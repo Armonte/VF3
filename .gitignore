@@ -16,7 +16,6 @@ data/aistrobot/body.X
 *.id0
 *.i64
 *.exe
-*.py
 *.id2
 *.config
 *.nam
@@ -68,3 +67,14 @@ keygen.md
 KEYGEN_DOCUMENTATION.md
 README_EXPORT.md
 .claude/settings.local.json
+analyze_actual_assembly.py
+analyze_quotients.py
+brute_force_keygen.py
+encode_key.py
+find_working_divisors.py
+fix_encode.py
+fix_failing_keys.py
+generate_all_keys.py
+real_key_parser.py
+reverse_keygen.py
+vf3_keygen.py
