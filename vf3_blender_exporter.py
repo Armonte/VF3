@@ -408,48 +408,38 @@ if __name__ == "__main__":
         if current_dir not in sys.path:
             sys.path.append(current_dir)
         
-        from vf3_loader import read_descriptor, parse_frame_bones, build_world_transforms
+        from vf3_loader import (
+            read_descriptor,
+            parse_frame_bones,
+            build_world_transforms,
+            collect_active_attachments,
+            find_mesh_file,
+        )
         from vf3_mesh_loader import load_mesh_with_full_materials
         
         # Load VF3 data
         desc = read_descriptor(descriptor_path)
         bones = parse_frame_bones(desc)
         
-        # For now, just load skin attachments (simplified)
-        attachments = []
-        if 'defaultvisual' in desc.blocks:
-            for line in desc.blocks['defaultvisual']:
-                if ':' in line:
-                    bone_name, resource_id = line.split(':', 1)
-                    # Create a simple attachment object
-                    class SimpleAttachment:
-                        def __init__(self, bone, resource):
-                            self.attach_bone = bone.strip()
-                            self.resource_id = resource.strip()
-                    
-                    attachments.append(SimpleAttachment(bone_name, resource_id))
-        
-        world_transforms = build_world_transforms(bones, [])
+        # Collect active attachments (base skin + default costume, expanded across referenced descriptors)
+        attachments, _clothing_dynamic_meshes = collect_active_attachments(desc)
+        print(f"? Total attachments collected: {len(attachments)}")
+
+        # Build world transforms, including any child frames introduced by attachments
+        world_transforms = build_world_transforms(bones, attachments)
         
         # Load mesh data
         mesh_data = {}
-        base_dir = os.path.dirname(descriptor_path)
-        
         for att in attachments:
-            if '.' in att.resource_id:
-                prefix, suffix = att.resource_id.split('.', 1)
-                char_dir = os.path.join(base_dir, prefix)
-                
-                for ext in ['.X', '.x']:
-                    mesh_path = os.path.join(char_dir, suffix + ext)
-                    if os.path.exists(mesh_path):
-                        try:
-                            mesh_info = load_mesh_with_full_materials(mesh_path)
-                            if mesh_info['mesh']:
-                                mesh_data[att.resource_id] = mesh_info
-                                break
-                        except Exception as e:
-                            print(f"Failed to load {mesh_path}: {e}")
+            mesh_path = find_mesh_file(att.resource_id)
+            if not mesh_path:
+                continue
+            try:
+                mesh_info = load_mesh_with_full_materials(mesh_path)
+                if mesh_info['mesh']:
+                    mesh_data[att.resource_id] = mesh_info
+            except Exception as e:
+                print(f"Failed to load {mesh_path}: {e}")
         
         # Create character in Blender
         success = create_vf3_character_in_blender(bones, attachments, world_transforms, mesh_data, output_path)
