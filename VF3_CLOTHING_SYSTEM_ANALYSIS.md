@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-**CRITICAL ISSUE**: Our current export system is **additive** instead of **replacement-based** like the original VF3 system. 
+yd**CRITICAL ISSUE**: Our current export system is **additive** instead of **replacement-based** like the original VF3 system. 
 
 ### Current Status (December 2024):
 ? **Working perfectly**: Naked character exports, materials, textures, DynamicVisual connectors, geometry positioning
@@ -206,15 +206,56 @@ python3 export_ciel_to_gltf.py --desc data/satsuki.txt --base-costume --out sats
 ? **Correct materials**: DynamicVisual connectors match appropriate mesh materials (BROKEN - all skin-colored)
 ? **Visual accuracy**: Matches original VF3 appearance when clothing is toggled (BROKEN)
 
-### CURRENT ISSUE SUMMARY:
+### CURRENT ISSUE SUMMARY (UPDATED):
 - **Geometry system**: ? Perfect (naked models work flawlessly)
-- **Material system**: ? Perfect (textures, colors, transparency all working)
-- **DynamicVisual system**: ? Perfect (connectors snap correctly)
-- **Clothing system**: ? BROKEN (additive instead of replacement)
-- **Bone hierarchy**: ? BROKEN (disconnected bones)
+- **Material system**: ? Perfect (textures, colors, transparency all working)  
+- **Clothing system**: ? **FIXED** (occupancy-based replacement working correctly)
+- **DynamicVisual deduplication**: ? **FIXED** (no more duplicate connectors)
+- **Bone hierarchy**: ? **ROOT CAUSE** (disconnected bones causing all remaining issues)
+- **DynamicVisual positioning**: ? BROKEN (due to bone hierarchy)
+- **Animation/Rigging**: ? BROKEN (due to bone hierarchy)
+
+## ? ROOT CAUSE DISCOVERED (December 2024)
+
+**CRITICAL BREAKTHROUGH**: After implementing the occupancy-based filtering system, we discovered the **fundamental architectural issue** causing all DynamicVisual problems:
+
+### The Real Problem: Broken Bone Hierarchy
+
+**Current System (WRONG)**:
+- Bakes world transforms directly into mesh vertices (`mesh.apply_transform(world_position)`)
+- All bones appear as separate objects branching from origin (0,0,0)
+- No parent-child bone relationships preserved in glTF export
+- DynamicVisual connectors can't follow proper bone hierarchy
+
+**Symptoms Observed**:
+- ? **Occupancy filtering works** - clothing properly replaces base body parts
+- ? **DynamicVisual stretching** - Hair connectors jump to wrong bones (Ayaka's hair Å® collar bone)  
+- ? **Material assignment issues** - Connectors get wrong colors due to improper bone relationships
+- ? **Mesh grouping problems** - Arms/elbows mixed with torso in single connector
+- ? **Animation impossible** - No proper armature structure for rigging
+
+### Technical Details:
+```python
+# CURRENT (BROKEN): Baking world transforms into vertices
+world_t = world.get(node_name, (0.0, 0.0, 0.0))
+T = np.eye(4)
+T[:3, 3] = np.array(world_t, dtype=float)
+mesh.apply_transform(T)  # Å© This destroys bone relationships
+
+# NEEDED: Proper bone hierarchy in glTF scene graph
+# - Create bone nodes with parent-child relationships
+# - Position meshes relative to parent bones (not world space)
+# - Export proper armature structure for animation
+```
+
+### Impact on Issues:
+1. **? Clothing System**: Fixed via occupancy filtering
+2. **? DynamicVisual Materials**: Root cause is bone hierarchy, not material logic
+3. **? DynamicVisual Positioning**: Root cause is bone hierarchy, not vertex snapping
+4. **? Animation/Rigging**: Impossible without proper bone structure
 
 ### NEXT STEPS FOR NEW CHAT:
-1. Implement occupancy-based filtering in `assemble_scene()` function
-2. Add intelligent DynamicVisual material assignment  
-3. Fix bone hierarchy for proper armature structure
-4. Test with multiple characters (Satsuki, Ayaka, Arcueid)
+1. **PRIORITY 1**: Implement proper bone hierarchy system in glTF export
+2. **PRIORITY 2**: Fix DynamicVisual positioning to follow bone relationships
+3. **PRIORITY 3**: Test animation/rigging compatibility in Blender
+4. Validate with multiple characters (Satsuki, Ayaka, Arcueid)

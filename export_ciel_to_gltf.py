@@ -1160,16 +1160,22 @@ def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textur
 
 def determine_dynamic_visual_material(dyn_data: dict, geometry_to_mesh_map: dict, all_materials: list, connector_index: int) -> dict:
     """
-    Determine the appropriate material for a DynamicVisual connector based on what it connects to.
+    Determine the appropriate material for a DynamicVisual connector based on its source.
     
     Logic:
-    - If connecting primarily to skin/body parts (female.*): use skin color
-    - If connecting primarily to clothing parts (character.*): use clothing color
-    - If mixed: use dominant type or fallback to skin
+    - Check the source of the DynamicVisual (from occupancy filtering)
+    - If from clothing source (satsuki.blazer, etc.): use clothing color
+    - If from skin source (female.*): use skin color
     """
     if not dyn_data or 'vertex_bones' not in dyn_data:
         # Fallback to skin color
         return get_skin_material_data()
+    
+    # Check if we have source information in the dyn_data
+    source_info = dyn_data.get('source_info', {})
+    source_name = source_info.get('source', '')
+    
+    print(f"    DEBUG: Connector {connector_index} source: '{source_name}'")
     
     # Analyze which bones this connector uses
     bone_counts = {}
@@ -1178,11 +1184,33 @@ def determine_dynamic_visual_material(dyn_data: dict, geometry_to_mesh_map: dict
     
     print(f"    DEBUG: Connector {connector_index} bone usage: {bone_counts}")
     
-    # Determine if this is primarily a clothing connector or skin connector
+    # Determine material based on SOURCE rather than bone names
+    clothing_sources = ['blazer', 'skirt', 'shoe', 'sock', 'shirt', 'dress', 'jacket', 'coat', 'pants', 'top']
+    skin_sources = ['female.', 'body', 'arms', 'legs', 'hands', 'foots', 'waist']
+    
+    source_lower = source_name.lower()
+    is_clothing_source = any(indicator in source_lower for indicator in clothing_sources)
+    is_skin_source = any(indicator in source_lower for indicator in skin_sources)
+    
+    print(f"    DEBUG: Source analysis - clothing: {is_clothing_source}, skin: {is_skin_source}")
+    
+    # Determine material type based on source
+    if is_clothing_source:
+        print(f"    DEBUG: Connector {connector_index} determined to be CLOTHING connector (source-based)")
+        return get_clothing_material_data(all_materials, bone_counts)
+    elif is_skin_source:
+        print(f"    DEBUG: Connector {connector_index} determined to be SKIN connector (source-based)")
+        return get_skin_material_data()
+    else:
+        # Fallback to bone name analysis if source is unclear
+        print(f"    DEBUG: Connector {connector_index} using fallback bone analysis")
+        return determine_material_from_bones(bone_counts, all_materials, connector_index)
+
+def determine_material_from_bones(bone_counts: dict, all_materials: list, connector_index: int) -> dict:
+    """Fallback material determination based on bone names"""
     clothing_indicators = ['skirt', 'blazer', 'shoe', 'sock', 'shirt', 'dress', 'jacket']
     skin_indicators = ['body', 'breast', 'arm', 'hand', 'leg', 'foot', 'head', 'waist']
     
-    # Check bone names for clothing indicators
     clothing_score = 0
     skin_score = 0
     
@@ -1203,12 +1231,11 @@ def determine_dynamic_visual_material(dyn_data: dict, geometry_to_mesh_map: dict
     
     print(f"    DEBUG: Connector {connector_index} scores - clothing: {clothing_score}, skin: {skin_score}")
     
-    # Determine material type based on dominant usage
     if clothing_score > skin_score:
-        print(f"    DEBUG: Connector {connector_index} determined to be CLOTHING connector")
+        print(f"    DEBUG: Connector {connector_index} determined to be CLOTHING connector (bone-based)")
         return get_clothing_material_data(all_materials, bone_counts)
     else:
-        print(f"    DEBUG: Connector {connector_index} determined to be SKIN connector")
+        print(f"    DEBUG: Connector {connector_index} determined to be SKIN connector (bone-based)")
         return get_skin_material_data()
 
 def get_skin_material_data() -> dict:
@@ -1325,7 +1352,10 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
             # Use source as key to deduplicate DynamicVisual meshes from same source
             source_key = winner['source']
             if source_key not in seen_dynamic_meshes:
-                final_dynamic_meshes.append(winner['dynamic_mesh'])
+                # Add source information to the DynamicVisual data for material assignment
+                dynamic_mesh_with_source = winner['dynamic_mesh'].copy()
+                dynamic_mesh_with_source['source_info'] = {'source': winner['source']}
+                final_dynamic_meshes.append(dynamic_mesh_with_source)
                 seen_dynamic_meshes.add(source_key)
                 print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments + DynamicVisual from {winner['source']} (ADDED)")
             else:
