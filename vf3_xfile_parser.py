@@ -669,26 +669,48 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                         corrected_diffuse[color_i] = pow(corrected_diffuse[color_i], 2.2)
                 print(f"  DEBUG: Gamma-corrected diffuse: {corrected_diffuse}")
                 
+                # Gather texture filenames robustly
+                extracted_textures = []
+                # Case 1: array attribute 'textures'
+                if hasattr(mat, 'textures') and mat.textures:
+                    for tex in mat.textures:
+                        # Try multiple attribute names
+                        for attr in ('name', 'fileName', 'filename', 'path'):
+                            if hasattr(tex, attr):
+                                val = getattr(tex, attr)
+                                if isinstance(val, (bytes, bytearray)):
+                                    try:
+                                        val = val.decode('utf-8', errors='ignore')
+                                    except Exception:
+                                        pass
+                                if isinstance(val, str) and val:
+                                    extracted_textures.append(val)
+                                    break
+                # Case 2: direct attributes on material
+                for attr in ('textureFilename', 'texFileName', 'texture', 'file'):
+                    if hasattr(mat, attr):
+                        val = getattr(mat, attr)
+                        if isinstance(val, (bytes, bytearray)):
+                            try:
+                                val = val.decode('utf-8', errors='ignore')
+                            except Exception:
+                                pass
+                        if isinstance(val, str) and val:
+                            extracted_textures.append(val)
+
                 material_data = {
                     'name': getattr(mat, 'name', f'Material_{i}'),
                     'diffuse': corrected_diffuse,
                     'specular': list(getattr(mat, 'specular', [0.0, 0.0, 0.0])),
                     'emissive': list(getattr(mat, 'emissive', [0.0, 0.0, 0.0])),
                     'power': getattr(mat, 'specularExponent', 1.0),
-                    'textures': []
+                    'textures': extracted_textures
                 }
                 
-                # Extract texture filenames from material
-                if hasattr(mat, 'textures'):
-                    for tex in mat.textures:
-                        if hasattr(tex, 'name'):
-                            # Convert bytes to string if needed
-                            tex_name = tex.name
-                            if isinstance(tex_name, bytes):
-                                tex_name = tex_name.decode('utf-8')
-                            material_data['textures'].append(tex_name)
-                            if tex_name not in textures:
-                                textures.append(tex_name)
+                # Add to unique textures list
+                for tex_name in material_data['textures']:
+                    if tex_name not in textures:
+                        textures.append(tex_name)
                 
                 materials.append(material_data)
                 print(f"Found material {i}: {material_data['name']} with {len(material_data['textures'])} textures")
@@ -743,26 +765,44 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                                 corrected_diffuse[color_i] = pow(corrected_diffuse[color_i], 2.2)
                         print(f"    DEBUG: Gamma-corrected diffuse: {corrected_diffuse}")
                         
+                        # Gather texture filenames robustly
+                        extracted_textures = []
+                        if hasattr(mat, 'textures') and mat.textures:
+                            for tex in mat.textures:
+                                for attr in ('name', 'fileName', 'filename', 'path'):
+                                    if hasattr(tex, attr):
+                                        val = getattr(tex, attr)
+                                        if isinstance(val, (bytes, bytearray)):
+                                            try:
+                                                val = val.decode('utf-8', errors='ignore')
+                                            except Exception:
+                                                pass
+                                        if isinstance(val, str) and val:
+                                            extracted_textures.append(val)
+                                            break
+                        for attr in ('textureFilename', 'texFileName', 'texture', 'file'):
+                            if hasattr(mat, attr):
+                                val = getattr(mat, attr)
+                                if isinstance(val, (bytes, bytearray)):
+                                    try:
+                                        val = val.decode('utf-8', errors='ignore')
+                                    except Exception:
+                                        pass
+                                if isinstance(val, str) and val:
+                                    extracted_textures.append(val)
+
                         material_data = {
                             'name': getattr(mat, 'name', f'Material_{len(materials)}'),
                             'diffuse': corrected_diffuse,
                             'specular': list(getattr(mat, 'specular', [0.0, 0.0, 0.0])),
                             'emissive': list(getattr(mat, 'emissive', [0.0, 0.0, 0.0])),
                             'power': getattr(mat, 'specularExponent', 1.0),
-                            'textures': []
+                            'textures': extracted_textures
                         }
                         
-                        # Extract texture filenames from material
-                        if hasattr(mat, 'textures'):
-                            for tex in mat.textures:
-                                if hasattr(tex, 'name'):
-                                    # Convert bytes to string if needed
-                                    tex_name = tex.name
-                                    if isinstance(tex_name, bytes):
-                                        tex_name = tex_name.decode('utf-8')
-                                    material_data['textures'].append(tex_name)
-                                    if tex_name not in textures:
-                                        textures.append(tex_name)
+                        for tex_name in material_data['textures']:
+                            if tex_name not in textures:
+                                textures.append(tex_name)
                         
                         materials.append(material_data)
                         print(f"Found material {len(materials)-1}: {material_data['name']} with {len(material_data['textures'])} textures")

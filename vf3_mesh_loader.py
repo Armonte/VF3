@@ -56,7 +56,10 @@ def load_mesh_with_full_materials(path: str) -> dict:
     # Use the complete XFile parser with materials for .X files
     if path.lower().endswith('.x'):
         try:
-            return load_mesh_with_materials(path)
+            result = load_mesh_with_materials(path)
+            # Attach source path for downstream texture resolution
+            result['source_path'] = path
+            return result
         except Exception as e:
             print(f"XFile parser with materials failed for {path}: {e}")
             return {'mesh': None, 'materials': [], 'textures': []}
@@ -67,7 +70,8 @@ def load_mesh_with_full_materials(path: str) -> dict:
         return {
             'mesh': mesh,
             'materials': [],
-            'textures': []
+            'textures': [],
+            'source_path': path
         }
     except Exception as e:
         print(f"Failed to load mesh {path}: {e}")

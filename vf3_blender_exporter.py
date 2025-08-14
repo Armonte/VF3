@@ -92,6 +92,10 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         
         if not trimesh_mesh:
             continue
+            
+        # Apply trimesh materials BEFORE converting to Blender (like original script)
+        if 'materials' in mesh_info and mesh_info['materials']:
+            trimesh_mesh = _apply_trimesh_materials(trimesh_mesh, mesh_info['materials'], mesh_info)
         
         # Create Blender mesh
         mesh_name = f"{att.attach_bone}_{att.resource_id}"
@@ -107,6 +111,25 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         faces = trimesh_mesh.faces.tolist()
         blender_mesh.from_pydata(vertices.tolist(), [], faces)
         blender_mesh.update()
+
+        # Assign UVs if available
+        try:
+            if hasattr(trimesh_mesh.visual, 'uv') and trimesh_mesh.visual.uv is not None:
+                import numpy as np
+                uv = trimesh_mesh.visual.uv
+                if len(uv) == len(blender_mesh.vertices):
+                    blender_mesh.uv_layers.new(name="UVMap")
+                    uv_layer = blender_mesh.uv_layers.active.data
+                    # Map per-loop UVs
+                    loop_index = 0
+                    for poly in blender_mesh.polygons:
+                        for li in poly.loop_indices:
+                            vidx = blender_mesh.loops[li].vertex_index
+                            if vidx < len(uv):
+                                uv_layer[loop_index].uv = (uv[vidx][0], 1.0 - uv[vidx][1])
+                            loop_index += 1
+        except Exception as e:
+            print(f"  UV assignment failed for {mesh_name}: {e}")
         
         # Clean up mesh to reduce z-fighting
         blender_mesh.validate()  # Fix invalid geometry
@@ -123,23 +146,8 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         mesh_obj = bpy.data.objects.new(mesh_name, blender_mesh)
         bpy.context.collection.objects.link(mesh_obj)
         
-        # Step 5.5: Create and assign materials
-        if 'materials' in mesh_info and mesh_info['materials']:
-            print(f"  Creating materials for {mesh_name}: {len(mesh_info['materials'])} materials")
-            _create_blender_materials(mesh_obj, mesh_info['materials'], trimesh_mesh, mesh_info)
-        else:
-            print(f"  No materials found for {mesh_name}")
-            # Create a default material so it's not completely gray
-            default_mat = bpy.data.materials.new(name=f"Default_{mesh_name}")
-            default_mat.use_nodes = True
-            bsdf = default_mat.node_tree.nodes.get("Principled BSDF")
-            if bsdf:
-                # Set a default color based on bone name
-                if 'body' in att.attach_bone.lower():
-                    bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Skin tone
-                else:
-                    bsdf.inputs['Base Color'].default_value = (0.7, 0.7, 0.7, 1.0)  # Light gray
-            mesh_obj.data.materials.append(default_mat)
+        # Skip manual Blender material creation - trimesh materials are handled during export
+        print(f"  Created mesh '{mesh_name}' with {len(trimesh_mesh.vertices)} vertices, bound to bone '{att.attach_bone}'")
         
         # Step 6: Create vertex groups and bind to armature
         if att.attach_bone in created_bones:
@@ -251,20 +259,68 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                 print(f"      Metallic: {metallic}")
         
         # Handle texture
+        # Try texture list from .X materials or resolved absolute paths
+        texture_path = None
         if 'texture' in material_data and material_data['texture']:
             texture_path = material_data['texture']
-            print(f"      Texture: {texture_path}")
-            if os.path.exists(texture_path):
-                # Create texture node
+        elif 'textures' in material_data and material_data['textures']:
+            # Use the first texture
+            texture_path = material_data['textures'][0]
+
+        if texture_path:
+            # Resolve relative texture path against mesh source directory, if needed
+            resolved_path = texture_path
+            if not os.path.isabs(resolved_path):
+                base_dir = None
+                if mesh_info and 'source_path' in mesh_info:
+                    base_dir = os.path.dirname(mesh_info['source_path'])
+                if base_dir:
+                    candidate = os.path.join(base_dir, resolved_path)
+                    if os.path.exists(candidate):
+                        resolved_path = candidate
+                    else:
+                        # Also try data root for character textures (e.g., data/stkface.bmp)
+                        fallback = _find_in_data_root(os.path.basename(resolved_path), mesh_info)
+                        if fallback:
+                            resolved_path = fallback
+            print(f"      Texture: {resolved_path}")
+            if os.path.exists(resolved_path):
+                # Create texture node and load image (packed) with optional black->alpha conversion, without writing files
                 tex_image = nodes.new(type='ShaderNodeTexImage')
                 try:
-                    tex_image.image = bpy.data.images.load(texture_path)
+                    img = _load_image_with_black_as_alpha(resolved_path, make_alpha=('hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower()))
+                    tex_image.image = img
+                    # Base Color
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
-                    print(f"      ? Loaded texture: {texture_path}")
+                    # Alpha hookup
+                    if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
+                        blender_mat.blend_method = 'HASHED'
+                        blender_mat.shadow_method = 'CLIP'
+                        if 'Alpha' in [s.name for s in tex_image.outputs]:
+                            links.new(tex_image.outputs['Alpha'], bsdf.inputs['Alpha'])
+                    print(f"      ? Loaded texture (packed): {img.name}")
                 except Exception as e:
-                    print(f"      ? Failed to load texture: {texture_path} - {e}")
+                    print(f"      ? Failed to load texture: {resolved_path} - {e}")
             else:
-                print(f"      ? Texture file not found: {texture_path}")
+                print(f"      ? Texture file not found: {resolved_path}")
+        else:
+            # Try to auto-discover textures near mesh
+            auto_tex = _auto_discover_texture(mesh_info, mesh_obj.name)
+            if auto_tex and os.path.exists(auto_tex):
+                print(f"      ? Auto texture: {auto_tex}")
+                tex_image = nodes.new(type='ShaderNodeTexImage')
+                try:
+                    img = _load_image_with_black_as_alpha(auto_tex, make_alpha=('hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower()))
+                    tex_image.image = img
+                    links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
+                    if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
+                        blender_mat.blend_method = 'HASHED'
+                        blender_mat.shadow_method = 'CLIP'
+                        if 'Alpha' in [s.name for s in tex_image.outputs]:
+                            links.new(tex_image.outputs['Alpha'], bsdf.inputs['Alpha'])
+                    print(f"      ? Loaded texture (packed): {img.name}")
+                except Exception as e:
+                    print(f"      ? Failed to load texture: {auto_tex} - {e}")
         
         # Add material to mesh
         mesh_obj.data.materials.append(blender_mat)
@@ -315,6 +371,304 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
             print(f"    ? Assigned materials to {assigned_count}/{len(face_materials)} faces")
     else:
         print("    ? No face material mapping found - all faces will use first material (white)")
+
+
+def _find_in_data_root(filename: str, mesh_info: dict) -> str:
+    try:
+        # Ascend until a directory named 'data' is found
+        start = os.path.dirname(mesh_info['source_path']) if mesh_info and 'source_path' in mesh_info else ''
+        cur = start
+        data_dir = ''
+        while cur and os.path.dirname(cur) != cur:
+            if os.path.basename(cur).lower() == 'data' and os.path.isdir(cur):
+                data_dir = cur
+                break
+            cur = os.path.dirname(cur)
+        if not data_dir:
+            return ''
+        # Direct match first
+        candidate = os.path.join(data_dir, filename)
+        if os.path.exists(candidate):
+            return candidate
+        # Recursive search case-insensitive
+        target = filename.lower()
+        for root, _dirs, files in os.walk(data_dir):
+            for fn in files:
+                if fn.lower() == target:
+                    return os.path.join(root, fn)
+        return ''
+    except Exception:
+        return ''
+
+
+def _auto_discover_texture(mesh_info: dict, mesh_name: str) -> str:
+    try:
+        if not mesh_info or 'source_path' not in mesh_info:
+            return ''
+        base_dir = os.path.dirname(mesh_info['source_path'])
+        if not os.path.isdir(base_dir):
+            return ''
+        # Prioritize likely names
+        priorities = ['hair', 'face', 'head', 'skin']
+        exts = ['.png', '.jpg', '.jpeg', '.bmp', '.tga']
+        candidates = []
+        for fn in os.listdir(base_dir):
+            lower = fn.lower()
+            if any(lower.endswith(e) for e in exts):
+                # Score by priority keyword and mesh name overlap
+                score = 0
+                for p in priorities:
+                    if p in lower:
+                        score += 10
+                for token in mesh_name.lower().split('_'):
+                    if token and token in lower:
+                        score += 1
+                candidates.append((score, os.path.join(base_dir, fn)))
+        if not candidates:
+            return ''
+        candidates.sort(reverse=True)
+        return candidates[0][1]
+    except Exception:
+        return ''
+
+
+def _ensure_alpha_from_black(image_path: str) -> str:
+    """If image lacks alpha (e.g., BMP), generate a PNG with alpha where near-black becomes transparent."""
+    try:
+        import bpy
+        # Load
+        img = bpy.data.images.load(image_path)
+        # If already has alpha data that isn't fully opaque, keep
+        has_alpha = img.channels == 4
+        if has_alpha:
+            # Inspect a small sample
+            px = list(img.pixels)
+            if any(px[i+3] < 0.999 for i in range(0, min(len(px), 4000), 4)):
+                return image_path
+        # Ensure 4 channels
+        if img.channels < 4:
+            img.colorspace_settings.name = 'sRGB'
+        # Build alpha from black threshold
+        px = list(img.pixels)  # RGBA floats 0..1
+        n = len(px)
+        for i in range(0, n, 4):
+            r, g, b, a = px[i], px[i+1], px[i+2], 1.0
+            # Near-black threshold
+            if r < 0.05 and g < 0.05 and b < 0.05:
+                a = 0.0
+            px[i], px[i+1], px[i+2], px[i+3] = r, g, b, a
+        img.pixels[:] = px
+        # Save as PNG next to source
+        base_dir = os.path.dirname(image_path)
+        base_name = os.path.splitext(os.path.basename(image_path))[0]
+        out_path = os.path.join(base_dir, f"{base_name}_alpha.png")
+        img.filepath_raw = out_path
+        img.file_format = 'PNG'
+        img.save()
+        return out_path if os.path.exists(out_path) else image_path
+    except Exception:
+        return image_path
+
+
+def _load_image_with_black_as_alpha(image_path: str, make_alpha: bool) -> 'bpy.types.Image':
+    """Load image with proper black-as-alpha processing using PIL approach from original script."""
+    import bpy
+    
+    try:
+        from PIL import Image
+        import numpy as np
+        
+        # Check if image already loaded in Blender to avoid duplicates
+        img_name = os.path.basename(image_path)
+        existing_img = bpy.data.images.get(img_name)
+        if existing_img:
+            print(f"      ? Reusing existing image: {img_name}")
+            return existing_img
+        
+        # Use PIL to load and process the image (same as original script)
+        pil_img = Image.open(image_path)
+        
+        # Handle black-as-alpha transparency (from original script)
+        if make_alpha:
+            # Convert to RGBA if needed
+            if pil_img.mode != 'RGBA':
+                pil_img = pil_img.convert('RGBA')
+            
+            # Create alpha channel based on black pixels
+            data = np.array(pil_img)
+            # Check for pixels that are very close to black (RGB < 10) - same threshold as original
+            black_mask = np.all(data[:, :, :3] < 10, axis=2)
+            # Set alpha to 0 for black pixels
+            data[black_mask, 3] = 0
+            
+            # Update image with alpha channel
+            pil_img = Image.fromarray(data, 'RGBA')
+        
+        # Convert PIL image to Blender image
+        width, height = pil_img.size
+        
+        # Create new Blender image with alpha if needed
+        has_alpha = make_alpha or pil_img.mode == 'RGBA'
+        blender_img = bpy.data.images.new(name=img_name, width=width, height=height, alpha=has_alpha)
+        
+        # Convert PIL image to Blender pixel format
+        if has_alpha:
+            # RGBA format
+            if pil_img.mode != 'RGBA':
+                pil_img = pil_img.convert('RGBA')
+            pixels = np.array(pil_img).astype(np.float32) / 255.0  # Convert to 0-1 range
+            # Blender expects flipped Y and flattened RGBA
+            pixels = np.flipud(pixels).flatten()
+        else:
+            # RGB format
+            if pil_img.mode != 'RGB':
+                pil_img = pil_img.convert('RGB')
+            pixels = np.array(pil_img).astype(np.float32) / 255.0  # Convert to 0-1 range
+            # Blender expects flipped Y and flattened RGB
+            pixels = np.flipud(pixels).flatten()
+        
+        # Assign pixels to Blender image
+        blender_img.pixels[:] = pixels
+        
+        # Update image to ensure changes are applied
+        blender_img.update()
+        
+        # Pack image to embed in .blend and glTF
+        blender_img.pack()
+        
+        print(f"      ? Processed texture with PIL: {img_name} ({'RGBA' if has_alpha else 'RGB'})")
+        return blender_img
+        
+    except ImportError:
+        print("      ?? PIL not available, falling back to direct Blender loading")
+        # Fallback to direct Blender loading
+        img = bpy.data.images.load(image_path)
+        img.pack()
+        return img
+    except Exception as e:
+        print(f"      ? Failed to process texture with PIL: {e}, falling back to direct loading")
+        # Fallback to direct Blender loading
+        img = bpy.data.images.load(image_path)
+        img.pack()
+        return img
+
+
+def _apply_trimesh_materials(mesh: 'trimesh.Trimesh', materials: List[dict], mesh_info: dict = None) -> 'trimesh.Trimesh':
+    """Apply materials to trimesh using the same approach as the original working script."""
+    if not materials:
+        return mesh
+    
+    try:
+        import trimesh
+        from PIL import Image
+        import numpy as np
+        
+        # Find first material with texture (same logic as original)
+        material_with_texture = None
+        for mat in materials:
+            if mat.get('textures'):
+                material_with_texture = mat
+                break
+        
+        if not material_with_texture:
+            # Color-only material
+            if materials:
+                mat = materials[0]
+                if 'diffuse' in mat:
+                    color = list(mat['diffuse'][:4])
+                    if len(color) == 3:
+                        color.append(1.0)  # Add alpha
+                    
+                    # Create PBR material for color-only mesh
+                    material = trimesh.visual.material.PBRMaterial()
+                    material.name = mat.get('name', 'material')
+                    material.baseColorFactor = color
+                    
+                    if color[3] < 1.0:  # If material has transparency
+                        material.alphaMode = 'BLEND'
+                    
+                    # Create TextureVisuals with material
+                    mesh.visual = trimesh.visual.TextureVisuals(material=material)
+                    print(f"      Applied PBR color material: {color}")
+            return mesh
+        
+        # Material with texture - find texture file
+        texture_name = material_with_texture['textures'][0]
+        texture_path = None
+        
+        # Try multiple locations (same as original)
+        if mesh_info and 'source_path' in mesh_info:
+            base_path = os.path.dirname(mesh_info['source_path'])
+            candidates = [
+                os.path.join(base_path, texture_name),
+                _find_in_data_root(texture_name, mesh_info)
+            ]
+            for candidate in candidates:
+                if candidate and os.path.exists(candidate):
+                    texture_path = candidate
+                    break
+        
+        if not texture_path or not os.path.exists(texture_path):
+            print(f"      Texture not found: {texture_name}")
+            return mesh
+        
+        print(f"      Applying trimesh texture: {texture_path}")
+        
+        # Create PBR material with texture (same as original)
+        material = trimesh.visual.material.PBRMaterial()
+        material.name = material_with_texture['name']
+        
+        # Set base color from diffuse
+        if 'diffuse' in material_with_texture and len(material_with_texture['diffuse']) >= 3:
+            material.baseColorFactor = material_with_texture['diffuse'][:4]
+            if len(material.baseColorFactor) == 3:
+                material.baseColorFactor.append(1.0)
+        
+        # Load texture image with black-as-alpha (same as original)
+        img = Image.open(texture_path)
+        
+        # Handle black-as-alpha transparency
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        
+        # Create alpha channel based on black pixels
+        data = np.array(img)
+        # Check for pixels that are very close to black (RGB < 10) - same threshold as original
+        black_mask = np.all(data[:, :, :3] < 10, axis=2)
+        # Set alpha to 0 for black pixels
+        data[black_mask, 3] = 0
+        
+        # Update image with alpha channel (no flip - try original like working script)
+        img = Image.fromarray(data, 'RGBA')
+        material.baseColorTexture = img  # Direct assignment like original!
+        
+        # Set material to handle transparency
+        material.alphaMode = 'MASK'  # Use alpha masking for sharp edges
+        material.alphaCutoff = 0.1   # Pixels with alpha < 0.1 are discarded
+        
+        # Preserve existing UV coordinates before creating TextureVisuals
+        existing_uv = None
+        if hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None:
+            existing_uv = mesh.visual.uv.copy()
+            print(f"      Preserving UV coordinates: {existing_uv.shape}")
+        
+        # Create texture visuals for the mesh (same as original)
+        mesh.visual = trimesh.visual.TextureVisuals(material=material)
+        
+        # Restore UV coordinates - try both original and flipped to see which works
+        if existing_uv is not None:
+            # Since image is now unflipped, try flipping UV V-coordinates again
+            flipped_uv = existing_uv.copy() 
+            flipped_uv[:, 1] = 1.0 - flipped_uv[:, 1]
+            mesh.visual.uv = flipped_uv
+            print(f"      Applied UV with flipped V-coordinates")
+        
+        print(f"      Applied trimesh texture material: {texture_name}")
+        return mesh
+        
+    except Exception as e:
+        print(f"      Failed to apply trimesh materials: {e}")
+        return mesh
 
 
 def _get_bone_hierarchy_order(bones: Dict) -> List[str]:
