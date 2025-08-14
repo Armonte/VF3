@@ -688,21 +688,27 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                     uv_coords.append([uv[0], uv[1]])
                 print(f"Extracted {len(uv_coords)} UV coordinates")
             
-            # Extract faces
+            # Extract faces and track original face indices for material mapping
+            face_to_original = []  # Maps triangulated face index to original face index
+            original_face_idx = 0
             for face in mesh.posFaces:
                 if len(face.indices) >= 3:
                     # Convert to triangles if needed
                     if len(face.indices) == 3:
                         faces.append(face.indices)
+                        face_to_original.append(original_face_idx)
                     elif len(face.indices) > 3:
                         # Simple triangulation (fan)
                         for j in range(1, len(face.indices) - 1):
                             faces.append([face.indices[0], face.indices[j], face.indices[j+1]])
+                            face_to_original.append(original_face_idx)
+                original_face_idx += 1
         
         # If no global meshes, check frame nodes
         elif scene.rootNode:
+            face_to_original = []
             def extract_meshes_from_node(node):
-                nonlocal vertices, faces, materials, textures, uv_coords
+                nonlocal vertices, faces, materials, textures, uv_coords, face_to_original
                 
                 # Extract meshes from this node
                 for mesh in node.meshes:
@@ -744,16 +750,20 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                             uv_coords.append([uv[0], uv[1]])
                         print(f"Extracted {len(mesh.texCoords)} UV coordinates from frame node")
                     
-                    # Extract faces
+                    # Extract faces and track original face indices
+                    original_face_idx = len(face_to_original)
                     for face in mesh.posFaces:
                         if len(face.indices) >= 3:
                             # Convert to triangles if needed
                             if len(face.indices) == 3:
                                 faces.append(face.indices)
+                                face_to_original.append(original_face_idx)
                             elif len(face.indices) > 3:
                                 # Simple triangulation (fan)
                                 for j in range(1, len(face.indices) - 1):
                                     faces.append([face.indices[0], face.indices[j], face.indices[j+1]])
+                                    face_to_original.append(original_face_idx)
+                        original_face_idx += 1
                 
                 # Recursively check children
                 for child in node.children:
@@ -777,8 +787,14 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
         # Extract face materials for multi-material splitting
         face_materials = []
         if scene.globalMeshes and hasattr(scene.globalMeshes[0], 'faceMaterials'):
-            face_materials = scene.globalMeshes[0].faceMaterials
-            print(f"Extracted {len(face_materials)} face material assignments")
+            original_face_materials = scene.globalMeshes[0].faceMaterials
+            # Map original face materials to triangulated faces
+            if 'face_to_original' in locals() and face_to_original:
+                face_materials = [original_face_materials[orig_idx] for orig_idx in face_to_original]
+                print(f"Mapped {len(original_face_materials)} original face materials to {len(face_materials)} triangulated faces")
+            else:
+                face_materials = original_face_materials
+                print(f"Using {len(face_materials)} face material assignments directly")
         
         return {
             'mesh': mesh,
@@ -910,6 +926,66 @@ def merge_body_meshes(meshes: List[trimesh.Trimesh]) -> trimesh.Trimesh:
         pass  # Fill holes might fail on complex geometry
     
     return combined
+
+
+def split_mesh_by_materials(mesh_data: dict) -> List[dict]:
+    """Split a mesh into separate meshes by material for proper GLTF multi-material support"""
+    mesh = mesh_data['mesh']
+    materials = mesh_data['materials']
+    face_materials = mesh_data.get('face_materials', [])
+    uv_coords = mesh_data.get('uv_coords', [])
+    
+    if not face_materials or len(face_materials) != len(mesh.faces):
+        print("No face materials or mismatch, returning single mesh")
+        return [mesh_data]
+    
+    # Group faces by material
+    material_faces = {}
+    for face_idx, mat_idx in enumerate(face_materials):
+        if mat_idx not in material_faces:
+            material_faces[mat_idx] = []
+        material_faces[mat_idx].append(face_idx)
+    
+    print(f"Splitting mesh into {len(material_faces)} material groups")
+    
+    # Create separate meshes for each material
+    split_meshes = []
+    for mat_idx, face_indices in material_faces.items():
+        if mat_idx >= len(materials):
+            print(f"Warning: Material index {mat_idx} out of range, skipping")
+            continue
+            
+        # Extract faces for this material
+        faces_subset = mesh.faces[face_indices]
+        
+        # Find unique vertices used by these faces
+        unique_vertices = np.unique(faces_subset.flatten())
+        vertex_map = {old_idx: new_idx for new_idx, old_idx in enumerate(unique_vertices)}
+        
+        # Extract vertices and remap faces
+        new_vertices = mesh.vertices[unique_vertices]
+        new_faces = np.array([[vertex_map[v] for v in face] for face in faces_subset])
+        
+        # Create new mesh
+        new_mesh = trimesh.Trimesh(vertices=new_vertices, faces=new_faces, process=False)
+        
+        # Copy UV coordinates if available
+        if hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None:
+            new_mesh.visual.uv = mesh.visual.uv[unique_vertices]
+            print(f"Copied UV coordinates for material {mat_idx} ({len(unique_vertices)} vertices)")
+        
+        # Create mesh data with single material
+        split_mesh_data = {
+            'mesh': new_mesh,
+            'materials': [materials[mat_idx]],
+            'textures': materials[mat_idx]['textures'],
+            'material_index': mat_idx
+        }
+        
+        split_meshes.append(split_mesh_data)
+        print(f"Created mesh for material {mat_idx}: {len(new_vertices)} vertices, {len(new_faces)} faces, textures: {materials[mat_idx]['textures']}")
+    
+    return split_meshes
 
 
 def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textures: List[str], base_path: str) -> trimesh.Trimesh:
@@ -1204,6 +1280,10 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
 
         print(f"Found mesh file: {mesh_path}")
         try:
+            # Get node and mesh names first
+            node_name = att.child_name or att.attach_bone
+            name = os.path.basename(mesh_path)
+            
             mesh_data = load_mesh_with_materials(mesh_path)
             mesh = mesh_data['mesh']
             
@@ -1216,17 +1296,64 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                 all_textures.extend([tex for tex in mesh_data['textures'] if tex not in all_textures])
                 print(f"  Found textures: {mesh_data['textures']}")
             
-            # Apply materials to this mesh
-            if mesh_data['materials'] or mesh_data['textures']:
-                base_path = os.path.dirname(mesh_path)  # Directory containing the mesh file
-                mesh = apply_materials_to_mesh(mesh, mesh_data['materials'], mesh_data['textures'], base_path)
+            # Handle multi-material meshes by splitting them
+            if mesh_data.get('face_materials') and len(set(mesh_data['face_materials'])) > 1:
+                print(f"Multi-material mesh detected, splitting into {len(set(mesh_data['face_materials']))} parts")
+                split_meshes = split_mesh_by_materials(mesh_data)
+                
+                # Process each split mesh
+                for split_data in split_meshes:
+                    split_mesh = split_data['mesh']
+                    
+                    # Apply materials to this split mesh
+                    if split_data['materials'] or split_data['textures']:
+                        base_path = os.path.dirname(mesh_path)
+                        split_mesh = apply_materials_to_mesh(split_mesh, split_data['materials'], split_data['textures'], base_path)
+                    
+                    # Apply world transform to each split mesh
+                    world_t = world.get(node_name, (0.0, 0.0, 0.0))
+                    T = np.eye(4)
+                    T[:3, 3] = np.array(world_t, dtype=float)
+                    split_mesh = split_mesh.copy()
+                    split_mesh.apply_transform(T)
+                    
+                    # Add to scene with unique name
+                    split_name = f"{name}_mat{split_data['material_index']}"
+                    if merge_female_body and att.resource_id.startswith('female.'):
+                        female_body_meshes.append(split_mesh)
+                        print(f"Collected female body part {split_name} for merging")
+                    else:
+                        scene.add_geometry(split_mesh, node_name=split_name)
+                        geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
+                        print(f"Added split mesh {split_name} to scene")
+                
+            else:
+                # Single material mesh - process normally
+                # Apply materials to this mesh
+                if mesh_data['materials'] or mesh_data['textures']:
+                    base_path = os.path.dirname(mesh_path)  # Directory containing the mesh file
+                    mesh = apply_materials_to_mesh(mesh, mesh_data['materials'], mesh_data['textures'], base_path)
+                
+                # Apply world transform
+                world_t = world.get(node_name, (0.0, 0.0, 0.0))
+                T = np.eye(4)
+                T[:3, 3] = np.array(world_t, dtype=float)
+                mesh = mesh.copy()
+                mesh.apply_transform(T)
+                
+                # Add to scene
+                if merge_female_body and att.resource_id.startswith('female.'):
+                    female_body_meshes.append(mesh)
+                    print(f"Collected female body part {name} for merging")
+                else:
+                    scene.add_geometry(mesh, node_name=name)
+                    geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
+                    print(f"Added mesh {name} to scene")
 
             mesh_count += 1
         except Exception as e:
             print(f"Failed to load mesh {mesh_path}: {e}")
             continue
-        node_name = att.child_name or att.attach_bone
-        name = os.path.basename(mesh_path)
 
         # Count by resource prefix (e.g., 'female', 'ciel')
         if '.' in att.resource_id:
