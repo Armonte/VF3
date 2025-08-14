@@ -16,23 +16,35 @@ from vf3_loader import find_mesh_file
 
 
 def create_bone_hierarchy(bones: Dict, scene: trimesh.Scene) -> Dict[str, Any]:
-    """Create proper bone hierarchy with LOCAL transforms and parent relationships."""
-    scene_graph_nodes = {}
+    """Create bone nodes at WORLD positions for proper visualization.
     
-    # First pass: Create all bone nodes with LOCAL transforms
-    for bone_name, bone in bones.items():
-        local_tf = np.eye(4)
-        local_tf[:3, 3] = np.array(bone.translation, dtype=float)
-        scene_graph_nodes[bone_name] = scene.graph.update(frame_to=bone_name, matrix=local_tf)
-        print(f"Created bone node '{bone_name}' with local transform {bone.translation}")
+    Since trimesh's scene graph doesn't properly export bone hierarchies to glTF,
+    we position each bone at its world location. The meshes are also positioned
+    at world locations, creating the correct visual result.
+    """
+    scene_graph_nodes: Dict[str, Any] = {}
     
-    # Second pass: Set up parent-child relationships
+    # Calculate world transforms for all bones
+    world_transforms = build_world_transforms(bones, [])
+    
+    # Create bone nodes at WORLD positions
     for bone_name, bone in bones.items():
-        if bone.parent and bone.parent in scene_graph_nodes:
-            scene.graph.update(frame_from=bone_name, frame_to=bone.parent)
-            print(f"Set bone '{bone_name}' as child of '{bone.parent}'")
-        elif bone.parent:
-            print(f"WARNING: Parent bone '{bone.parent}' not found for bone '{bone_name}'")
+        if bone_name in world_transforms:
+            world_pos = world_transforms[bone_name]
+            world_tf = np.eye(4)
+            world_tf[:3, 3] = np.array(world_pos, dtype=float)
+            scene_graph_nodes[bone_name] = scene.graph.update(
+                frame_to=bone_name,
+                matrix=world_tf
+            )
+            print(f"Created bone '{bone_name}' at world position {world_pos}")
+        else:
+            # Root bone at origin
+            scene_graph_nodes[bone_name] = scene.graph.update(
+                frame_to=bone_name,
+                matrix=np.eye(4)
+            )
+            print(f"Created bone '{bone_name}' at origin")
     
     return scene_graph_nodes
 

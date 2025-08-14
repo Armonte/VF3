@@ -26,10 +26,12 @@ from vf3_scene_assembly import (
     create_bone_hierarchy, create_child_attachment_nodes, is_core_body_part
 )
 from vf3_dynamic_visual import process_dynamic_visual_meshes
+from vf3_armature import create_gltf_armature, create_mesh_skin
 
 
 def process_attachments(attachments: List, world_transforms: Dict, scene: trimesh.Scene, 
-                       scene_graph_nodes: Dict, bones: Dict, merge_female_body: bool = False) -> Dict[str, Any]:
+                       scene_graph_nodes: Dict, bones: Dict, joint_indices: Dict[str, int], 
+                       inverse_bind_matrices, merge_female_body: bool = False) -> Dict[str, Any]:
     """Process all mesh attachments with proper material handling and scene graph parenting."""
     mesh_count = 0
     prefix_counts: Dict[str, int] = {}
@@ -123,8 +125,8 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
             pref = att.resource_id.split('.', 1)[0]
             prefix_counts[pref] = prefix_counts.get(pref, 0) + 1
 
-        # Apply WORLD transform to position mesh correctly in world space
-        # This is needed because trimesh scene graph export doesn't always work reliably
+        # Apply WORLD transform to position mesh correctly
+        # The bone hierarchy in trimesh doesn't properly export to glTF, so we need meshes positioned correctly
         if att.attach_bone in world_transforms:
             world_pos = world_transforms[att.attach_bone]
             world_T = np.eye(4)
@@ -148,6 +150,9 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
                 # Apply world transform to position mesh correctly
                 split_mesh.apply_transform(world_T)
                 
+                # Create skinned mesh bound to the bone
+                split_mesh = create_mesh_skin(split_mesh, att.attach_bone, joint_indices, inverse_bind_matrices)
+                
                 split_name = f"{name}_mat{split_data['material_index']}"
                 if merge_female_body and att.resource_id.startswith('female.'):
                     female_body_meshes.append(split_mesh)
@@ -163,6 +168,9 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
             mesh = mesh.copy()
             # Apply world transform to position mesh correctly
             mesh.apply_transform(world_T)
+            
+            # Create skinned mesh bound to the bone
+            mesh = create_mesh_skin(mesh, att.attach_bone, joint_indices, inverse_bind_matrices)
 
             if merge_female_body and att.resource_id.startswith('female.'):
                 female_body_meshes.append(mesh)
@@ -314,13 +322,18 @@ def assemble_complete_scene(descriptor_path: str, include_skin: bool = True, inc
     world_transforms = build_world_transforms(bones, attachments)
     print(f"Built {len(world_transforms)} world transforms")
 
-    # Create scene and set up bone hierarchy
+    # Create scene and set up proper glTF armature
     scene = trimesh.Scene()
+    
+    # Create real glTF armature with bones and inverse bind matrices
+    armature_node, joint_indices, inverse_bind_matrices = create_gltf_armature(bones, scene, world_transforms)
+    
+    # Also create scene nodes for mesh parenting (temporary compatibility)
     scene_graph_nodes = create_bone_hierarchy(bones, scene)
     create_child_attachment_nodes(attachments, scene_graph_nodes, scene)
     
     # Process all mesh attachments
-    attachment_results = process_attachments(attachments, world_transforms, scene, scene_graph_nodes, bones, merge_female_body)
+    attachment_results = process_attachments(attachments, world_transforms, scene, scene_graph_nodes, bones, joint_indices, inverse_bind_matrices, merge_female_body)
     
     # Collect all existing mesh vertices for snapping
     all_mesh_vertices = []
