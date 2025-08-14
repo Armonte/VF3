@@ -757,10 +757,22 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
                 bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Skin tone
             connector_obj.data.materials.append(material)
             
-            # Bind to primary bone  
-            vertex_group = connector_obj.vertex_groups.new(name=primary_bone)
-            vertex_indices = list(range(len(vertices_list)))
-            vertex_group.add(vertex_indices, 1.0, 'REPLACE')
+            # Bind connector to appropriate joint bones for proper deformation
+            joint_bone_weights = _get_joint_bone_weights_for_region(region_name, region_vertex_bones, created_bones)
+            
+            for bone_name, weight in joint_bone_weights.items():
+                if bone_name in created_bones and weight > 0.0:
+                    vertex_group = connector_obj.vertex_groups.new(name=bone_name)
+                    vertex_indices = list(range(len(vertices_list)))
+                    vertex_group.add(vertex_indices, weight, 'REPLACE')
+                    print(f"      Bound to bone '{bone_name}' with weight {weight}")
+            
+            # Fallback to primary bone if no joint weights found
+            if not joint_bone_weights:
+                vertex_group = connector_obj.vertex_groups.new(name=primary_bone)
+                vertex_indices = list(range(len(vertices_list)))
+                vertex_group.add(vertex_indices, 1.0, 'REPLACE')
+                print(f"      Fallback: Bound to primary bone '{primary_bone}'")
             
             # Add armature modifier
             armature_modifier = connector_obj.modifiers.new(name="Armature", type='ARMATURE')
@@ -774,6 +786,58 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
             connector_count += 1
     
     return connector_count
+
+
+def _get_joint_bone_weights_for_region(region_name: str, region_vertex_bones: List[str], created_bones: Dict) -> Dict[str, float]:
+    """
+    Determine which bones should influence a connector region and with what weights.
+    This enables proper joint deformation (e.g., elbow connectors bend with elbow rotation).
+    """
+    # Define joint bone weights for each region type - CORRECTED ANATOMY
+    joint_weight_mappings = {
+        # Shoulder joints: mostly body connection to upper arm
+        'left_shoulder': {'body': 0.7, 'l_arm1': 0.3},
+        'right_shoulder': {'body': 0.7, 'r_arm1': 0.3},
+        
+        # Elbow joints: blend between upper arm (l_arm1) and forearm (l_arm2)
+        'left_elbow': {'l_arm1': 0.5, 'l_arm2': 0.5},
+        'right_elbow': {'r_arm1': 0.5, 'r_arm2': 0.5},
+        
+        # Forearm regions (when not part of elbow joint)
+        'left_forearm': {'l_arm2': 1.0},
+        'right_forearm': {'r_arm2': 1.0},
+        
+        # Wrist joints: blend between forearm and hand
+        'left_wrist': {'l_arm2': 0.7, 'l_hand': 0.3},
+        'right_wrist': {'r_arm2': 0.7, 'r_hand': 0.3},
+        
+        # Hip joints: blend between waist and thigh (l_leg1 = thigh bone)
+        'left_hip': {'waist': 0.6, 'l_leg1': 0.4},
+        'right_hip': {'waist': 0.6, 'r_leg1': 0.4},
+        
+        # Knee joints: blend between thigh (l_leg1) and shin (l_leg2)  
+        'left_knee': {'l_leg1': 0.5, 'l_leg2': 0.5},
+        'right_knee': {'r_leg1': 0.5, 'r_leg2': 0.5},
+        
+        # Ankle joints: blend between shin and foot
+        'left_ankle': {'l_leg2': 0.7, 'l_foot': 0.3},
+        'right_ankle': {'r_leg2': 0.7, 'r_foot': 0.3},
+        
+        # Breast connection: merged connector with both breast bones
+        'breast_connection': {'body': 0.6, 'l_breast': 0.2, 'r_breast': 0.2},
+        
+        # Torso connection: only body (waist handled by separate mesh)
+        'torso': {'body': 1.0},
+    }
+    
+    # Return the bone weights for this region, filtered by available bones
+    if region_name in joint_weight_mappings:
+        weights = joint_weight_mappings[region_name]
+        # Only return weights for bones that actually exist in the armature
+        return {bone: weight for bone, weight in weights.items() if bone in created_bones}
+    else:
+        # Unknown region - no specific weighting
+        return {}
 
 
 def _collect_attachments_with_occupancy_filtering(desc):
