@@ -1020,9 +1020,15 @@ def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textur
                     if color[3] < 1.0:  # If material has transparency
                         material.alphaMode = 'BLEND'
                     
-                    # Create material visuals instead of just face colors
-                    mesh.visual = trimesh.visual.material.MaterialVisuals(material=material)
-                    print(f"Applied PBR material with diffuse color {color} to mesh")
+                    # Create material visuals for color-only mesh (similar to texture approach)
+                    try:
+                        # Try to create TextureVisuals with material but no texture
+                        mesh.visual = trimesh.visual.TextureVisuals(material=material)
+                        print(f"Applied PBR material with diffuse color {color} to mesh")
+                    except Exception as e:
+                        # Fallback to face colors if TextureVisuals fails
+                        mesh.visual.face_colors = color
+                        print(f"Applied diffuse color {color} to mesh (fallback)")
             return mesh
         
         # Try to load texture
@@ -1312,8 +1318,8 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
         print(f"Found mesh file: {mesh_path}")
         try:
             # Get node and mesh names first
-            node_name = att.child_name or att.attach_bone
-            name = os.path.basename(mesh_path)
+        node_name = att.child_name or att.attach_bone
+        name = os.path.basename(mesh_path)
             
             mesh_data = load_mesh_with_materials(mesh_path)
             mesh = mesh_data['mesh']
