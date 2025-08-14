@@ -188,6 +188,14 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         
         mesh_objects.append(mesh_obj)
     
+    # Step 6.5: Process DynamicVisual connector meshes
+    print("? Creating DynamicVisual connectors...")
+    connector_count = _create_dynamic_visual_meshes(
+        _clothing_dynamic_meshes, world_transforms, created_bones, 
+        armature_obj, mesh_objects, mesh_data
+    )
+    print(f"? Created {connector_count} DynamicVisual connector meshes")
+    
     # Step 7: Select all objects for export
     bpy.ops.object.select_all(action='DESELECT')
     armature_obj.select_set(True)
@@ -202,7 +210,6 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         bpy.ops.export_scene.gltf(
             filepath=output_path,
             export_format='GLB',
-            export_selected=True,
             export_apply=True,
             export_animations=False,  # No animations yet
             export_skins=True,        # Include armature/skinning
@@ -584,6 +591,314 @@ def _load_image_with_black_as_alpha(image_path: str, make_alpha: bool) -> 'bpy.t
         return img
 
 
+def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, created_bones, 
+                                armature_obj, mesh_objects, mesh_data):
+    """Create DynamicVisual connector meshes in Blender with proper bone binding."""
+    try:
+        import bpy
+        import bmesh
+        import numpy as np
+        from mathutils import Vector
+    except ImportError:
+        print("  Blender imports not available")
+        return 0
+    
+    if not clothing_dynamic_meshes:
+        print("  No DynamicVisual meshes to process")
+        return 0
+    
+    connector_count = 0
+    
+    # Collect all mesh vertices for snapping
+    all_mesh_vertices = []
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj.data, 'vertices'):
+            for v in mesh_obj.data.vertices:
+                world_co = mesh_obj.matrix_world @ v.co
+                all_mesh_vertices.append(world_co)
+    
+    all_mesh_vertices = np.array([[v.x, v.y, v.z] for v in all_mesh_vertices])
+    print(f"  Collected {len(all_mesh_vertices)} vertices from existing meshes for snapping")
+    
+    for dyn_idx, dyn_data in enumerate(clothing_dynamic_meshes):
+        if not (dyn_data and 'vertices' in dyn_data and 'faces' in dyn_data):
+            continue
+            
+        vertices = dyn_data['vertices']  # List of (pos1, pos2) tuples
+        vertex_bones = dyn_data.get('vertex_bones', [])
+        faces = np.array(dyn_data['faces'])
+        
+        if len(vertices) == 0 or len(faces) == 0:
+            continue
+            
+        print(f"  Processing DynamicVisual mesh {dyn_idx}: {len(vertices)} vertices, {len(faces)} faces")
+        
+        # Group vertices by bone (same logic as existing implementation)
+        bone_vertex_groups = {}
+        for v_idx, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
+            if bone_name not in bone_vertex_groups:
+                bone_vertex_groups[bone_name] = {
+                    'vertices': [],
+                    'vertex_indices': [],
+                    'bone': bone_name
+                }
+            bone_vertex_groups[bone_name]['vertices'].append(vertex_tuple)
+            bone_vertex_groups[bone_name]['vertex_indices'].append(v_idx)
+        
+        # Create faces for each bone group using majority rule (same as working implementation)
+        for bone_name, bone_group in bone_vertex_groups.items():
+            original_indices = bone_group['vertex_indices']
+            bone_vertices = bone_group['vertices']
+            
+            # Create mapping from original vertex index to new bone-local index
+            index_mapping = {orig_idx: new_idx for new_idx, orig_idx in enumerate(original_indices)}
+            
+            # Filter faces using majority rule (>=2 vertices belong to this bone)
+            bone_faces = []
+            for face in faces:
+                # Count how many vertices in this face belong to this bone
+                bone_vertex_count = sum(1 for v_idx in face if v_idx in index_mapping)
+                
+                # Assign face to this bone if it has majority (>=2) vertices
+                if bone_vertex_count >= 2:
+                    # For vertices not in this bone, add them temporarily to this bone's vertex list
+                    new_face = []
+                    for v_idx in face:
+                        if v_idx in index_mapping:
+                            new_face.append(index_mapping[v_idx])
+                        else:
+                            # Add vertex from other bone to this bone's vertex list
+                            other_vertex = vertices[v_idx]
+                            bone_vertices.append(other_vertex)
+                            new_idx = len(bone_vertices) - 1
+                            new_face.append(new_idx)
+                            # Update the index mapping for future faces
+                            index_mapping[v_idx] = new_idx
+                    
+                    bone_faces.append(new_face)
+            
+            # Update the bone group with the expanded vertex list and faces
+            bone_group['vertices'] = bone_vertices
+            bone_group['faces'] = np.array(bone_faces) if bone_faces else np.array([]).reshape(0, 3)
+        
+        # Create Blender mesh for each bone group
+        for bone_name, bone_group in bone_vertex_groups.items():
+            bone_vertices = bone_group['vertices']
+            bone_faces = bone_group['faces']
+            
+            if len(bone_faces) == 0:
+                print(f"    WARNING: No faces for bone {bone_name}, skipping")
+                continue
+                
+            if bone_name not in created_bones:
+                print(f"    WARNING: Bone {bone_name} not found in armature, skipping")
+                continue
+            
+            # Get bone's world position
+            bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
+            
+            # Process vertices with snapping
+            snapped_vertices = []
+            for vertex_tuple in bone_vertices:
+                pos1, pos2 = vertex_tuple
+                
+                # Use pos2 positioned relative to bone (same as working implementation)
+                candidate_pos = np.array([
+                    pos2[0] + bone_pos[0],
+                    pos2[1] + bone_pos[1], 
+                    pos2[2] + bone_pos[2]
+                ])
+                
+                # Snap to nearest existing mesh vertex
+                if len(all_mesh_vertices) > 0:
+                    distances = np.linalg.norm(all_mesh_vertices - candidate_pos, axis=1)
+                    min_distance = np.min(distances)
+                    
+                    if min_distance <= 1.0:  # Snap threshold
+                        closest_idx = np.argmin(distances)
+                        snapped_pos = all_mesh_vertices[closest_idx]
+                    else:
+                        snapped_pos = candidate_pos
+                else:
+                    snapped_pos = candidate_pos
+                
+                snapped_vertices.append(snapped_pos)
+            
+            # Create Blender mesh
+            connector_name = f"dynamic_connector_{connector_count}_{bone_name}"
+            blender_mesh = bpy.data.meshes.new(connector_name)
+            
+            # Convert to Blender format
+            vertices_list = [[v[0], v[1], v[2]] for v in snapped_vertices]
+            faces_list = bone_faces.tolist()
+            
+            blender_mesh.from_pydata(vertices_list, [], faces_list)
+            blender_mesh.update()
+            
+            # Enable smooth shading
+            for poly in blender_mesh.polygons:
+                poly.use_smooth = True
+            
+            # Create mesh object
+            connector_obj = bpy.data.objects.new(connector_name, blender_mesh)
+            bpy.context.collection.objects.link(connector_obj)
+            
+            # Create material (skin tone for now - can be improved later)
+            material = bpy.data.materials.new(name=f"{connector_name}_material")
+            material.use_nodes = True
+            bsdf = material.node_tree.nodes.get("Principled BSDF")
+            if bsdf:
+                bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Skin tone
+            connector_obj.data.materials.append(material)
+            
+            # Bind to bone
+            vertex_group = connector_obj.vertex_groups.new(name=bone_name)
+            vertex_indices = list(range(len(vertices_list)))
+            vertex_group.add(vertex_indices, 1.0, 'REPLACE')
+            
+            # Add armature modifier
+            armature_modifier = connector_obj.modifiers.new(name="Armature", type='ARMATURE')
+            armature_modifier.object = armature_obj
+            armature_modifier.use_vertex_groups = True
+            
+            # Add to mesh objects list for export
+            mesh_objects.append(connector_obj)
+            
+            print(f"    Created DynamicVisual connector {connector_count} for bone {bone_name}: {len(vertices_list)} vertices, {len(faces_list)} faces")
+            connector_count += 1
+    
+    return connector_count
+
+
+def _collect_attachments_with_occupancy_filtering(desc):
+    """
+    Collect attachments with proper occupancy-based filtering to prevent clothing/body conflicts.
+    
+    This implements the VF3 replacement logic where higher occupancy values override lower ones:
+    - Blazer (3,3) REPLACES female.body (1) and female.arms (1) 
+    - SkirtA (2) REPLACES female.waist (1)
+    - ShoesA (3) REPLACES female.foots (1)
+    """
+    try:
+        from vf3_loader import (
+            parse_attachment_block_lines, 
+            resolve_identifier_to_attachments,
+            parse_defaultcos,
+            parse_dynamic_visual_mesh
+        )
+        from vf3_occupancy import filter_attachments_by_occupancy_with_dynamic, parse_occupancy_vector
+    except ImportError as e:
+        print(f"Failed to import VF3 modules: {e}")
+        return [], []
+    
+    print("OCCUPANCY: Collecting attachments with proper clothing replacement logic...")
+    
+    # Parse skin attachments with occupancy vectors
+    skin_attachments_with_occupancy = []
+    skin_dynamic_meshes = []
+    
+    skin_lines = desc.blocks.get('skin', [])
+    for line in skin_lines:
+        if not line.strip() or ':' not in line:
+            continue
+        
+        # Parse line format: "occupancy_vector:resource_id"
+        parts = line.strip().split(':', 1)
+        if len(parts) != 2:
+            continue
+            
+        occ_str, resource_id = parts
+        occupancy_vector = parse_occupancy_vector(occ_str)
+        
+        # Resolve the resource ID to attachments and DynamicVisual data
+        skin_attachments, skin_dyn_mesh = resolve_identifier_to_attachments(resource_id.strip(), desc)
+        
+        if skin_attachments:
+            skin_attachments_with_occupancy.append({
+                'occupancy': occupancy_vector,
+                'source': f'skin:{resource_id}',
+                'attachments': skin_attachments,
+                'dynamic_mesh': skin_dyn_mesh
+            })
+            print(f"  SKIN: {resource_id} -> occupancy {occupancy_vector}, {len(skin_attachments)} attachments")
+    
+    # Parse clothing attachments from defaultcos with occupancy vectors
+    clothing_attachments_with_occupancy = []
+    clothing_dynamic_meshes = []
+    
+    # TEMP: Disable clothing to focus on naked base body DynamicVisual connectors
+    default_costume = []  # parse_defaultcos(desc)
+    print(f"  DEBUG: NAKED MODE - Disabled clothing, only loading base skin")
+    for costume_item in default_costume:
+        # Look for the costume item definition
+        # Handle namespace: "satsuki.blazer" -> try both "satsuki.blazer" and "blazer"
+        block_name = None
+        if costume_item in desc.blocks:
+            block_name = costume_item
+        elif '.' in costume_item:
+            # Try without namespace prefix
+            short_name = costume_item.split('.', 1)[1]
+            if short_name in desc.blocks:
+                block_name = short_name
+                print(f"    DEBUG: Found block '{short_name}' for costume item '{costume_item}'")
+        
+        if block_name:
+            print(f"    DEBUG: Processing costume block '{block_name}' for item '{costume_item}'")
+            costume_lines = desc.blocks[block_name]
+            print(f"    DEBUG: Block has {len(costume_lines)} lines: {costume_lines}")
+            for line in costume_lines:
+                if not line.strip() or ':' not in line:
+                    continue
+                if line.strip().startswith('class:'):
+                    continue
+                
+                # Parse line format: "occupancy_vector:vp_block_name"
+                parts = line.strip().split(':', 1) 
+                if len(parts) != 2:
+                    continue
+                    
+                occ_str, vp_block_name = parts
+                occupancy_vector = parse_occupancy_vector(occ_str)
+                
+                # Get attachments from the *_vp block (handle namespace)
+                vp_block = desc.blocks.get(vp_block_name)
+                if not vp_block and '.' in vp_block_name:
+                    # Try without namespace prefix
+                    short_vp_name = vp_block_name.split('.', 1)[1]
+                    vp_block = desc.blocks.get(short_vp_name)
+                    if vp_block:
+                        print(f"      DEBUG: Found vp_block '{short_vp_name}' for '{vp_block_name}'")
+                if vp_block:
+                    clothing_attachments = parse_attachment_block_lines(vp_block)
+                    clothing_dyn_mesh = parse_dynamic_visual_mesh(vp_block)
+                    
+                    if clothing_attachments:
+                        clothing_attachments_with_occupancy.append({
+                            'occupancy': occupancy_vector,
+                            'source': f'clothing:{costume_item}',
+                            'attachments': clothing_attachments,
+                            'dynamic_mesh': clothing_dyn_mesh
+                        })
+                        print(f"  CLOTHING: {costume_item} -> occupancy {occupancy_vector}, {len(clothing_attachments)} attachments")
+                    else:
+                        print(f"      DEBUG: No attachments found in vp_block '{vp_block_name}'")
+                else:
+                    print(f"      DEBUG: vp_block '{vp_block_name}' not found in descriptor blocks")
+                break
+    
+    # Apply occupancy-based filtering to resolve conflicts
+    print(f"OCCUPANCY: Before filtering - {len(skin_attachments_with_occupancy)} skin, {len(clothing_attachments_with_occupancy)} clothing")
+    filtered_result = filter_attachments_by_occupancy_with_dynamic(skin_attachments_with_occupancy, clothing_attachments_with_occupancy)
+    
+    final_attachments = filtered_result['attachments']
+    final_dynamic_meshes = filtered_result['dynamic_meshes']
+    
+    print(f"OCCUPANCY: After filtering - {len(final_attachments)} final attachments, {len(final_dynamic_meshes)} dynamic meshes")
+    print("OCCUPANCY: Clothing replacement logic applied successfully!")
+    
+    return final_attachments, final_dynamic_meshes
+
+
 def _apply_trimesh_materials(mesh: 'trimesh.Trimesh', materials: List[dict], mesh_info: dict = None) -> 'trimesh.Trimesh':
     """Apply materials to trimesh using the same approach as the original working script."""
     if not materials:
@@ -803,9 +1118,33 @@ if __name__ == "__main__":
         desc = read_descriptor(descriptor_path)
         bones = parse_frame_bones(desc)
         
-        # Collect active attachments (base skin + default costume, expanded across referenced descriptors)
-        attachments, _clothing_dynamic_meshes = collect_active_attachments(desc)
-        print(f"? Total attachments collected: {len(attachments)}")
+        # Collect active attachments with occupancy filtering (base skin + default costume, expanded across referenced descriptors)
+        attachments, _clothing_dynamic_meshes = _collect_attachments_with_occupancy_filtering(desc)
+        print(f"? Total attachments collected: {len(attachments)} (after occupancy filtering)")
+        
+        # For Satsuki, add both head variants to get both stkface.bmp and stkface2.bmp
+        if "satsuki" in descriptor_path.lower():
+            print("? Adding both head variants for Satsuki (stkface + stkface2)...")
+            try:
+                from vf3_loader import resolve_identifier_to_attachments
+                # Add the alternative head_k variant
+                head_k_atts, head_k_dyn = resolve_identifier_to_attachments('satsuki.head_k', desc)
+                if head_k_atts:
+                    # Rename to avoid conflict with existing head bone
+                    for att in head_k_atts:
+                        att.attach_bone = att.attach_bone + "_k"  # head -> head_k
+                    attachments.extend(head_k_atts)
+                    
+                    # Add head_k bone to bone hierarchy (same position as head)
+                    if 'head' in bones:
+                        import copy
+                        head_k_bone = copy.deepcopy(bones['head'])
+                        bones['head_k'] = head_k_bone
+                        print(f"? Added head_k bone to hierarchy")
+                    
+                    print(f"? Added {len(head_k_atts)} head_k attachments for stkface2 texture")
+            except Exception as e:
+                print(f"? Failed to add head_k variant: {e}")
 
         # Build world transforms, including any child frames introduced by attachments
         world_transforms = build_world_transforms(bones, attachments)

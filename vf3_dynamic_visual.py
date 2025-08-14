@@ -69,6 +69,67 @@ def group_dynamic_visual_by_bone(dyn_data: Dict) -> Dict[str, Dict]:
     return bone_vertex_groups
 
 
+def group_vertices_by_anatomical_region(vertices: List[Tuple], vertex_bones: List[str]) -> Dict[str, Dict]:
+    """
+    Group vertices by anatomical regions to create separate connectors.
+    E.g. l_arm1+l_arm2 = left_elbow, r_arm1+r_arm2 = right_elbow
+    """
+    # Define anatomical region mappings
+    region_mappings = {
+        # Arms
+        'left_elbow': ['l_arm1', 'l_arm2'],
+        'right_elbow': ['r_arm1', 'r_arm2'], 
+        # Legs
+        'left_knee': ['l_leg1', 'l_leg2'],
+        'right_knee': ['r_leg1', 'r_leg2'],
+        # Hands
+        'left_wrist': ['l_arm2', 'l_hand'],
+        'right_wrist': ['r_arm2', 'r_hand'],
+        # Feet
+        'left_ankle': ['l_leg2', 'l_foot'],
+        'right_ankle': ['r_leg2', 'r_foot'],
+        # Body connections
+        'torso_waist': ['body', 'waist'],
+        'left_shoulder': ['body', 'l_arm1', 'l_breast'],
+        'right_shoulder': ['body', 'r_arm1', 'r_breast'],
+        # Hip connections (MISSING - CRITICAL)
+        'left_hip': ['waist', 'l_leg1'],
+        'right_hip': ['waist', 'r_leg1'],
+        # Breast connections (MISSING - CRITICAL) 
+        'left_breast_connection': ['body', 'l_breast'],
+        'right_breast_connection': ['body', 'r_breast'],
+    }
+    
+    # Group vertices by region
+    regions = {}
+    
+    for i, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
+        # Find which region this bone belongs to
+        assigned_region = None
+        for region_name, bone_list in region_mappings.items():
+            if bone_name in bone_list:
+                assigned_region = region_name
+                break
+        
+        # If no specific region found, use bone name as region
+        if assigned_region is None:
+            assigned_region = f"misc_{bone_name}"
+        
+        # Add to region
+        if assigned_region not in regions:
+            regions[assigned_region] = {
+                'vertices': [],
+                'vertex_bones': [],
+                'indices': []
+            }
+        
+        regions[assigned_region]['vertices'].append(vertex_tuple)
+        regions[assigned_region]['vertex_bones'].append(bone_name)
+        regions[assigned_region]['indices'].append(i)
+    
+    return regions
+
+
 def snap_vertex_to_mesh(candidate_pos: List[float], all_mesh_vertices: np.ndarray, snap_threshold: float = 1.0) -> List[float]:
     """Snap a vertex to the nearest existing mesh vertex if within threshold."""
     if len(all_mesh_vertices) == 0:
@@ -142,10 +203,11 @@ def process_dynamic_visual_meshes(dynamic_meshes: List[Dict], world_transforms: 
     if not dynamic_meshes:
         return 0
     
-    print(f"\nProcessing {len(dynamic_meshes)} DynamicVisual mesh sections...")
+    print(f"\nDEBUG: Processing {len(dynamic_meshes)} DynamicVisual mesh sections...")
     
     total_connectors = 0
     
+    # Process ALL DynamicVisual meshes for complete naked character export
     for i, dyn_data in enumerate(dynamic_meshes):
         if not (dyn_data and 'vertices' in dyn_data and 'faces' in dyn_data):
             continue
@@ -156,42 +218,105 @@ def process_dynamic_visual_meshes(dynamic_meshes: List[Dict], world_transforms: 
         
         print(f"  DynamicVisual mesh {i}: {len(vertices)} vertices, {len(faces)} faces")
         
-        # CRITICAL: Group vertices by bone to create separate meshes for skeletal animation
-        bone_vertex_groups = group_dynamic_visual_by_bone(dyn_data)
-        print(f"    Split into {len(bone_vertex_groups)} bone groups: {list(bone_vertex_groups.keys())}")
+        # FIXED: Group by bone pairs/regions to avoid stretching across the body
+        # Each anatomical connector (left elbow, right elbow, etc.) should be separate
+        bone_groups = group_vertices_by_anatomical_region(vertices, vertex_bones)
+        print(f"    Split into {len(bone_groups)} anatomical regions: {list(bone_groups.keys())}")
         
-        # Create separate mesh for each bone group
-        for bone_idx, (bone_name, bone_group) in enumerate(bone_vertex_groups.items()):
-            bone_mesh = create_bone_dynamic_visual_mesh(
-                bone_name, bone_group, world_transforms, 
-                all_mesh_vertices, i, bone_idx
-            )
+        # Create separate connector for each anatomical region
+        for region_name, region_data in bone_groups.items():
+            region_vertices = region_data['vertices']
+            region_vertex_bones = region_data['vertex_bones'] 
+            region_indices = region_data['indices']
             
-            if bone_mesh is None:
+            print(f"    Processing region '{region_name}' with {len(region_vertices)} vertices from bones: {set(region_vertex_bones)}")
+            
+            # Filter faces using MAJORITY RULE (>=2 vertices belong to this region)
+            region_faces = []
+            vertex_mapping = {old_idx: new_idx for new_idx, old_idx in enumerate(region_indices)}
+            
+            for face in faces:
+                # Count how many vertices in this face belong to this region
+                vertices_in_region = [v_idx in vertex_mapping for v_idx in face]
+                vertices_in_region_count = sum(vertices_in_region)
+                
+                # Use majority rule: face belongs to this region if >= 2 vertices are in it
+                if vertices_in_region_count >= 2:
+                    # Create new face, adding missing vertices from other regions to this region
+                    new_face = []
+                    for v_idx in face:
+                        if v_idx in vertex_mapping:
+                            # Vertex already in this region
+                            new_face.append(vertex_mapping[v_idx])
+                        else:
+                            # Add vertex from another region to this region's vertex list
+                            other_vertex = vertices[v_idx]
+                            other_bone = vertex_bones[v_idx] if v_idx < len(vertex_bones) else 'unknown'
+                            region_vertices.append(other_vertex)
+                            region_vertex_bones.append(other_bone)
+                            region_indices.append(v_idx)
+                            new_idx = len(region_vertices) - 1
+                            new_face.append(new_idx)
+                            # Update mapping for future faces
+                            vertex_mapping[v_idx] = new_idx
+                    
+                    region_faces.append(new_face)
+            
+            if len(region_faces) == 0:
+                print(f"      No faces for region {region_name}, skipping")
                 continue
+                
+            print(f"      Region {region_name}: {len(region_vertices)} vertices, {len(region_faces)} faces")
             
-            # Determine material for this connector
-            connector_material = determine_dynamic_visual_material(dyn_data, geometry_to_mesh_map, all_materials, total_connectors)
-            
-            # Create PBR material
-            material = trimesh.visual.material.PBRMaterial()
-            material.name = f"dynamic_connector_{total_connectors}_{bone_name}_material"
-            material.baseColorFactor = connector_material['color']
-            
-            # Apply material to mesh
             try:
-                bone_mesh.visual = trimesh.visual.TextureVisuals(material=material)
-                print(f"  Applied {connector_material['type']} to DynamicVisual connector {total_connectors} ({bone_name})")
-            except Exception:
-                # Fallback to face colors
-                bone_mesh.visual.face_colors = connector_material['color']
-                print(f"  Applied {connector_material['type']} to DynamicVisual connector {total_connectors} ({bone_name}) (fallback)")
-            
-            # Add to scene with bone-specific naming
-            connector_name = f"dynamic_connector_{total_connectors}_{bone_name}"
-            scene.add_geometry(bone_mesh, node_name=connector_name)
-            print(f"  Added DynamicVisual connector mesh {total_connectors} for bone {bone_name} with {len(bone_group['vertices'])} vertices")
-            
-            total_connectors += 1
+                # Process vertices with proper bone-relative positioning
+                snapped_vertices = []
+                for idx, (vertex_tuple, bone_name) in enumerate(zip(region_vertices, region_vertex_bones)):
+                    pos1, pos2 = vertex_tuple
+                    
+                    # Get bone's world position for this vertex
+                    bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
+                    
+                    # Use pos1 + bone_transform (like regular meshes)
+                    candidate_pos = [pos1[0] + bone_pos[0], pos1[1] + bone_pos[1], pos1[2] + bone_pos[2]]
+                    
+                    # Skip snapping to preserve connector shape
+                    snapped_pos = candidate_pos
+                    snapped_vertices.append(snapped_pos)
+                
+                # Create region-specific trimesh
+                region_faces_array = np.array(region_faces)
+                print(f"      Creating region trimesh: {len(snapped_vertices)} vertices, {len(region_faces_array)} faces")
+                
+                connector_mesh = trimesh.Trimesh(vertices=np.array(snapped_vertices), faces=region_faces_array)
+                print(f"      ✅ Created {region_name} connector: {len(snapped_vertices)} vertices, {len(region_faces_array)} faces")
+                
+                # Determine material for this connector
+                connector_material = determine_dynamic_visual_material(dyn_data, geometry_to_mesh_map, all_materials, total_connectors)
+                
+                # Create PBR material
+                material = trimesh.visual.material.PBRMaterial()
+                material.name = f"dynamic_connector_{total_connectors}_{region_name}_material"
+                material.baseColorFactor = connector_material['color']
+                
+                # Apply material to mesh
+                try:
+                    connector_mesh.visual = trimesh.visual.TextureVisuals(material=material)
+                    print(f"        Applied {connector_material['type']} to {region_name} connector")
+                except Exception:
+                    # Fallback to face colors
+                    connector_mesh.visual.face_colors = connector_material['color']
+                    print(f"        Applied {connector_material['type']} to {region_name} connector (fallback)")
+                
+                # Add to scene
+                connector_name = f"dynamic_connector_{total_connectors}_{region_name}"
+                scene.add_geometry(connector_mesh, node_name=connector_name)
+                print(f"        ✅ Added {region_name} connector to scene")
+                
+                total_connectors += 1
+                
+            except Exception as e:
+                print(f"      ❌ Failed to create {region_name} connector: {e}")
+                continue
     
     return total_connectors

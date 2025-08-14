@@ -62,7 +62,20 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                     if occ_value > 0:  # This source occupies this slot
                         current_winner = slot_winners.get(slot_idx)
                         
-                        if current_winner is None or occ_value > current_winner['occupancy']:
+                        # SPECIAL CASE: Handle bilateral body parts (both hands should be included in naked mode)
+                        is_bilateral_body_part = (
+                            slot_idx == 3 and  # hands slot
+                            group_name == 'SKIN' and
+                            ('female.l_hand' in source or 'female.r_hand' in source)
+                        )
+                        
+                        if is_bilateral_body_part and current_winner and group_name == 'SKIN':
+                            # For bilateral body parts in skin mode, merge instead of replace
+                            print(f"  {group_name}: Slot {slot_idx} - Merging bilateral part {source} with existing {current_winner['source']}")
+                            current_winner['attachments'].extend(attachments)
+                            if dynamic_mesh and not current_winner['dynamic_mesh']:
+                                current_winner['dynamic_mesh'] = dynamic_mesh
+                        elif current_winner is None or occ_value > current_winner['occupancy']:
                             # This source wins this slot
                             action = "REPLACED" if current_winner else "occupied"
                             slot_winners[slot_idx] = {
