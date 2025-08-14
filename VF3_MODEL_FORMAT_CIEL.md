@@ -83,25 +83,29 @@ The current implementation has a fundamental flaw: **all bones are positioned fr
 
 **?? IMMEDIATE PRIORITIES (Phase 4):**
 
-1. **Fix Bone Hierarchy (CRITICAL)**
-   - **Problem**: Current system calculates world positions but doesn't maintain parent-child bone relationships
-   - **Solution**: Implement proper bone hierarchy where each bone is positioned relative to its parent
-   - **Impact**: Essential for animation, proper armature display, and character rigging
+1. **Fix Clothing Replacement System (CRITICAL)**
+   - **Problem**: Current system is additive (loads both base body AND clothing) instead of replacement-based like VF3
+   - **Root Cause**: Occupancy system not implemented - higher occupancy values should override lower ones
+   - **Example**: Blazer (occupancy 3,3) should DISABLE female.body/arms (occupancy 1,1)
+   - **Impact**: Causes mesh overlaps, incorrect materials, performance issues
+   - **Solution**: Implement occupancy-based filtering in `assemble_scene()` function
 
-2. **Test Full Costume Export**
-   - **Goal**: Export Satsuki with complete clothing (`--base-costume` mode)
-   - **Expected challenges**: Clothing positioning, additional DynamicVisual connectors for garments
-   - **Validation**: Ensure clothing items (blazer, skirt, shoes) position correctly with body
+2. **Fix DynamicVisual Material Assignment**
+   - **Problem**: All DynamicVisual connectors get skin color, even clothing connectors
+   - **Example**: Skirt connectors should be fabric-colored, not skin-colored
+   - **Solution**: Analyze connected meshes and assign appropriate materials
 
-3. **Skeleton Integration for Animation**
-   - **Extract bone weights** from DirectX .X files (currently ignored)
-   - **Implement proper GLTF armature export** with bone relationships
-   - **Add skin binding** to connect meshes to bones for animation
+3. **Fix Bone Hierarchy (Animation Critical)**
+   - **Problem**: All bones branch from world origin instead of parent-child chain
+   - **Impact**: Breaks animation/rigging - bones appear disconnected in Blender
+   - **Solution**: Implement proper hierarchical bone structure
 
 **?? Current System Status:**
-? **Fully Working**: Geometry export, materials, textures, DynamicVisual connectors, color accuracy
-? **Broken**: Bone hierarchy, animation support
-?? **Untested**: Full costume export, complex clothing systems
+? **Fully Working**: Naked character export, materials, textures, DynamicVisual connectors, color accuracy, geometry positioning
+? **BROKEN**: Clothing replacement system (additive instead of replacement), bone hierarchy (disconnected bones)
+?? **Needs Implementation**: Occupancy-based filtering, intelligent DynamicVisual materials, proper armature structure
+
+**CRITICAL**: Clothing system completely broken - exports both base body AND clothing simultaneously causing overlaps
 
 ### Development Roadmap
 

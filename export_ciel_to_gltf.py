@@ -6,7 +6,7 @@ import struct
 import sys
 import importlib.util
 import types
-from typing import Dict, List
+from typing import Dict, List, Any
 
 import numpy as np
 
@@ -1158,6 +1158,237 @@ def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textur
     return mesh
 
 
+def determine_dynamic_visual_material(dyn_data: dict, geometry_to_mesh_map: dict, all_materials: list, connector_index: int) -> dict:
+    """
+    Determine the appropriate material for a DynamicVisual connector based on what it connects to.
+    
+    Logic:
+    - If connecting primarily to skin/body parts (female.*): use skin color
+    - If connecting primarily to clothing parts (character.*): use clothing color
+    - If mixed: use dominant type or fallback to skin
+    """
+    if not dyn_data or 'vertex_bones' not in dyn_data:
+        # Fallback to skin color
+        return get_skin_material_data()
+    
+    # Analyze which bones this connector uses
+    bone_counts = {}
+    for bone_name in dyn_data['vertex_bones']:
+        bone_counts[bone_name] = bone_counts.get(bone_name, 0) + 1
+    
+    print(f"    DEBUG: Connector {connector_index} bone usage: {bone_counts}")
+    
+    # Determine if this is primarily a clothing connector or skin connector
+    clothing_indicators = ['skirt', 'blazer', 'shoe', 'sock', 'shirt', 'dress', 'jacket']
+    skin_indicators = ['body', 'breast', 'arm', 'hand', 'leg', 'foot', 'head', 'waist']
+    
+    # Check bone names for clothing indicators
+    clothing_score = 0
+    skin_score = 0
+    
+    for bone_name in bone_counts.keys():
+        bone_lower = bone_name.lower()
+        
+        # Check for clothing indicators in bone names
+        for indicator in clothing_indicators:
+            if indicator in bone_lower:
+                clothing_score += bone_counts[bone_name]
+                print(f"    DEBUG: Bone '{bone_name}' indicates clothing (+{bone_counts[bone_name]})")
+        
+        # Check for skin indicators in bone names  
+        for indicator in skin_indicators:
+            if indicator in bone_lower:
+                skin_score += bone_counts[bone_name]
+                print(f"    DEBUG: Bone '{bone_name}' indicates skin (+{bone_counts[bone_name]})")
+    
+    print(f"    DEBUG: Connector {connector_index} scores - clothing: {clothing_score}, skin: {skin_score}")
+    
+    # Determine material type based on dominant usage
+    if clothing_score > skin_score:
+        print(f"    DEBUG: Connector {connector_index} determined to be CLOTHING connector")
+        return get_clothing_material_data(all_materials, bone_counts)
+    else:
+        print(f"    DEBUG: Connector {connector_index} determined to be SKIN connector")
+        return get_skin_material_data()
+
+def get_skin_material_data() -> dict:
+    """Get skin material data with gamma correction"""
+    raw_skin_color = [1.0, 0.8823530077934265, 0.7843137979507446, 1.0]
+    skin_color = raw_skin_color.copy()
+    # Apply gamma correction to match the corrected colors from .X files
+    for color_i in range(3):  # Only RGB, not alpha
+        skin_color[color_i] = pow(skin_color[color_i], 2.2)
+    
+    return {
+        'color': skin_color,
+        'type': 'skin tone'
+    }
+
+def get_clothing_material_data(all_materials: list, bone_counts: dict) -> dict:
+    """Get clothing material data based on connected meshes"""
+    # Try to find a suitable clothing color from the materials
+    # Look for non-skin colors (avoid flesh tones)
+    
+    clothing_colors = []
+    for material in all_materials:
+        if 'diffuse' in material:
+            color = material['diffuse']
+            # Skip skin-like colors (high red, moderate green, low blue)
+            if len(color) >= 3:
+                r, g, b = color[0], color[1], color[2]
+                # Avoid skin tones: high red (>0.7), moderate green (0.4-0.9), low blue (<0.7)
+                if not (r > 0.7 and 0.4 < g < 0.9 and b < 0.7):
+                    clothing_colors.append(color)
+    
+    if clothing_colors:
+        # Use the first non-skin color found
+        chosen_color = clothing_colors[0]
+        print(f"    DEBUG: Using clothing color: {chosen_color}")
+        return {
+            'color': chosen_color,
+            'type': 'clothing fabric'
+        }
+    else:
+        # Fallback to a generic clothing color (dark blue/gray)
+        clothing_color = [0.2, 0.2, 0.4, 1.0]  # Dark blue-gray
+        print(f"    DEBUG: Using fallback clothing color: {clothing_color}")
+        return {
+            'color': clothing_color,
+            'type': 'clothing fabric (fallback)'
+        }
+
+def parse_occupancy_vector(occ_str: str) -> List[int]:
+    """Parse occupancy vector string like '0,3,3,0,0,0,0' into list of integers"""
+    try:
+        return [int(x.strip()) for x in occ_str.split(',')]
+    except ValueError:
+        return [0, 0, 0, 0, 0, 0, 0]  # Default if parsing fails
+
+def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str, Any]], clothing_attachments: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    CRITICAL: Implement VF3's replacement system with DynamicVisual mesh filtering.
+    Higher occupancy values override lower ones in same slot.
+    
+    The 7-slot occupancy vector: [head, body, arms, hands, waist, legs, feet]
+    """
+    print(f"OCCUPANCY FILTER: Processing {len(skin_attachments)} skin + {len(clothing_attachments)} clothing attachments")
+    
+    # Track the highest occupancy value for each slot
+    slot_winners = {}  # slot_index -> {'occupancy': value, 'attachments': [list], 'dynamic_mesh': mesh}
+    
+    # Process skin attachments (base layer)
+    for skin_att in skin_attachments:
+        occupancy = skin_att['occupancy']
+        for slot_idx, occ_value in enumerate(occupancy):
+            if occ_value > 0:  # This attachment occupies this slot
+                if slot_idx not in slot_winners or occ_value > slot_winners[slot_idx]['occupancy']:
+                    slot_winners[slot_idx] = {
+                        'occupancy': occ_value, 
+                        'attachments': skin_att['attachments'][:],
+                        'dynamic_mesh': skin_att.get('dynamic_mesh'),
+                        'source': skin_att['source']
+                    }
+                    print(f"  SKIN: Slot {slot_idx} occupied by {skin_att['source']} with occupancy {occ_value}")
+                elif occ_value == slot_winners[slot_idx]['occupancy']:
+                    # Same occupancy - add to existing (for bilateral items)
+                    slot_winners[slot_idx]['attachments'].extend(skin_att['attachments'])
+    
+    # Process clothing attachments (override layer)
+    for clothing_att in clothing_attachments:
+        occupancy = clothing_att['occupancy']
+        for slot_idx, occ_value in enumerate(occupancy):
+            if occ_value > 0:  # This attachment occupies this slot
+                if slot_idx not in slot_winners or occ_value > slot_winners[slot_idx]['occupancy']:
+                    # Higher occupancy - REPLACE existing
+                    slot_winners[slot_idx] = {
+                        'occupancy': occ_value, 
+                        'attachments': clothing_att['attachments'][:],
+                        'dynamic_mesh': clothing_att.get('dynamic_mesh'),
+                        'source': clothing_att['source']
+                    }
+                    print(f"  CLOTHING: Slot {slot_idx} REPLACED by {clothing_att['source']} with occupancy {occ_value}")
+                elif occ_value == slot_winners[slot_idx]['occupancy']:
+                    # Same occupancy - add to existing
+                    slot_winners[slot_idx]['attachments'].extend(clothing_att['attachments'])
+                    print(f"  CLOTHING: Slot {slot_idx} ADDED {clothing_att['source']} with occupancy {occ_value}")
+                else:
+                    print(f"  CLOTHING: Slot {slot_idx} IGNORED {clothing_att['source']} (occupancy {occ_value} < {slot_winners[slot_idx]['occupancy']})")
+    
+    # Collect final filtered attachments and dynamic meshes
+    final_attachments = []
+    final_dynamic_meshes = []
+    seen_dynamic_meshes = set()  # Track sources to avoid duplicates
+    
+    for slot_idx, winner in slot_winners.items():
+        final_attachments.extend(winner['attachments'])
+        if winner['dynamic_mesh']:
+            # Use source as key to deduplicate DynamicVisual meshes from same source
+            source_key = winner['source']
+            if source_key not in seen_dynamic_meshes:
+                final_dynamic_meshes.append(winner['dynamic_mesh'])
+                seen_dynamic_meshes.add(source_key)
+                print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments + DynamicVisual from {winner['source']} (ADDED)")
+            else:
+                print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments + DynamicVisual from {winner['source']} (DUPLICATE - SKIPPED)")
+        else:
+            print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments from {winner['source']}")
+    
+    print(f"OCCUPANCY FILTER: Final result: {len(final_attachments)} attachments, {len(final_dynamic_meshes)} dynamic meshes (deduplicated)")
+    
+    return {
+        'attachments': final_attachments,
+        'dynamic_meshes': final_dynamic_meshes
+    }
+
+def filter_attachments_by_occupancy(skin_attachments: List[Dict[str, Any]], clothing_attachments: List[Dict[str, Any]]) -> List[Any]:
+    """
+    CRITICAL: Implement VF3's replacement system.
+    Higher occupancy values override lower ones in same slot.
+    
+    The 7-slot occupancy vector: [head, body, arms, hands, waist, legs, feet]
+    """
+    print(f"OCCUPANCY FILTER: Processing {len(skin_attachments)} skin + {len(clothing_attachments)} clothing attachments")
+    
+    # Track the highest occupancy value for each slot
+    slot_winners = {}  # slot_index -> {'occupancy': value, 'attachments': [list]}
+    
+    # Process skin attachments (base layer)
+    for skin_att in skin_attachments:
+        occupancy = skin_att['occupancy']
+        for slot_idx, occ_value in enumerate(occupancy):
+            if occ_value > 0:  # This attachment occupies this slot
+                if slot_idx not in slot_winners or occ_value > slot_winners[slot_idx]['occupancy']:
+                    slot_winners[slot_idx] = {'occupancy': occ_value, 'attachments': skin_att['attachments'][:]}
+                    print(f"  SKIN: Slot {slot_idx} occupied by {skin_att['source']} with occupancy {occ_value}")
+                elif occ_value == slot_winners[slot_idx]['occupancy']:
+                    # Same occupancy - add to existing (for bilateral items)
+                    slot_winners[slot_idx]['attachments'].extend(skin_att['attachments'])
+    
+    # Process clothing attachments (override layer)
+    for clothing_att in clothing_attachments:
+        occupancy = clothing_att['occupancy']
+        for slot_idx, occ_value in enumerate(occupancy):
+            if occ_value > 0:  # This attachment occupies this slot
+                if slot_idx not in slot_winners or occ_value > slot_winners[slot_idx]['occupancy']:
+                    # Higher occupancy - REPLACE existing
+                    slot_winners[slot_idx] = {'occupancy': occ_value, 'attachments': clothing_att['attachments'][:]}
+                    print(f"  CLOTHING: Slot {slot_idx} REPLACED by {clothing_att['source']} with occupancy {occ_value}")
+                elif occ_value == slot_winners[slot_idx]['occupancy']:
+                    # Same occupancy - add to existing
+                    slot_winners[slot_idx]['attachments'].extend(clothing_att['attachments'])
+                    print(f"  CLOTHING: Slot {slot_idx} ADDED {clothing_att['source']} with occupancy {occ_value}")
+                else:
+                    print(f"  CLOTHING: Slot {slot_idx} IGNORED {clothing_att['source']} (occupancy {occ_value} < {slot_winners[slot_idx]['occupancy']})")
+    
+    # Collect final filtered attachments
+    final_attachments = []
+    for slot_idx, winner in slot_winners.items():
+        final_attachments.extend(winner['attachments'])
+        print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments with occupancy {winner['occupancy']}")
+    
+    print(f"OCCUPANCY FILTER: Final result: {len(final_attachments)} attachments (reduced from {len(skin_attachments) + len(clothing_attachments)} total)")
+    return final_attachments
+
 def assemble_scene(descriptor_path: str, include_skin: bool = True, include_items: bool = True, merge_female_body: bool = False) -> dict:
     print(f"Reading descriptor: {descriptor_path}")
     desc = read_descriptor(descriptor_path)
@@ -1168,15 +1399,29 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
 
     print(f"Found {len(bones)} bones: {list(bones.keys())}")
     
-    # Build attachments per flags
-    attachments: List[Attachment] = []  # type: ignore[name-defined]
-    dynamic_meshes = []  # Store DynamicVisual mesh data
+    # CRITICAL: Parse attachments with occupancy information for proper filtering
+    skin_attachments_with_occupancy = []
+    clothing_attachments_with_occupancy = []
+    
+    # Parse skin attachments with occupancy vectors (collect DynamicVisual separately)
+    skin_dynamic_meshes = []
     if include_skin:
-        for _, ident in parse_skin_entries(desc):  # type: ignore[name-defined]
+        for occ_str, ident in parse_skin_entries(desc):  # type: ignore[name-defined]
+            occupancy = parse_occupancy_vector(occ_str)
             atts, dynamic_mesh = resolve_identifier_to_attachments(ident, desc)  # type: ignore[name-defined]
-            attachments.extend(atts)
+            
+            skin_attachments_with_occupancy.append({
+                'occupancy': occupancy,
+                'attachments': atts,
+                'source': ident,
+                'dynamic_mesh': dynamic_mesh
+            })
+            
             if dynamic_mesh:
-                dynamic_meshes.append(dynamic_mesh)
+                skin_dynamic_meshes.append(dynamic_mesh)
+    
+    # Parse clothing attachments with occupancy vectors (collect DynamicVisual separately)
+    clothing_dynamic_meshes = []
     if include_items:
         for full in parse_defaultcos(desc):  # type: ignore[name-defined]
             if '.' not in full:
@@ -1189,21 +1434,38 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                 s = raw.strip()
                 if not s or ':' not in s or s.startswith('class:'):
                     continue
-                _, vp_ident = s.split(':', 1)
+                # CRITICAL: Parse the occupancy vector (left side of colon)
+                occ_str, vp_ident = s.split(':', 1)
+                occupancy = parse_occupancy_vector(occ_str.strip())
                 vp_ident = vp_ident.strip()
+                
                 if '.' in vp_ident:
                     _, vp_name = vp_ident.split('.', 1)
                 else:
                     vp_name = vp_ident
                 vp_block = desc.blocks.get(vp_name)
                 if vp_block:
-                    attachments.extend(parse_attachment_block_lines(vp_block))  # type: ignore[name-defined]
-                    # CRITICAL: Also parse DynamicVisual data from clothing blocks!
+                    atts = parse_attachment_block_lines(vp_block)  # type: ignore[name-defined]
                     clothing_dyn_mesh = parse_dynamic_visual_mesh(vp_block)  # type: ignore[name-defined]
+                    
+                    clothing_attachments_with_occupancy.append({
+                        'occupancy': occupancy,
+                        'attachments': atts,
+                        'source': f"{full} ({occ_str})",
+                        'dynamic_mesh': clothing_dyn_mesh
+                    })
+                    
                     if clothing_dyn_mesh:
                         print(f"DEBUG: Found clothing DynamicVisual mesh in {vp_name} with {len(clothing_dyn_mesh['vertices'])} vertices")
-                        dynamic_meshes.append(clothing_dyn_mesh)
+                        clothing_dynamic_meshes.append(clothing_dyn_mesh)
                 break
+    
+    # CRITICAL: Apply occupancy-based filtering to resolve conflicts
+    print(f"DEBUG: Before filtering - {len(skin_attachments_with_occupancy)} skin, {len(clothing_attachments_with_occupancy)} clothing")
+    filtered_result = filter_attachments_by_occupancy_with_dynamic(skin_attachments_with_occupancy, clothing_attachments_with_occupancy)
+    attachments = filtered_result['attachments']
+    dynamic_meshes = filtered_result['dynamic_meshes']
+    print(f"DEBUG: After filtering - {len(attachments)} final attachments, {len(dynamic_meshes)} dynamic meshes")
     
     # CRITICAL: Process additional *_vp blocks with DynamicVisual data that aren't in defaultcos
     if include_items:
@@ -1742,27 +2004,22 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                             dyn_mesh = trimesh.Trimesh(vertices=combined_vertices, faces=combined_faces, process=False)
                             print(f"  DEBUG: Created mirrored skirt with {len(combined_vertices)} vertices and {len(combined_faces)} faces")
                     
-                    # Apply skin tone material to DynamicVisual mesh
-                    # Use the same skin color as body parts, with gamma correction
-                    raw_skin_color = [1.0, 0.8823530077934265, 0.7843137979507446, 1.0]
-                    skin_color = raw_skin_color.copy()
-                    # Apply gamma correction to match the corrected colors from .X files
-                    for color_i in range(3):  # Only RGB, not alpha
-                        skin_color[color_i] = pow(skin_color[color_i], 2.2)
+                    # INTELLIGENT MATERIAL ASSIGNMENT: Determine if this is a clothing or skin connector
+                    connector_material = determine_dynamic_visual_material(dyn_data, geometry_to_mesh_map, all_materials, i)
                     
                     # Create PBR material for DynamicVisual mesh
                     material = trimesh.visual.material.PBRMaterial()
                     material.name = f"dynamic_connector_{i}_material"
-                    material.baseColorFactor = skin_color
+                    material.baseColorFactor = connector_material['color']
                     
                     # Apply material to mesh
                     try:
                         dyn_mesh.visual = trimesh.visual.TextureVisuals(material=material)
-                        print(f"  Applied skin tone material to DynamicVisual connector {i}")
+                        print(f"  Applied {connector_material['type']} material to DynamicVisual connector {i}")
                     except Exception as e:
                         # Fallback to face colors
-                        dyn_mesh.visual.face_colors = skin_color
-                        print(f"  Applied skin tone color to DynamicVisual connector {i} (fallback)")
+                        dyn_mesh.visual.face_colors = connector_material['color']
+                        print(f"  Applied {connector_material['type']} color to DynamicVisual connector {i} (fallback)")
                     
                     scene.add_geometry(dyn_mesh, node_name=f"dynamic_connector_{i}")
                     print(f"  Added DynamicVisual connector mesh {i} with {len(vertices)} vertices using vertex snapping")
