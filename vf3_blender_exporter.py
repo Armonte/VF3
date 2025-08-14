@@ -126,6 +126,7 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
                         for li in poly.loop_indices:
                             vidx = blender_mesh.loops[li].vertex_index
                             if vidx < len(uv):
+                                # DirectX uses V=0 at top, Blender uses V=0 at bottom, so flip V
                                 uv_layer[loop_index].uv = (uv[vidx][0], 1.0 - uv[vidx][1])
                             loop_index += 1
         except Exception as e:
@@ -142,12 +143,32 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         bm.free()
         blender_mesh.update()
         
+        # Enable smooth shading for Gouraud-like appearance (same as VF3)
+        for poly in blender_mesh.polygons:
+            poly.use_smooth = True
+        print(f"  Enabled smooth shading for {mesh_name} (Gouraud rendering like VF3)")
+        
         # Create mesh object
         mesh_obj = bpy.data.objects.new(mesh_name, blender_mesh)
         bpy.context.collection.objects.link(mesh_obj)
         
-        # Skip manual Blender material creation - trimesh materials are handled during export
-        print(f"  Created mesh '{mesh_name}' with {len(trimesh_mesh.vertices)} vertices, bound to bone '{att.attach_bone}'")
+        # Step 5.5: Create and assign Blender materials (needed for glTF export)
+        if 'materials' in mesh_info and mesh_info['materials']:
+            print(f"  Creating Blender materials for {mesh_name}: {len(mesh_info['materials'])} materials")
+            _create_blender_materials(mesh_obj, mesh_info['materials'], trimesh_mesh, mesh_info)
+        else:
+            print(f"  No materials found for {mesh_name}")
+            # Create a default material so it's not completely gray
+            default_mat = bpy.data.materials.new(name=f"Default_{mesh_name}")
+            default_mat.use_nodes = True
+            bsdf = default_mat.node_tree.nodes.get("Principled BSDF")
+            if bsdf:
+                # Set a default color based on bone name
+                if 'body' in att.attach_bone.lower():
+                    bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Skin tone
+                else:
+                    bsdf.inputs['Base Color'].default_value = (0.7, 0.7, 0.7, 1.0)  # Light gray
+            mesh_obj.data.materials.append(default_mat)
         
         # Step 6: Create vertex groups and bind to armature
         if att.attach_bone in created_bones:
@@ -292,10 +313,12 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                     tex_image.image = img
                     # Base Color
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
-                    # Alpha hookup
+                    # Alpha hookup - use CLIP for better depth sorting than HASHED
                     if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
-                        blender_mat.blend_method = 'HASHED'
+                        blender_mat.blend_method = 'CLIP'
+                        blender_mat.alpha_threshold = 0.5  # Higher threshold for sharper cutouts
                         blender_mat.shadow_method = 'CLIP'
+                        blender_mat.use_backface_culling = True  # Enable backface culling for hair
                         if 'Alpha' in [s.name for s in tex_image.outputs]:
                             links.new(tex_image.outputs['Alpha'], bsdf.inputs['Alpha'])
                     print(f"      ? Loaded texture (packed): {img.name}")
@@ -314,8 +337,10 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                     tex_image.image = img
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
                     if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
-                        blender_mat.blend_method = 'HASHED'
+                        blender_mat.blend_method = 'CLIP'
+                        blender_mat.alpha_threshold = 0.5  # Higher threshold for sharper cutouts
                         blender_mat.shadow_method = 'CLIP'
+                        blender_mat.use_backface_culling = True  # Enable backface culling for hair
                         if 'Alpha' in [s.name for s in tex_image.outputs]:
                             links.new(tex_image.outputs['Alpha'], bsdf.inputs['Alpha'])
                     print(f"      ? Loaded texture (packed): {img.name}")
@@ -448,13 +473,15 @@ def _ensure_alpha_from_black(image_path: str) -> str:
         # Ensure 4 channels
         if img.channels < 4:
             img.colorspace_settings.name = 'sRGB'
-        # Build alpha from black threshold
+        # Build alpha from black threshold - be more aggressive for hair textures
         px = list(img.pixels)  # RGBA floats 0..1
         n = len(px)
+        # Use higher threshold for hair to make more pixels transparent
+        threshold = 0.15 if make_alpha else 0.05
         for i in range(0, n, 4):
             r, g, b, a = px[i], px[i+1], px[i+2], 1.0
-            # Near-black threshold
-            if r < 0.05 and g < 0.05 and b < 0.05:
+            # Near-black threshold - higher for hair textures
+            if r < threshold and g < threshold and b < threshold:
                 a = 0.0
             px[i], px[i+1], px[i+2], px[i+3] = r, g, b, a
         img.pixels[:] = px
@@ -517,15 +544,15 @@ def _load_image_with_black_as_alpha(image_path: str, make_alpha: bool) -> 'bpy.t
             if pil_img.mode != 'RGBA':
                 pil_img = pil_img.convert('RGBA')
             pixels = np.array(pil_img).astype(np.float32) / 255.0  # Convert to 0-1 range
-            # Blender expects flipped Y and flattened RGBA
-            pixels = np.flipud(pixels).flatten()
+            # Blender expects flattened RGBA (no Y flip to match original)
+            pixels = pixels.flatten()
         else:
             # RGB format
             if pil_img.mode != 'RGB':
                 pil_img = pil_img.convert('RGB')
             pixels = np.array(pil_img).astype(np.float32) / 255.0  # Convert to 0-1 range
-            # Blender expects flipped Y and flattened RGB
-            pixels = np.flipud(pixels).flatten()
+            # Blender expects flattened RGB (no Y flip to match original)
+            pixels = pixels.flatten()
         
         # Assign pixels to Blender image
         blender_img.pixels[:] = pixels
@@ -655,13 +682,10 @@ def _apply_trimesh_materials(mesh: 'trimesh.Trimesh', materials: List[dict], mes
         # Create texture visuals for the mesh (same as original)
         mesh.visual = trimesh.visual.TextureVisuals(material=material)
         
-        # Restore UV coordinates - try both original and flipped to see which works
+        # Restore UV coordinates (no flipping - same as original working script)
         if existing_uv is not None:
-            # Since image is now unflipped, try flipping UV V-coordinates again
-            flipped_uv = existing_uv.copy() 
-            flipped_uv[:, 1] = 1.0 - flipped_uv[:, 1]
-            mesh.visual.uv = flipped_uv
-            print(f"      Applied UV with flipped V-coordinates")
+            mesh.visual.uv = existing_uv
+            print(f"      Restored original UV coordinates")
         
         print(f"      Applied trimesh texture material: {texture_name}")
         return mesh
