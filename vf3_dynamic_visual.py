@@ -6,7 +6,7 @@ Handles DynamicVisual mesh processing, bone grouping, and vertex snapping.
 import numpy as np
 import trimesh
 from typing import Dict, List, Any, Optional, Tuple
-from vf3_materials import determine_dynamic_visual_material, create_pbr_material
+from vf3_materials import determine_dynamic_visual_material
 
 
 def group_dynamic_visual_by_bone(dyn_data: Dict) -> Dict[str, Dict]:
@@ -156,12 +156,13 @@ def process_dynamic_visual_meshes(dynamic_meshes: List[Dict], world_transforms: 
             connector_material = determine_dynamic_visual_material(dyn_data, geometry_to_mesh_map, all_materials, total_connectors)
             
             # Create PBR material
-            material_name = f"dynamic_connector_{total_connectors}_{bone_name}_material"
-            pbr_material = create_pbr_material(material_name, connector_material['color'])
+            material = trimesh.visual.material.PBRMaterial()
+            material.name = f"dynamic_connector_{total_connectors}_{bone_name}_material"
+            material.baseColorFactor = connector_material['color']
             
             # Apply material to mesh
             try:
-                bone_mesh.visual.material = pbr_material
+                bone_mesh.visual = trimesh.visual.TextureVisuals(material=material)
                 print(f"  Applied {connector_material['type']} to DynamicVisual connector {total_connectors} ({bone_name})")
             except Exception:
                 # Fallback to face colors
