@@ -78,3 +78,5 @@ generate_all_keys.py
 real_key_parser.py
 reverse_keygen.py
 vf3_keygen.py
+*.bin
+*.gltf

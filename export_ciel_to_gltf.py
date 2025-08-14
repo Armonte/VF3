@@ -619,9 +619,9 @@ class XFileParser:
         return self.scene
 
 
-def parse_directx_x_file(file_path: str) -> trimesh.Trimesh:
-    """Parse DirectX .X files using the integrated XFileParser"""
-    print(f"Attempting to parse DirectX .X file: {file_path}")
+def parse_directx_x_file_with_materials(file_path: str) -> dict:
+    """Parse DirectX .X files with material/texture information"""
+    print(f"Attempting to parse DirectX .X file with materials: {file_path}")
     
     try:
         # Read the file into memory
@@ -637,15 +637,56 @@ def parse_directx_x_file(file_path: str) -> trimesh.Trimesh:
         # Extract mesh data from the parsed scene
         vertices = []
         faces = []
+        materials = []
+        textures = []
+        
+        # Extract materials from meshes (not scene.globalMaterials)
+        # We'll collect materials from all meshes
+        mesh_materials = []
         
         # Get meshes from the scene
         if scene.globalMeshes:
             # Use the first mesh found
             mesh = scene.globalMeshes[0]
             
+            # Extract materials from this mesh
+            for i, mat in enumerate(mesh.materials):
+                material_data = {
+                    'name': getattr(mat, 'name', f'Material_{i}'),
+                    'diffuse': list(getattr(mat, 'diffuse', [1.0, 1.0, 1.0, 1.0])),
+                    'specular': list(getattr(mat, 'specular', [0.0, 0.0, 0.0])),
+                    'emissive': list(getattr(mat, 'emissive', [0.0, 0.0, 0.0])),
+                    'power': getattr(mat, 'specularExponent', 1.0),
+                    'textures': []
+                }
+                
+                # Extract texture filenames from material
+                if hasattr(mat, 'textures'):
+                    for tex in mat.textures:
+                        if hasattr(tex, 'name'):
+                            # Convert bytes to string if needed
+                            tex_name = tex.name
+                            if isinstance(tex_name, bytes):
+                                tex_name = tex_name.decode('utf-8')
+                            material_data['textures'].append(tex_name)
+                            if tex_name not in textures:
+                                textures.append(tex_name)
+                
+                materials.append(material_data)
+                print(f"Found material {i}: {material_data['name']} with {len(material_data['textures'])} textures")
+                if material_data['textures']:
+                    print(f"  Textures: {material_data['textures']}")
+            
             # Extract vertices
             for pos in mesh.positions:
                 vertices.append([pos[0], pos[1], pos[2]])
+            
+            # Extract UV coordinates if available
+            uv_coords = []
+            if hasattr(mesh, 'texCoords') and mesh.texCoords:
+                for uv in mesh.texCoords:
+                    uv_coords.append([uv[0], uv[1]])
+                print(f"Extracted {len(uv_coords)} UV coordinates")
             
             # Extract faces
             for face in mesh.posFaces:
@@ -661,13 +702,47 @@ def parse_directx_x_file(file_path: str) -> trimesh.Trimesh:
         # If no global meshes, check frame nodes
         elif scene.rootNode:
             def extract_meshes_from_node(node):
-                nonlocal vertices, faces
+                nonlocal vertices, faces, materials, textures, uv_coords
                 
                 # Extract meshes from this node
                 for mesh in node.meshes:
+                    # Extract materials from this mesh
+                    for i, mat in enumerate(mesh.materials):
+                        material_data = {
+                            'name': getattr(mat, 'name', f'Material_{len(materials)}'),
+                            'diffuse': list(getattr(mat, 'diffuse', [1.0, 1.0, 1.0, 1.0])),
+                            'specular': list(getattr(mat, 'specular', [0.0, 0.0, 0.0])),
+                            'emissive': list(getattr(mat, 'emissive', [0.0, 0.0, 0.0])),
+                            'power': getattr(mat, 'specularExponent', 1.0),
+                            'textures': []
+                        }
+                        
+                        # Extract texture filenames from material
+                        if hasattr(mat, 'textures'):
+                            for tex in mat.textures:
+                                if hasattr(tex, 'name'):
+                                    # Convert bytes to string if needed
+                                    tex_name = tex.name
+                                    if isinstance(tex_name, bytes):
+                                        tex_name = tex_name.decode('utf-8')
+                                    material_data['textures'].append(tex_name)
+                                    if tex_name not in textures:
+                                        textures.append(tex_name)
+                        
+                        materials.append(material_data)
+                        print(f"Found material {len(materials)-1}: {material_data['name']} with {len(material_data['textures'])} textures")
+                        if material_data['textures']:
+                            print(f"  Textures: {material_data['textures']}")
+                    
                     # Extract vertices
                     for pos in mesh.positions:
                         vertices.append([pos[0], pos[1], pos[2]])
+                    
+                    # Extract UV coordinates if available
+                    if hasattr(mesh, 'texCoords') and mesh.texCoords:
+                        for uv in mesh.texCoords:
+                            uv_coords.append([uv[0], uv[1]])
+                        print(f"Extracted {len(mesh.texCoords)} UV coordinates from frame node")
                     
                     # Extract faces
                     for face in mesh.posFaces:
@@ -689,19 +764,69 @@ def parse_directx_x_file(file_path: str) -> trimesh.Trimesh:
         if not vertices or not faces:
             raise ValueError("Could not extract vertices or faces from .X file")
         
-        print(f"Parsed {len(vertices)} vertices and {len(faces)} faces from .X file")
+        print(f"Parsed {len(vertices)} vertices, {len(faces)} faces, {len(materials)} materials, {len(textures)} textures from .X file")
         
         # Create trimesh
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-        return mesh
+        
+        # Add UV coordinates if available
+        if uv_coords and len(uv_coords) == len(vertices):
+            mesh.visual.uv = np.array(uv_coords)
+            print(f"Applied {len(uv_coords)} UV coordinates to mesh")
+        
+        # Extract face materials for multi-material splitting
+        face_materials = []
+        if scene.globalMeshes and hasattr(scene.globalMeshes[0], 'faceMaterials'):
+            face_materials = scene.globalMeshes[0].faceMaterials
+            print(f"Extracted {len(face_materials)} face material assignments")
+        
+        return {
+            'mesh': mesh,
+            'materials': materials,
+            'textures': textures,
+            'uv_coords': uv_coords,
+            'face_materials': face_materials
+        }
         
     except Exception as e:
         print(f"XFileParser failed: {e}")
         raise
 
 
-def load_mesh(path: str) -> trimesh.Trimesh:
+def parse_directx_x_file(file_path: str) -> trimesh.Trimesh:
+    """Parse DirectX .X files using the integrated XFileParser (backward compatibility)"""
+    result = parse_directx_x_file_with_materials(file_path)
+    return result['mesh']
 
+
+def load_mesh_with_materials(path: str) -> dict:
+    """Load mesh with material and texture information"""
+    print(f"Attempting to load mesh with materials: {path}")
+    
+    # Try DirectX .X parser first for .X files
+    if path.lower().endswith('.x'):
+        try:
+            result = parse_directx_x_file_with_materials(path)
+            print(f"Successfully parsed {path} as DirectX .X file with materials")
+            return result
+        except Exception as e:
+            print(f"DirectX parser with materials failed: {e}")
+    
+    # Fallback to regular mesh loading (no materials)
+    try:
+        mesh = load_mesh(path)
+        return {
+            'mesh': mesh,
+            'materials': [],
+            'textures': []
+        }
+    except Exception as e:
+        print(f"Failed to load mesh {path}: {e}")
+        raise
+
+
+def load_mesh(path: str) -> trimesh.Trimesh:
+    """Load mesh without material information (backward compatibility)"""
     print(f"Attempting to load mesh: {path}")
     
     # Try DirectX .X parser first for .X files
@@ -787,7 +912,117 @@ def merge_body_meshes(meshes: List[trimesh.Trimesh]) -> trimesh.Trimesh:
     return combined
 
 
-def assemble_scene(descriptor_path: str, include_skin: bool = True, include_items: bool = True, merge_female_body: bool = False) -> trimesh.Scene:
+def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textures: List[str], base_path: str) -> trimesh.Trimesh:
+    """Apply materials and textures to a mesh"""
+    if not materials:
+        return mesh
+    
+    try:
+        # For now, use the first material that has a texture
+        material_with_texture = None
+        for mat in materials:
+            if mat['textures']:
+                material_with_texture = mat
+                break
+        
+        if not material_with_texture:
+            # Use first material for color
+            if materials:
+                mat = materials[0]
+                # Apply diffuse color
+                if 'diffuse' in mat and len(mat['diffuse']) >= 3:
+                    color = mat['diffuse'][:4]  # RGBA
+                    if len(color) == 3:
+                        color.append(1.0)  # Add alpha
+                    mesh.visual.face_colors = color
+                    print(f"Applied diffuse color {color} to mesh")
+            return mesh
+        
+        # Try to load texture
+        texture_name = material_with_texture['textures'][0]
+        # Try multiple possible locations for texture files
+        texture_paths = [
+            os.path.join(base_path, texture_name),  # Same directory as mesh
+            os.path.join(os.path.dirname(base_path), texture_name),  # Parent directory (data/)
+            os.path.join('data', texture_name)  # Relative to project root
+        ]
+        
+        texture_path = None
+        for path in texture_paths:
+            if os.path.exists(path):
+                texture_path = path
+                break
+        
+        if texture_path and os.path.exists(texture_path):
+            print(f"Loading texture: {texture_path}")
+            
+            # Create PBR material with texture
+            material = trimesh.visual.material.PBRMaterial()
+            material.name = material_with_texture['name']
+            
+            # Set base color from diffuse
+            if 'diffuse' in material_with_texture and len(material_with_texture['diffuse']) >= 3:
+                material.baseColorFactor = material_with_texture['diffuse'][:4]
+                if len(material.baseColorFactor) == 3:
+                    material.baseColorFactor.append(1.0)
+            
+            # Load texture image
+            try:
+                from PIL import Image
+                img = Image.open(texture_path)
+                material.baseColorTexture = img
+                print(f"Successfully loaded texture {texture_name}")
+                
+                # Preserve existing UV coordinates before creating TextureVisuals
+                existing_uv = None
+                if hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None:
+                    existing_uv = mesh.visual.uv.copy()
+                    print(f"Preserving existing UV coordinates from .X file ({existing_uv.shape})")
+                
+                # Create texture visuals for the mesh
+                mesh.visual = trimesh.visual.TextureVisuals(material=material)
+                
+                # Restore or generate UV coordinates
+                if existing_uv is not None:
+                    mesh.visual.uv = existing_uv
+                    print("Restored UV coordinates from .X file")
+                else:
+                    print("Generating UV coordinates for mesh (no UV data from .X file)")
+                    # Simple planar UV mapping as fallback
+                    vertices = mesh.vertices
+                    bounds = mesh.bounds
+                    width = bounds[1][0] - bounds[0][0]
+                    height = bounds[1][1] - bounds[0][1]
+                    
+                    uv = np.zeros((len(vertices), 2))
+                    uv[:, 0] = (vertices[:, 0] - bounds[0][0]) / width if width > 0 else 0
+                    uv[:, 1] = (vertices[:, 1] - bounds[0][1]) / height if height > 0 else 0
+                    
+                    mesh.visual.uv = uv
+                
+            except ImportError:
+                print("PIL not available, cannot load texture images")
+                # Fall back to color
+                if 'diffuse' in material_with_texture:
+                    mesh.visual.face_colors = material_with_texture['diffuse'][:4]
+            except Exception as e:
+                print(f"Failed to load texture {texture_path}: {e}")
+                # Fall back to color
+                if 'diffuse' in material_with_texture:
+                    mesh.visual.face_colors = material_with_texture['diffuse'][:4]
+        else:
+            print(f"Texture not found: {texture_path}")
+            # Apply color only
+            if 'diffuse' in material_with_texture:
+                mesh.visual.face_colors = material_with_texture['diffuse'][:4]
+                
+    except Exception as e:
+        print(f"Error applying materials to mesh: {e}")
+    
+    return mesh
+
+
+def assemble_scene(descriptor_path: str, include_skin: bool = True, include_items: bool = True, merge_female_body: bool = False) -> dict:
     print(f"Reading descriptor: {descriptor_path}")
     desc = read_descriptor(descriptor_path)
 
@@ -890,6 +1125,10 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
     scene = trimesh.Scene()
     scene_graph_nodes: Dict[str, trimesh.SceneNode] = {}
 
+    # Collect all materials and textures
+    all_materials = []
+    all_textures = []
+
 
     # Create transform nodes for bones and child attachment nodes (kept for reference)
     for name, pos in world.items():
@@ -965,7 +1204,22 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
 
         print(f"Found mesh file: {mesh_path}")
         try:
-            mesh = load_mesh(mesh_path)
+            mesh_data = load_mesh_with_materials(mesh_path)
+            mesh = mesh_data['mesh']
+            
+            # Store materials for this mesh
+            if mesh_data['materials']:
+                all_materials.extend(mesh_data['materials'])
+                print(f"  Loaded {len(mesh_data['materials'])} materials from {mesh_path}")
+            
+            if mesh_data['textures']:
+                all_textures.extend([tex for tex in mesh_data['textures'] if tex not in all_textures])
+                print(f"  Found textures: {mesh_data['textures']}")
+            
+            # Apply materials to this mesh
+            if mesh_data['materials'] or mesh_data['textures']:
+                base_path = os.path.dirname(mesh_path)  # Directory containing the mesh file
+                mesh = apply_materials_to_mesh(mesh, mesh_data['materials'], mesh_data['textures'], base_path)
 
             mesh_count += 1
         except Exception as e:
@@ -1315,7 +1569,11 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                 except Exception as e:
                     print(f"  Failed to create DynamicVisual mesh {i}: {e}")
 
-    return scene
+    return {
+        'scene': scene,
+        'materials': all_materials,
+        'textures': all_textures
+    }
 
 
 def export_glb(scene: trimesh.Scene, out_path: str) -> None:
@@ -1396,8 +1654,15 @@ if __name__ == '__main__':
         include_skin, include_items = True, True
         print("Export mode: FULL-OUTFIT - complete character with all items")
 
-    sc = assemble_scene(descriptor, include_skin=include_skin, include_items=include_items, merge_female_body=args.merge_body)
-    export_glb(sc, out)
+    scene_data = assemble_scene(descriptor, include_skin=include_skin, include_items=include_items, merge_female_body=args.merge_body)
+    scene = scene_data['scene']
+    materials = scene_data['materials'] 
+    textures = scene_data['textures']
+    
+    print(f"Scene assembled with {len(scene.geometry)} geometries, {len(materials)} materials, {len(textures)} unique textures")
+    
+    # For now, export the scene without materials (will add material support next)
+    export_glb(scene, out)
     print(f'Exported: {out}')
 
 
