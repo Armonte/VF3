@@ -108,9 +108,38 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         blender_mesh.from_pydata(vertices.tolist(), [], faces)
         blender_mesh.update()
         
+        # Clean up mesh to reduce z-fighting
+        blender_mesh.validate()  # Fix invalid geometry
+        # Remove doubles/duplicates to prevent z-fighting
+        import bmesh
+        bm = bmesh.new()
+        bm.from_mesh(blender_mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)  # Very small threshold
+        bm.to_mesh(blender_mesh)
+        bm.free()
+        blender_mesh.update()
+        
         # Create mesh object
         mesh_obj = bpy.data.objects.new(mesh_name, blender_mesh)
         bpy.context.collection.objects.link(mesh_obj)
+        
+        # Step 5.5: Create and assign materials
+        if 'materials' in mesh_info and mesh_info['materials']:
+            print(f"  Creating materials for {mesh_name}: {len(mesh_info['materials'])} materials")
+            _create_blender_materials(mesh_obj, mesh_info['materials'], trimesh_mesh, mesh_info)
+        else:
+            print(f"  No materials found for {mesh_name}")
+            # Create a default material so it's not completely gray
+            default_mat = bpy.data.materials.new(name=f"Default_{mesh_name}")
+            default_mat.use_nodes = True
+            bsdf = default_mat.node_tree.nodes.get("Principled BSDF")
+            if bsdf:
+                # Set a default color based on bone name
+                if 'body' in att.attach_bone.lower():
+                    bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Skin tone
+                else:
+                    bsdf.inputs['Base Color'].default_value = (0.7, 0.7, 0.7, 1.0)  # Light gray
+            mesh_obj.data.materials.append(default_mat)
         
         # Step 6: Create vertex groups and bind to armature
         if att.attach_bone in created_bones:
@@ -149,7 +178,13 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
             export_animations=False,  # No animations yet
             export_skins=True,        # Include armature/skinning
             export_morph=False,
-            export_force_sampling=False
+            export_force_sampling=False,
+            export_materials='EXPORT',  # Ensure materials are exported
+            export_colors=True,        # Export vertex colors
+            export_normals=True,       # Export normals to help with z-fighting
+            export_tangents=True,      # Export tangents for better lighting
+            export_texcoords=True,     # Export UV coordinates
+            export_yup=True           # Use Y-up convention
         )
         print(f"? Successfully exported VF3 character to {output_path}")
         return True
@@ -157,6 +192,129 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     except Exception as e:
         print(f"? Export failed: {e}")
         return False
+
+
+def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info: dict = None):
+    """Create Blender materials from VF3 material data."""
+    try:
+        import bpy
+        from mathutils import Vector
+    except ImportError:
+        print("  ERROR: bpy not available for material creation")
+        return
+    
+    print(f"    Creating {len(materials)} materials for mesh")
+    
+    # Always create materials, even if we don't have face material mapping
+    for i, material_data in enumerate(materials):
+        # Create Blender material
+        mat_name = f"Material_{i}"
+        if material_data.get('name'):
+            mat_name = material_data['name']
+        
+        print(f"    Material {i}: {mat_name}")
+        
+        blender_mat = bpy.data.materials.new(name=f"{mesh_obj.name}_{mat_name}")
+        blender_mat.use_nodes = True
+        nodes = blender_mat.node_tree.nodes
+        links = blender_mat.node_tree.links
+        
+        # Clear default nodes
+        nodes.clear()
+        
+        # Create principled BSDF
+        bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
+        output = nodes.new(type='ShaderNodeOutputMaterial')
+        links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
+        
+        # Set material properties to reduce z-fighting
+        blender_mat.use_backface_culling = True  # Enable backface culling
+        blender_mat.blend_method = 'OPAQUE'      # Use opaque blending (no alpha issues)
+        
+        # Set material properties
+        if 'diffuse' in material_data:
+            diffuse = material_data['diffuse']
+            if len(diffuse) >= 3:
+                color = (*diffuse[:3], 1.0)
+                bsdf.inputs['Base Color'].default_value = color
+                print(f"      Diffuse: {color}")
+        else:
+            # Default color if no diffuse
+            bsdf.inputs['Base Color'].default_value = (0.8, 0.8, 0.8, 1.0)
+        
+        if 'specular' in material_data:
+            specular = material_data['specular']
+            if len(specular) >= 3:
+                # Use specular intensity as metallic factor
+                metallic = sum(specular[:3]) / 3.0
+                bsdf.inputs['Metallic'].default_value = min(metallic, 1.0)
+                print(f"      Metallic: {metallic}")
+        
+        # Handle texture
+        if 'texture' in material_data and material_data['texture']:
+            texture_path = material_data['texture']
+            print(f"      Texture: {texture_path}")
+            if os.path.exists(texture_path):
+                # Create texture node
+                tex_image = nodes.new(type='ShaderNodeTexImage')
+                try:
+                    tex_image.image = bpy.data.images.load(texture_path)
+                    links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
+                    print(f"      ? Loaded texture: {texture_path}")
+                except Exception as e:
+                    print(f"      ? Failed to load texture: {texture_path} - {e}")
+            else:
+                print(f"      ? Texture file not found: {texture_path}")
+        
+        # Add material to mesh
+        mesh_obj.data.materials.append(blender_mat)
+        print(f"      ? Added material {mat_name} to mesh")
+    
+    # Try to assign face materials if available
+    face_materials = None
+    
+    # FIRST: Check mesh_info dictionary (this is where our .X parser stores face materials!)
+    if mesh_info and 'face_materials' in mesh_info:
+        face_materials = mesh_info['face_materials']
+        print(f"    ? Found face materials in mesh_info: {len(face_materials)}")
+    
+    # Fallback: Check multiple possible locations on trimesh object
+    elif hasattr(trimesh_mesh, 'visual'):
+        if hasattr(trimesh_mesh.visual, 'face_materials'):
+            face_materials = trimesh_mesh.visual.face_materials
+            print(f"    Found face materials in visual.face_materials: {len(face_materials)}")
+        elif hasattr(trimesh_mesh.visual, 'material'):
+            # Check if it's a TextureVisuals with face materials
+            if hasattr(trimesh_mesh.visual.material, 'face_materials'):
+                face_materials = trimesh_mesh.visual.material.face_materials
+                print(f"    Found face materials in visual.material.face_materials: {len(face_materials)}")
+    
+    # Also check if trimesh has face materials directly
+    elif hasattr(trimesh_mesh, 'face_materials'):
+        face_materials = trimesh_mesh.face_materials
+        print(f"    Found face materials directly on mesh: {len(face_materials)}")
+    
+    # Debug: print what we have available
+    if mesh_info:
+        print(f"    mesh_info keys: {list(mesh_info.keys())}")
+    if hasattr(trimesh_mesh, 'visual'):
+        print(f"    Visual type: {type(trimesh_mesh.visual)}")
+        visual_attrs = [attr for attr in dir(trimesh_mesh.visual) if not attr.startswith('_')]
+        print(f"    Visual attributes: {visual_attrs}")
+    
+    if face_materials is not None and len(face_materials) > 0:
+        print(f"    Assigning face materials: {len(face_materials)} face assignments to {len(mesh_obj.data.polygons)} polygons")
+        
+        mesh_obj.data.update()
+        if len(mesh_obj.data.polygons) > 0:
+            assigned_count = 0
+            for face_idx, mat_idx in enumerate(face_materials):
+                if face_idx < len(mesh_obj.data.polygons) and mat_idx < len(materials):
+                    mesh_obj.data.polygons[face_idx].material_index = mat_idx
+                    assigned_count += 1
+            print(f"    ? Assigned materials to {assigned_count}/{len(face_materials)} faces")
+    else:
+        print("    ? No face material mapping found - all faces will use first material (white)")
 
 
 def _get_bone_hierarchy_order(bones: Dict) -> List[str]:
