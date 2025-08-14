@@ -1002,16 +1002,27 @@ def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textur
                 break
         
         if not material_with_texture:
-            # Use first material for color
+            # Use first material for color - create proper PBR material
             if materials:
                 mat = materials[0]
-                # Apply diffuse color
+                # Apply diffuse color as PBR material
                 if 'diffuse' in mat and len(mat['diffuse']) >= 3:
                     color = mat['diffuse'][:4]  # RGBA
                     if len(color) == 3:
                         color.append(1.0)  # Add alpha
-                    mesh.visual.face_colors = color
-                    print(f"Applied diffuse color {color} to mesh")
+                    
+                    # Create PBR material for color-only mesh
+                    material = trimesh.visual.material.PBRMaterial()
+                    material.name = mat.get('name', 'material')
+                    material.baseColorFactor = color
+                    
+                    # Handle transparency for black pixels (alpha masking)
+                    if color[3] < 1.0:  # If material has transparency
+                        material.alphaMode = 'BLEND'
+                    
+                    # Create material visuals instead of just face colors
+                    mesh.visual = trimesh.visual.material.MaterialVisuals(material=material)
+                    print(f"Applied PBR material with diffuse color {color} to mesh")
             return mesh
         
         # Try to load texture
@@ -1046,8 +1057,28 @@ def apply_materials_to_mesh(mesh: trimesh.Trimesh, materials: List[dict], textur
             try:
                 from PIL import Image
                 img = Image.open(texture_path)
+                
+                # Handle black-as-alpha transparency
+                # Convert black pixels to transparent
+                if img.mode != 'RGBA':
+                    img = img.convert('RGBA')
+                
+                # Create alpha channel based on black pixels
+                data = np.array(img)
+                # Check for pixels that are very close to black (RGB < 10)
+                black_mask = np.all(data[:, :, :3] < 10, axis=2)
+                # Set alpha to 0 for black pixels
+                data[black_mask, 3] = 0
+                
+                # Update image with alpha channel
+                img = Image.fromarray(data, 'RGBA')
                 material.baseColorTexture = img
-                print(f"Successfully loaded texture {texture_name}")
+                
+                # Set material to handle transparency
+                material.alphaMode = 'MASK'  # Use alpha masking for sharp edges
+                material.alphaCutoff = 0.1   # Pixels with alpha < 0.1 are discarded
+                
+                print(f"Successfully loaded texture {texture_name} with black-as-alpha transparency")
                 
                 # Preserve existing UV coordinates before creating TextureVisuals
                 existing_uv = None
