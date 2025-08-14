@@ -311,6 +311,8 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                 try:
                     img = _load_image_with_black_as_alpha(resolved_path, make_alpha=('hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower()))
                     tex_image.image = img
+                    # Set texture interpolation to Closest for sharp pixelated look like VF3
+                    tex_image.interpolation = 'Closest'
                     # Base Color
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
                     # Alpha hookup - use gentler settings to avoid white sheen
@@ -335,6 +337,8 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                 try:
                     img = _load_image_with_black_as_alpha(auto_tex, make_alpha=('hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower()))
                     tex_image.image = img
+                    # Set texture interpolation to Closest for sharp pixelated look like VF3
+                    tex_image.interpolation = 'Closest'
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
                     if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
                         blender_mat.blend_method = 'CLIP'
