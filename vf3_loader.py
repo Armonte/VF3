@@ -121,7 +121,8 @@ def parse_dynamic_visual_mesh(lines: List[str]) -> Optional[Dict]:
             'vertices': vertices,
             'vertex_bones': vertex_bones,
             'faces': faces,
-            'materials': materials
+            'materials': materials,
+            'original_faces': True  # Flag to indicate this has original VF3 FaceArray data
         }
     return None
 
@@ -438,7 +439,7 @@ def collect_active_attachments(descriptor: Descriptor) -> Tuple[List[Attachment]
 
 
 def find_mesh_file(resource_id: str) -> Optional[str]:
-    # resource_id like 'ciel.blazer' ¨ data/ciel/blazer.X or .x
+    # resource_id like 'ciel.blazer' ï¿½ï¿½ data/ciel/blazer.X or .x
     if '.' not in resource_id:
         return None
     prefix, name = resource_id.split('.', 1)
