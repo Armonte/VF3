@@ -313,10 +313,10 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                     tex_image.image = img
                     # Base Color
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
-                    # Alpha hookup - use CLIP for better depth sorting than HASHED
+                    # Alpha hookup - use gentler settings to avoid white sheen
                     if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
                         blender_mat.blend_method = 'CLIP'
-                        blender_mat.alpha_threshold = 0.5  # Higher threshold for sharper cutouts
+                        blender_mat.alpha_threshold = 0.1  # Lower threshold to avoid white edges
                         blender_mat.shadow_method = 'CLIP'
                         blender_mat.use_backface_culling = True  # Enable backface culling for hair
                         if 'Alpha' in [s.name for s in tex_image.outputs]:
@@ -338,7 +338,7 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                     links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
                     if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
                         blender_mat.blend_method = 'CLIP'
-                        blender_mat.alpha_threshold = 0.5  # Higher threshold for sharper cutouts
+                        blender_mat.alpha_threshold = 0.1  # Lower threshold to avoid white edges
                         blender_mat.shadow_method = 'CLIP'
                         blender_mat.use_backface_culling = True  # Enable backface culling for hair
                         if 'Alpha' in [s.name for s in tex_image.outputs]:
@@ -476,8 +476,8 @@ def _ensure_alpha_from_black(image_path: str) -> str:
         # Build alpha from black threshold - be more aggressive for hair textures
         px = list(img.pixels)  # RGBA floats 0..1
         n = len(px)
-        # Use higher threshold for hair to make more pixels transparent
-        threshold = 0.15 if make_alpha else 0.05
+        # Use gentler threshold for hair to avoid white sheen
+        threshold = 0.05 if make_alpha else 0.05  # Same threshold for both
         for i in range(0, n, 4):
             r, g, b, a = px[i], px[i+1], px[i+2], 1.0
             # Near-black threshold - higher for hair textures
@@ -523,8 +523,8 @@ def _load_image_with_black_as_alpha(image_path: str, make_alpha: bool) -> 'bpy.t
             
             # Create alpha channel based on black pixels
             data = np.array(pil_img)
-            # Check for pixels that are very close to black (RGB < 10) - same threshold as original
-            black_mask = np.all(data[:, :, :3] < 10, axis=2)
+            # Check for pixels that are very close to black (RGB < 5) - gentler to avoid white sheen
+            black_mask = np.all(data[:, :, :3] < 5, axis=2)
             # Set alpha to 0 for black pixels
             data[black_mask, 3] = 0
             
@@ -660,8 +660,8 @@ def _apply_trimesh_materials(mesh: 'trimesh.Trimesh', materials: List[dict], mes
         
         # Create alpha channel based on black pixels
         data = np.array(img)
-        # Check for pixels that are very close to black (RGB < 10) - same threshold as original
-        black_mask = np.all(data[:, :, :3] < 10, axis=2)
+        # Check for pixels that are very close to black (RGB < 5) - gentler to avoid white sheen
+        black_mask = np.all(data[:, :, :3] < 5, axis=2)
         # Set alpha to 0 for black pixels
         data[black_mask, 3] = 0
         
