@@ -1,0 +1,16 @@
+<frame>
+class:machine.ginger
+tyre::(0.0,0.0,0.0):(0.0,0.0,0.0):H--:
+body:tyre:(0.0,21.0,0.0):(0.0,0.0,0.0):-P-:
+</>
+
+<skin>
+0,0,0,0,0,0,0:ginger.defaultvisual
+</>
+
+<defaultvisual>
+body:ginger.body
+tyre:ginger.tyre
+</>
+
+

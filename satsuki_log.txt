@@ -1,0 +1,358 @@
+/mnt/c/dev/loot/VF3/xfile/xfile_parser.py:167: UserWarning: Unknown data object in animation of .x file
+  warn("Unknown data object in animation of .x file")
+Falling back to inline XFileParser, external import failed: No module named 'bpy'
+Loaded robust XFileParser via direct module loading
+Export mode: NAKED - skin/body parts only
+Reading descriptor: data/satsuki.txt
+Descriptor blocks: ['frame', 'skin', 'defaultcos', 'heads', 'head', 'head_k', 'blazer', 'skirtA', 'shoesA', 'blazer_vp', 'skirta_vp', 'shoesa_vp']
+Found 17 bones: ['body', 'head', 'l_breast', 'r_breast', 'l_arm1', 'l_arm2', 'l_hand', 'r_arm1', 'r_arm2', 'r_hand', 'waist', 'l_leg1', 'l_leg2', 'l_foot', 'r_leg1', 'r_leg2', 'r_foot']
+DEBUG: Resolving identifier 'satsuki.head'
+DEBUG: Found 1 attachments in current descriptor for 'head'
+DEBUG: Resolving identifier 'female.body'
+DEBUG: Found grouped block 'body' with 3 attachments
+DEBUG: Found DynamicVisual mesh with 80 vertices, 82 faces
+DEBUG: Total attachments from grouped identifier 'body': 3
+DEBUG: Resolving identifier 'female.arms'
+DEBUG: Found grouped block 'arms' with 4 attachments
+DEBUG: Found DynamicVisual mesh with 24 vertices, 24 faces
+DEBUG: Total attachments from grouped identifier 'arms': 4
+DEBUG: Resolving identifier 'female.l_hand'
+DEBUG: Found 1 attachments in other descriptor for 'l_hand'
+DEBUG: Resolving identifier 'female.r_hand'
+DEBUG: Found 1 attachments in other descriptor for 'r_hand'
+DEBUG: Resolving identifier 'female.waist'
+DEBUG: Found grouped block 'waist' with 1 attachments
+DEBUG: Found DynamicVisual mesh with 26 vertices, 26 faces
+DEBUG: Total attachments from grouped identifier 'waist': 1
+DEBUG: Resolving identifier 'female.legs'
+DEBUG: Found grouped block 'legs' with 4 attachments
+DEBUG: Found DynamicVisual mesh with 24 vertices, 24 faces
+DEBUG: Total attachments from grouped identifier 'legs': 4
+DEBUG: Resolving identifier 'female.foots'
+DEBUG: Found grouped block 'foots' with 2 attachments
+DEBUG: Found DynamicVisual mesh with 28 vertices, 28 faces
+DEBUG: Total attachments from grouped identifier 'foots': 2
+Found 17 attachments:
+  - head -> satsuki.head
+  - body -> female.body
+  - l_breast -> female.l_breast
+  - r_breast -> female.r_breast
+  - l_arm1 -> female.l_arm1
+  - l_arm2 -> female.l_arm2
+  - r_arm1 -> female.r_arm1
+  - r_arm2 -> female.r_arm2
+  - l_hand -> female.l_hand
+  - r_hand -> female.r_hand
+  - waist -> female.waist
+  - l_leg1 -> female.l_leg1
+  - l_leg2 -> female.l_leg2
+  - r_leg1 -> female.r_leg1
+  - r_leg2 -> female.r_leg2
+  - l_foot -> female.l_foot
+  - r_foot -> female.r_foot
+Built 17 world transforms
+  DEBUG: body world position: (0.0, 0.0, 0.0)
+  DEBUG: waist world position: (0.0, 0.0, 0.0)
+Found mesh file: /mnt/c/dev/loot/VF3/data/satsuki/head.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/satsuki/head.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/satsuki/head.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 384 vertices and 672 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/head.X as DirectX .X file
+Added mesh head.X to scene under node head
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/body.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/body.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/body.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 92 vertices and 146 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/body.X as DirectX .X file
+Added mesh body.X to scene under node body
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_breast.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_breast.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_breast.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 30 vertices and 46 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_breast.X as DirectX .X file
+Added mesh l_breast.X to scene under node l_breast
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_breast.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_breast.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_breast.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 30 vertices and 46 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_breast.X as DirectX .X file
+Added mesh r_breast.X to scene under node r_breast
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_arm1.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_arm1.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_arm1.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 22 vertices and 32 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_arm1.X as DirectX .X file
+Added mesh l_arm1.X to scene under node l_arm1
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_arm2.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_arm2.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_arm2.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 18 vertices and 24 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_arm2.X as DirectX .X file
+Added mesh l_arm2.X to scene under node l_arm2
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_arm1.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_arm1.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_arm1.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 22 vertices and 32 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_arm1.X as DirectX .X file
+Added mesh r_arm1.X to scene under node r_arm1
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_arm2.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_arm2.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_arm2.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 18 vertices and 24 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_arm2.X as DirectX .X file
+Added mesh r_arm2.X to scene under node r_arm2
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 84 vertices and 142 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_hand.X as DirectX .X file
+Added mesh l_hand.X to scene under node l_hand
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 84 vertices and 142 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_hand.X as DirectX .X file
+Added mesh r_hand.X to scene under node r_hand
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/waist.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/waist.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/waist.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 57 vertices and 92 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/waist.X as DirectX .X file
+Added mesh waist.X to scene under node waist
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_leg1.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_leg1.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_leg1.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 20 vertices and 28 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_leg1.X as DirectX .X file
+Added mesh l_leg1.X to scene under node l_leg1
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_leg2.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_leg2.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_leg2.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 20 vertices and 28 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_leg2.X as DirectX .X file
+Added mesh l_leg2.X to scene under node l_leg2
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_leg1.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_leg1.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_leg1.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 20 vertices and 28 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_leg1.X as DirectX .X file
+Added mesh r_leg1.X to scene under node r_leg1
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_leg2.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_leg2.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_leg2.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 20 vertices and 28 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_leg2.X as DirectX .X file
+Added mesh r_leg2.X to scene under node r_leg2
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/l_foot.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/l_foot.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/l_foot.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 77 vertices and 122 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_foot.X as DirectX .X file
+Added mesh l_foot.X to scene under node l_foot
+Found mesh file: /mnt/c/dev/loot/VF3/data/female/r_foot.X
+Attempting to load mesh: /mnt/c/dev/loot/VF3/data/female/r_foot.X
+Attempting to parse DirectX .X file: /mnt/c/dev/loot/VF3/data/female/r_foot.X
+Using parser class: xfile.xfile_parser.XFileParser
+Parsed 77 vertices and 122 faces from .X file
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_foot.X as DirectX .X file
+Added mesh r_foot.X to scene under node r_foot
+Total meshes added to scene: 17
+Meshes by source prefix:
+  - female: 16
+  - satsuki: 1
+
+Processing 7 DynamicVisual mesh sections...
+  Collected 1075 vertices from existing meshes for snapping
+  Mesh breakdown: {'geometry_0': 384, 'geometry_1': 92, 'geometry_2': 30, 'geometry_3': 30, 'geometry_4': 22, 'geometry_5': 18, 'geometry_6': 22, 'geometry_7': 18, 'geometry_8': 84, 'geometry_9': 84, 'geometry_10': 57, 'geometry_11': 20, 'geometry_12': 20, 'geometry_13': 20, 'geometry_14': 20, 'geometry_15': 77, 'geometry_16': 77}
+  DynamicVisual mesh 0: 80 vertices, 82 faces
+    Vertex 0 (body) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 1 (body) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 2 (waist) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 3 (waist) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 4 (body) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 5 (waist) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 6 (body) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 7 (waist) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 8 (body) using pos1 instead of pos2 (better distance: 0.058)
+    Vertex 9 (waist) using pos1 instead of pos2 (better distance: 0.058)
+  Added DynamicVisual connector mesh 0 with 80 vertices using vertex snapping
+  DynamicVisual mesh 1: 24 vertices, 24 faces
+    Vertex 0 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 1 (l_arm1) snapped to geometry_4 (distance: 1.000) - potential alignment issue
+    Vertex 2 (l_arm1) snapped to geometry_4 (distance: 1.000) - potential alignment issue
+    Vertex 3 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 4 (l_arm1) snapped to geometry_4 (distance: 1.000) - potential alignment issue
+    Vertex 5 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 6 (l_arm1) snapped to geometry_4 (distance: 1.000) - potential alignment issue
+    Vertex 7 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 8 (l_arm1) snapped to geometry_4 (distance: 1.000) - potential alignment issue
+    Vertex 9 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 10 (l_arm1) snapped to geometry_4 (distance: 1.000) - potential alignment issue
+    Vertex 11 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 12 (r_arm1) snapped to geometry_6 (distance: 1.000) - potential alignment issue
+    Vertex 13 (r_arm1) snapped to geometry_6 (distance: 1.000) - potential alignment issue
+    Vertex 14 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 15 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 16 (r_arm1) snapped to geometry_6 (distance: 1.000) - potential alignment issue
+    Vertex 17 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 18 (r_arm1) snapped to geometry_6 (distance: 1.000) - potential alignment issue
+    Vertex 19 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 20 (r_arm1) snapped to geometry_6 (distance: 1.000) - potential alignment issue
+    Vertex 21 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 22 (r_arm1) snapped to geometry_6 (distance: 1.000) - potential alignment issue
+    Vertex 23 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+  Added DynamicVisual connector mesh 1 with 24 vertices using vertex snapping
+  DynamicVisual mesh 2: 10 vertices, 10 faces
+    Vertex 0 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 1 (l_hand) snapped to geometry_8 (distance: 1.000) - potential alignment issue
+    Vertex 2 (l_hand) snapped to geometry_8 (distance: 1.000) - potential alignment issue
+    Vertex 3 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 4 (l_hand) snapped to geometry_8 (distance: 1.000) - potential alignment issue
+    Vertex 5 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 6 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 7 (l_hand) snapped to geometry_8 (distance: 1.000) - potential alignment issue
+    Vertex 8 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+    Vertex 9 (l_arm2) snapped to geometry_5 (distance: 1.000) - potential alignment issue
+  Added DynamicVisual connector mesh 2 with 10 vertices using vertex snapping
+  DynamicVisual mesh 3: 10 vertices, 10 faces
+    Vertex 0 (r_hand) snapped to geometry_9 (distance: 1.000) - potential alignment issue
+    Vertex 1 (r_hand) snapped to geometry_9 (distance: 1.000) - potential alignment issue
+    Vertex 2 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 3 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 4 (r_hand) snapped to geometry_9 (distance: 1.000) - potential alignment issue
+    Vertex 5 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 6 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 7 (r_hand) snapped to geometry_9 (distance: 1.000) - potential alignment issue
+    Vertex 8 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+    Vertex 9 (r_arm2) snapped to geometry_7 (distance: 1.000) - potential alignment issue
+  Added DynamicVisual connector mesh 3 with 10 vertices using vertex snapping
+  DynamicVisual mesh 4: 26 vertices, 26 faces
+    Vertex 0 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 1 (r_leg1) snapped to geometry_13 (distance: 1.000) - potential alignment issue
+    Vertex 2 (r_leg1) snapped to geometry_13 (distance: 1.000) - potential alignment issue
+    Vertex 3 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 4 (r_leg1) snapped to geometry_13 (distance: 1.000) - potential alignment issue
+    Vertex 5 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 6 (r_leg1) snapped to geometry_13 (distance: 1.000) - potential alignment issue
+    Vertex 7 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 8 (r_leg1) snapped to geometry_13 (distance: 1.000) - potential alignment issue
+    Vertex 9 (waist) snapped to geometry_10 (distance: 0.708) - potential alignment issue
+    Vertex 10 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 11 (r_leg1) snapped to geometry_13 (distance: 1.000) - potential alignment issue
+    Vertex 12 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 13 (l_leg1) snapped to geometry_11 (distance: 1.000) - potential alignment issue
+    Vertex 14 (l_leg1) snapped to geometry_11 (distance: 1.000) - potential alignment issue
+    Vertex 15 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 16 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 17 (l_leg1) snapped to geometry_11 (distance: 1.000) - potential alignment issue
+    Vertex 18 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 19 (l_leg1) snapped to geometry_11 (distance: 1.000) - potential alignment issue
+    Vertex 20 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 21 (waist) snapped to geometry_10 (distance: 0.708) - potential alignment issue
+    Vertex 22 (l_leg1) snapped to geometry_11 (distance: 1.000) - potential alignment issue
+    Vertex 23 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 24 (waist) snapped to geometry_10 (distance: 1.000) - potential alignment issue
+    Vertex 25 (l_leg1) snapped to geometry_11 (distance: 1.000) - potential alignment issue
+  Added DynamicVisual connector mesh 4 with 26 vertices using vertex snapping
+  DynamicVisual mesh 5: 24 vertices, 24 faces
+    DEBUG: Connector 5 bone breakdown: {'l_leg1': 6, 'l_leg2': 6, 'r_leg2': 6, 'r_leg1': 6}
+    DEBUG: Connector 5 Y-coordinate range: -55.9 to -45.5
+    DEBUG: Lowest vertices: ['-55.9(l_leg2)', '-55.9(l_leg2)', '-55.9(r_leg2)', '-55.9(r_leg2)']
+    DEBUG: Highest vertices: ['-45.6(l_leg1)', '-45.6(r_leg1)', '-45.5(l_leg1)', '-45.5(r_leg1)']
+    DEBUG: Connector 5 Vertex 0 (l_leg1) at [3.012813, -49.64053, -2.361917] snapped to geometry_11 (distance: 1.000)
+    DEBUG: Snapped from [3.012813, -49.64053, -2.361917] to [3.5000001192092896, -49.5, -1.5000008344650269]
+    DEBUG: Connector 5 Vertex 1 (l_leg1) at [6.4871859999999995, -49.64053, -2.361918] snapped to geometry_11 (distance: 1.000)
+    DEBUG: Snapped from [6.4871859999999995, -49.64053, -2.361918] to [5.999999523162842, -49.5, -1.5000008344650269]
+    DEBUG: Connector 5 Vertex 2 (l_leg2) at [3.06983, -51.148411, -2.390466] snapped to geometry_12 (distance: 1.000)
+    DEBUG: Snapped from [3.06983, -51.148411, -2.390466] to [3.5000001192092896, -50.99999988079071, -1.5000009536743164]
+    DEBUG: Connector 5 Vertex 3 (l_leg2) at [6.430171, -51.148411, -2.390466] snapped to geometry_12 (distance: 1.000)
+    DEBUG: Snapped from [6.430171, -51.148411, -2.390466] to [6.000000715255737, -50.99999988079071, -1.5000009536743164]
+    DEBUG: Connector 5 Vertex 4 (l_leg1) at [8.982427999999999, -48.091042, 1.337055] snapped to geometry_11 (distance: 1.000)
+    DEBUG: Snapped from [8.982427999999999, -48.091042, 1.337055] to [8.000002384185791, -47.999996185302734, 1.5]
+    DEBUG: Connector 5 Vertex 5 (l_leg2) at [8.9546, -54.040752, 1.204901] snapped to geometry_12 (distance: 1.000)
+    DEBUG: Snapped from [8.9546, -54.040752, 1.204901] to [8.000002384185791, -54.000000953674316, 1.5000000149011612]
+    DEBUG: Connector 5 Vertex 6 (l_leg2) at [6.67478, -55.931829, 5.734865] snapped to geometry_12 (distance: 1.000)
+    DEBUG: Snapped from [6.67478, -55.931829, 5.734865] to [6.000001668930054, -56.000000953674316, 5.0]
+    DEBUG: Connector 5 Vertex 7 (l_leg1) at [6.595111, -45.544964, 5.302385] snapped to geometry_11 (distance: 1.000)
+    DEBUG: Snapped from [6.595111, -45.544964, 5.302385] to [5.999999523162842, -45.5, 4.500000476837158]
+    DEBUG: Connector 5 Vertex 8 (l_leg2) at [2.825222, -55.931829, 5.734865] snapped to geometry_12 (distance: 1.000)
+    DEBUG: Snapped from [2.825222, -55.931829, 5.734865] to [3.5000001192092896, -56.000000953674316, 5.0]
+    DEBUG: Connector 5 Vertex 9 (l_leg1) at [2.8032719999999998, -45.558783, 5.214924] snapped to geometry_11 (distance: 1.000)
+    DEBUG: Snapped from [2.8032719999999998, -45.558783, 5.214924] to [3.5000001192092896, -45.5, 4.500000476837158]
+    DEBUG: Connector 5 Vertex 10 (l_leg1) at [0.508413, -48.047077, 1.379422] snapped to geometry_11 (distance: 1.000)
+    DEBUG: Snapped from [0.508413, -48.047077, 1.379422] to [1.500000238418579, -47.999996185302734, 1.5]
+    DEBUG: Connector 5 Vertex 11 (l_leg2) at [0.5454030000000003, -54.040752, 1.204901] snapped to geometry_12 (distance: 1.000)
+    DEBUG: Snapped from [0.5454030000000003, -54.040752, 1.204901] to [1.499999761581421, -54.000000953674316, 1.5000000149011612]
+    DEBUG: Connector 5 Vertex 12 (r_leg2) at [-3.06983, -51.148411, -2.390466] snapped to geometry_14 (distance: 1.000)
+    DEBUG: Snapped from [-3.06983, -51.148411, -2.390466] to [-3.5000001192092896, -50.99999988079071, -1.5000009536743164]
+    DEBUG: Connector 5 Vertex 13 (r_leg1) at [-6.4871859999999995, -49.64053, -2.361918] snapped to geometry_13 (distance: 1.000)
+    DEBUG: Snapped from [-6.4871859999999995, -49.64053, -2.361918] to [-5.999999523162842, -49.5, -1.5000008344650269]
+    DEBUG: Connector 5 Vertex 14 (r_leg1) at [-3.012813, -49.64053, -2.361917] snapped to geometry_13 (distance: 1.000)
+    DEBUG: Snapped from [-3.012813, -49.64053, -2.361917] to [-3.5000001192092896, -49.5, -1.5000008344650269]
+    DEBUG: Connector 5 Vertex 15 (r_leg2) at [-6.430171, -51.148411, -2.390466] snapped to geometry_14 (distance: 1.000)
+    DEBUG: Snapped from [-6.430171, -51.148411, -2.390466] to [-6.000000715255737, -50.99999988079071, -1.5000009536743164]
+    DEBUG: Connector 5 Vertex 16 (r_leg1) at [-8.982427999999999, -48.091042, 1.337055] snapped to geometry_13 (distance: 1.000)
+    DEBUG: Snapped from [-8.982427999999999, -48.091042, 1.337055] to [-8.000002384185791, -47.999996185302734, 1.5]
+    DEBUG: Connector 5 Vertex 17 (r_leg2) at [-8.9546, -54.040752, 1.204901] snapped to geometry_14 (distance: 1.000)
+    DEBUG: Snapped from [-8.9546, -54.040752, 1.204901] to [-8.000002384185791, -54.000000953674316, 1.5000000149011612]
+    DEBUG: Connector 5 Vertex 18 (r_leg2) at [-6.67478, -55.931829, 5.734865] snapped to geometry_14 (distance: 1.000)
+    DEBUG: Snapped from [-6.67478, -55.931829, 5.734865] to [-6.000001668930054, -56.000000953674316, 5.0]
+    DEBUG: Connector 5 Vertex 19 (r_leg1) at [-6.595111, -45.544964, 5.302385] snapped to geometry_13 (distance: 1.000)
+    DEBUG: Snapped from [-6.595111, -45.544964, 5.302385] to [-5.999999523162842, -45.5, 4.500000476837158]
+    DEBUG: Connector 5 Vertex 20 (r_leg2) at [-2.825222, -55.931829, 5.734865] snapped to geometry_14 (distance: 1.000)
+    DEBUG: Snapped from [-2.825222, -55.931829, 5.734865] to [-3.5000001192092896, -56.000000953674316, 5.0]
+    DEBUG: Connector 5 Vertex 21 (r_leg1) at [-2.8032719999999998, -45.558783, 5.214924] snapped to geometry_13 (distance: 1.000)
+    DEBUG: Snapped from [-2.8032719999999998, -45.558783, 5.214924] to [-3.5000001192092896, -45.5, 4.500000476837158]
+    DEBUG: Connector 5 Vertex 22 (r_leg1) at [-0.508413, -48.047077, 1.379422] snapped to geometry_13 (distance: 1.000)
+    DEBUG: Snapped from [-0.508413, -48.047077, 1.379422] to [-1.500000238418579, -47.999996185302734, 1.5]
+    DEBUG: Connector 5 Vertex 23 (r_leg2) at [-0.5454030000000003, -54.040752, 1.204901] snapped to geometry_14 (distance: 1.000)
+    DEBUG: Snapped from [-0.5454030000000003, -54.040752, 1.204901] to [-1.499999761581421, -54.000000953674316, 1.5000000149011612]
+  Added DynamicVisual connector mesh 5 with 24 vertices using vertex snapping
+  DynamicVisual mesh 6: 28 vertices, 28 faces
+    Vertex 0 (l_leg2) snapped to geometry_12 (distance: 1.000) - potential alignment issue
+    Vertex 1 (l_leg2) snapped to geometry_12 (distance: 1.000) - potential alignment issue
+    Vertex 2 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 3 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 4 (l_leg2) snapped to geometry_12 (distance: 1.000) - potential alignment issue
+    Vertex 5 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 6 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 7 (l_leg2) snapped to geometry_12 (distance: 1.000) - potential alignment issue
+    Vertex 8 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 9 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 10 (l_leg2) snapped to geometry_12 (distance: 1.000) - potential alignment issue
+    Vertex 11 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 12 (l_leg2) snapped to geometry_12 (distance: 1.000) - potential alignment issue
+    Vertex 13 (l_foot) snapped to geometry_15 (distance: 1.000) - potential alignment issue
+    Vertex 14 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 15 (r_leg2) snapped to geometry_14 (distance: 1.000) - potential alignment issue
+    Vertex 16 (r_leg2) snapped to geometry_14 (distance: 1.000) - potential alignment issue
+    Vertex 17 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 18 (r_leg2) snapped to geometry_14 (distance: 1.000) - potential alignment issue
+    Vertex 19 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 20 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 21 (r_leg2) snapped to geometry_14 (distance: 1.000) - potential alignment issue
+    Vertex 22 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 23 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 24 (r_leg2) snapped to geometry_14 (distance: 1.000) - potential alignment issue
+    Vertex 25 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+    Vertex 26 (r_leg2) snapped to geometry_14 (distance: 1.000) - potential alignment issue
+    Vertex 27 (r_foot) snapped to geometry_16 (distance: 1.000) - potential alignment issue
+  Added DynamicVisual connector mesh 6 with 28 vertices using vertex snapping
+Exporting scene with 24 geometries to satsuki_naked_compare.glb
+Exported: satsuki_naked_compare.glb

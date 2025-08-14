@@ -39,22 +39,41 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
             attachments = attachment_data['attachments']
             dynamic_mesh = attachment_data.get('dynamic_mesh')
             
-            for slot_idx, occ_value in enumerate(occupancy):
-                if occ_value > 0:  # This source occupies this slot
-                    current_winner = slot_winners.get(slot_idx)
-                    
-                    if current_winner is None or occ_value > current_winner['occupancy']:
-                        # This source wins this slot
-                        action = "REPLACED" if current_winner else "occupied"
-                        slot_winners[slot_idx] = {
-                            'occupancy': occ_value,
-                            'source': source,
-                            'attachments': attachments,
-                            'dynamic_mesh': dynamic_mesh
-                        }
-                        print(f"  {group_name}: Slot {slot_idx} {action} by {source} with occupancy {occ_value}")
-                    else:
-                        print(f"  {group_name}: Slot {slot_idx} - {source} (occupancy {occ_value}) loses to existing winner (occupancy {current_winner['occupancy']})")
+            # Handle special case: if all occupancy values are 0, treat as occupying a special "default" slot
+            has_any_occupancy = any(occ > 0 for occ in occupancy)
+            if not has_any_occupancy:
+                # For zero-occupancy entries (like robots), assign to a special slot -1
+                slot_idx = -1
+                occ_value = 1
+                current_winner = slot_winners.get(slot_idx)
+                
+                if current_winner is None or occ_value >= current_winner['occupancy']:
+                    action = "REPLACED" if current_winner else "occupied"
+                    slot_winners[slot_idx] = {
+                        'occupancy': occ_value,
+                        'source': source,
+                        'attachments': attachments,
+                        'dynamic_mesh': dynamic_mesh
+                    }
+                    print(f"  {group_name}: Special slot {slot_idx} {action} by {source} (zero-occupancy)")
+            else:
+                # Normal processing for non-zero occupancy
+                for slot_idx, occ_value in enumerate(occupancy):
+                    if occ_value > 0:  # This source occupies this slot
+                        current_winner = slot_winners.get(slot_idx)
+                        
+                        if current_winner is None or occ_value > current_winner['occupancy']:
+                            # This source wins this slot
+                            action = "REPLACED" if current_winner else "occupied"
+                            slot_winners[slot_idx] = {
+                                'occupancy': occ_value,
+                                'source': source,
+                                'attachments': attachments,
+                                'dynamic_mesh': dynamic_mesh
+                            }
+                            print(f"  {group_name}: Slot {slot_idx} {action} by {source} with occupancy {occ_value}")
+                        else:
+                            print(f"  {group_name}: Slot {slot_idx} - {source} (occupancy {occ_value}) loses to existing winner (occupancy {current_winner['occupancy']})")
     
     # Collect final results
     final_attachments = []

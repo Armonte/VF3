@@ -30,22 +30,40 @@ def group_dynamic_visual_by_bone(dyn_data: Dict) -> Dict[str, Dict]:
         bone_vertex_groups[bone_name]['vertices'].append(vertex_tuple)
         bone_vertex_groups[bone_name]['vertex_indices'].append(v_idx)
     
-    # Create face groups for each bone
+    # Create face groups for each bone using MAJORITY RULE
     for bone_name, bone_group in bone_vertex_groups.items():
         original_indices = bone_group['vertex_indices']
+        bone_vertices = bone_group['vertices']
         
         # Create mapping from original vertex index to new bone-local index
         index_mapping = {orig_idx: new_idx for new_idx, orig_idx in enumerate(original_indices)}
         
-        # Filter faces that use vertices from this bone
+        # Filter faces using majority rule (>=2 vertices belong to this bone)
         bone_faces = []
         for face in faces:
-            # Check if all vertices in this face belong to this bone
-            if all(v_idx in index_mapping for v_idx in face):
-                # Remap face indices to bone-local indices
-                new_face = [index_mapping[v_idx] for v_idx in face]
+            # Count how many vertices in this face belong to this bone
+            bone_vertex_count = sum(1 for v_idx in face if v_idx in index_mapping)
+            
+            # Assign face to this bone if it has majority (>=2) vertices
+            if bone_vertex_count >= 2:  # Majority rule - same as working export_minimal.py
+                # For vertices not in this bone, add them temporarily to this bone's vertex list
+                new_face = []
+                for v_idx in face:
+                    if v_idx in index_mapping:
+                        new_face.append(index_mapping[v_idx])
+                    else:
+                        # Add vertex from other bone to this bone's vertex list
+                        other_vertex = vertices[v_idx]  # vertices is from the outer scope
+                        bone_vertices.append(other_vertex)
+                        new_idx = len(bone_vertices) - 1
+                        new_face.append(new_idx)
+                        # Update the index mapping for future faces
+                        index_mapping[v_idx] = new_idx
+                
                 bone_faces.append(new_face)
         
+        # Update the bone group with the expanded vertex list and faces
+        bone_group['vertices'] = bone_vertices
         bone_group['faces'] = np.array(bone_faces) if bone_faces else np.array([]).reshape(0, 3)
     
     return bone_vertex_groups

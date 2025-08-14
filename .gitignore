@@ -5,7 +5,7 @@ data/aistrobot/armend.X
 data/aistrobot/body.X
 *.X
 *.bmp
-*.TXT
+
 *.key
 *.dat
 *.l_arm1

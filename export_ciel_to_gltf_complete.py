@@ -29,7 +29,7 @@ from vf3_dynamic_visual import process_dynamic_visual_meshes
 
 
 def process_attachments(attachments: List, world_transforms: Dict, scene: trimesh.Scene, 
-                       scene_graph_nodes: Dict, merge_female_body: bool = False) -> Dict[str, Any]:
+                       scene_graph_nodes: Dict, bones: Dict, merge_female_body: bool = False) -> Dict[str, Any]:
     """Process all mesh attachments with proper material handling and scene graph parenting."""
     mesh_count = 0
     prefix_counts: Dict[str, int] = {}
@@ -81,7 +81,8 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
         print(f"Found mesh file: {mesh_path}")
         try:
             node_name = att.child_name or att.attach_bone
-            name = os.path.basename(mesh_path)
+            mesh_filename = os.path.basename(mesh_path)
+            name = f"{att.attach_bone}_{mesh_filename}"  # Use bone name + filename to ensure uniqueness
             
             mesh_data = load_mesh_with_full_materials(mesh_path)
             if not mesh_data['mesh']:
@@ -122,14 +123,16 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
             pref = att.resource_id.split('.', 1)[0]
             prefix_counts[pref] = prefix_counts.get(pref, 0) + 1
 
-        # Apply world transforms to position mesh correctly
+        # Apply WORLD transform to position mesh correctly in world space
+        # This is needed because trimesh scene graph export doesn't always work reliably
         if att.attach_bone in world_transforms:
             world_pos = world_transforms[att.attach_bone]
             world_T = np.eye(4)
             world_T[:3, 3] = np.array(world_pos, dtype=float)
+            print(f"    DEBUG: Applying world transform {world_pos} to mesh {name} for bone {att.attach_bone}")
         else:
             world_T = np.eye(4)
-            print(f"WARNING: No world transform found for bone {att.attach_bone}")
+            print(f"    WARNING: No world transform found for bone {att.attach_bone}, using identity transform")
         
         # Check if this mesh was split into multiple parts
         if mesh_data.get('is_split'):
@@ -142,6 +145,7 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
                     split_mesh = apply_materials_to_mesh(split_mesh, split_data['materials'], split_data['textures'], base_path)
                 
                 split_mesh = split_mesh.copy()
+                # Apply world transform to position mesh correctly
                 split_mesh.apply_transform(world_T)
                 
                 split_name = f"{name}_mat{split_data['material_index']}"
@@ -157,6 +161,7 @@ def process_attachments(attachments: List, world_transforms: Dict, scene: trimes
         else:
             mesh = mesh_data['mesh']
             mesh = mesh.copy()
+            # Apply world transform to position mesh correctly
             mesh.apply_transform(world_T)
 
             if merge_female_body and att.resource_id.startswith('female.'):
@@ -315,7 +320,7 @@ def assemble_complete_scene(descriptor_path: str, include_skin: bool = True, inc
     create_child_attachment_nodes(attachments, scene_graph_nodes, scene)
     
     # Process all mesh attachments
-    attachment_results = process_attachments(attachments, world_transforms, scene, scene_graph_nodes, merge_female_body)
+    attachment_results = process_attachments(attachments, world_transforms, scene, scene_graph_nodes, bones, merge_female_body)
     
     # Collect all existing mesh vertices for snapping
     all_mesh_vertices = []
