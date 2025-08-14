@@ -1301,54 +1301,16 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                 print(f"Multi-material mesh detected, splitting into {len(set(mesh_data['face_materials']))} parts")
                 split_meshes = split_mesh_by_materials(mesh_data)
                 
-                # Process each split mesh
-                for split_data in split_meshes:
-                    split_mesh = split_data['mesh']
-                    
-                    # Apply materials to this split mesh
-                    if split_data['materials'] or split_data['textures']:
-                        base_path = os.path.dirname(mesh_path)
-                        split_mesh = apply_materials_to_mesh(split_mesh, split_data['materials'], split_data['textures'], base_path)
-                    
-                    # Apply world transform to each split mesh
-                    world_t = world.get(node_name, (0.0, 0.0, 0.0))
-                    T = np.eye(4)
-                    T[:3, 3] = np.array(world_t, dtype=float)
-                    split_mesh = split_mesh.copy()
-                    split_mesh.apply_transform(T)
-                    
-                    # Add to scene with unique name
-                    split_name = f"{name}_mat{split_data['material_index']}"
-                    if merge_female_body and att.resource_id.startswith('female.'):
-                        female_body_meshes.append(split_mesh)
-                        print(f"Collected female body part {split_name} for merging")
-                    else:
-                        scene.add_geometry(split_mesh, node_name=split_name)
-                        geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
-                        print(f"Added split mesh {split_name} to scene")
+                # Store split meshes for later processing (transform will be applied later)
+                mesh_data['split_meshes'] = split_meshes
+                mesh_data['is_split'] = True
                 
             else:
-                # Single material mesh - process normally
-                # Apply materials to this mesh
+                # Single material mesh - apply materials now
                 if mesh_data['materials'] or mesh_data['textures']:
-                    base_path = os.path.dirname(mesh_path)  # Directory containing the mesh file
+                    base_path = os.path.dirname(mesh_path)
                     mesh = apply_materials_to_mesh(mesh, mesh_data['materials'], mesh_data['textures'], base_path)
-                
-                # Apply world transform
-                world_t = world.get(node_name, (0.0, 0.0, 0.0))
-                T = np.eye(4)
-                T[:3, 3] = np.array(world_t, dtype=float)
-                mesh = mesh.copy()
-                mesh.apply_transform(T)
-                
-                # Add to scene
-                if merge_female_body and att.resource_id.startswith('female.'):
-                    female_body_meshes.append(mesh)
-                    print(f"Collected female body part {name} for merging")
-                else:
-                    scene.add_geometry(mesh, node_name=name)
-                    geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
-                    print(f"Added mesh {name} to scene")
+                    mesh_data['mesh'] = mesh
 
             mesh_count += 1
         except Exception as e:
@@ -1367,21 +1329,50 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
             print(f"    DEBUG: Child frame {node_name} world transform: {world_t} (from world dict)")
         T = np.eye(4)
         T[:3, 3] = np.array(world_t, dtype=float)
-        mesh = mesh.copy()
-        mesh.apply_transform(T)
-
-        # If merging female body parts, collect them instead of adding individually
-        if merge_female_body and att.resource_id.startswith('female.'):
-            female_body_meshes.append(mesh)
-            print(f"Collected female body part {name} for merging")
+        
+        # Check if this mesh was split into multiple parts
+        if mesh_data.get('is_split'):
+            # Handle split meshes
+            split_meshes = mesh_data['split_meshes']
+            for split_data in split_meshes:
+                split_mesh = split_data['mesh']
+                
+                # Apply materials to this split mesh
+                if split_data['materials'] or split_data['textures']:
+                    base_path = os.path.dirname(mesh_path)
+                    split_mesh = apply_materials_to_mesh(split_mesh, split_data['materials'], split_data['textures'], base_path)
+                
+                # Apply world transform
+                split_mesh = split_mesh.copy()
+                split_mesh.apply_transform(T)
+                
+                # Add to scene with unique name
+                split_name = f"{name}_mat{split_data['material_index']}"
+                if merge_female_body and att.resource_id.startswith('female.'):
+                    female_body_meshes.append(split_mesh)
+                    print(f"Collected female body part {split_name} for merging")
+                else:
+                    scene.add_geometry(split_mesh, node_name=split_name)
+                    geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
+                    print(f"Added split mesh {split_name} to scene")
         else:
-            # Add geometry directly (no scene-graph parenting relied upon for transforms)
-            scene.add_geometry(mesh, node_name=name)
-            # Track which geometry corresponds to which resource (not just bone)
-            # The geometry will be named something like "geometry_0", "geometry_1", etc.
-            # We need to track this BEFORE incrementing mesh_count
-            geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
-            print(f"Added mesh {name} to scene under node {node_name}")
+            # Handle single mesh (original logic)
+            mesh = mesh_data['mesh']
+            mesh = mesh.copy()
+            mesh.apply_transform(T)
+
+            # If merging female body parts, collect them instead of adding individually
+            if merge_female_body and att.resource_id.startswith('female.'):
+                female_body_meshes.append(mesh)
+                print(f"Collected female body part {name} for merging")
+            else:
+                # Add geometry directly (no scene-graph parenting relied upon for transforms)
+                scene.add_geometry(mesh, node_name=name)
+                # Track which geometry corresponds to which resource (not just bone)
+                # The geometry will be named something like "geometry_0", "geometry_1", etc.
+                # We need to track this BEFORE incrementing mesh_count
+                geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
+                print(f"Added mesh {name} to scene under node {node_name}")
     
     # Merge female body parts if requested
     if merge_female_body and female_body_meshes:
