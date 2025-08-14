@@ -114,7 +114,11 @@ def group_vertices_by_anatomical_region(vertices: List[Tuple], vertex_bones: Lis
     # Only create torso connector if allowed and has body+waist
     create_torso_connector = allow_torso and has_body and has_waist
     
-# Debug output removed - fix confirmed working
+# Debug output removed - bilateral merging fix confirmed working
+    
+    # Check if this is a bilateral merge (has both left and right hand bones)
+    has_both_hands = 'l_hand' in unique_bones and 'r_hand' in unique_bones
+    has_both_arm2 = 'l_arm2' in unique_bones and 'r_arm2' in unique_bones
     
     for i, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
         # Skip waist bone - it's handled by regular waist mesh
@@ -131,13 +135,28 @@ def group_vertices_by_anatomical_region(vertices: List[Tuple], vertex_bones: Lis
         elif bone_name == 'l_arm2':
             if 'l_arm1' in unique_bones:
                 assigned_region = 'left_elbow'  # True elbow joint (l_arm1 + l_arm2)
+            elif has_both_hands and has_both_arm2:
+                assigned_region = 'left_forearm'  # Bilateral merge: create both forearms
             else:
                 assigned_region = 'left_forearm'  # Just forearm, not elbow joint
         elif bone_name == 'r_arm2':
             if 'r_arm1' in unique_bones:
                 assigned_region = 'right_elbow'  # True elbow joint (r_arm1 + r_arm2)
+            elif has_both_hands and has_both_arm2:
+                assigned_region = 'right_forearm'  # Bilateral merge: create both forearms
             else:
                 assigned_region = 'right_forearm'  # Just forearm, not elbow joint
+        # Special handling for hands in bilateral merges
+        elif bone_name == 'l_hand':
+            if has_both_hands:
+                assigned_region = 'left_wrist'  # Bilateral merge: separate left wrist
+            else:
+                assigned_region = bone_to_region.get(bone_name, f"misc_{bone_name}")
+        elif bone_name == 'r_hand':
+            if has_both_hands:
+                assigned_region = 'right_wrist'  # Bilateral merge: separate right wrist
+            else:
+                assigned_region = bone_to_region.get(bone_name, f"misc_{bone_name}")
         else:
             # Get region for this bone (no overlaps possible)
             assigned_region = bone_to_region.get(bone_name, f"misc_{bone_name}")

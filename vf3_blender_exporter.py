@@ -626,6 +626,7 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         return 0
     
     connector_count = 0
+    created_regions = set()  # Track regions already created to prevent duplicates
     
     # Collect all mesh vertices for snapping
     all_mesh_vertices = []
@@ -659,6 +660,11 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         
         # Process each anatomical region (using working majority rule logic from vf3_dynamic_visual.py)  
         for region_name, region_data in region_groups.items():
+            # Skip if we've already created a connector for this region (deduplication)
+            if region_name in created_regions:
+                print(f"    Skipping duplicate region '{region_name}' (already created)")
+                continue
+                
             region_vertices = region_data['vertices']
             region_vertex_bones = region_data['vertex_bones']
             region_indices = region_data['indices']
@@ -844,6 +850,7 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
             
             print(f"    Created DynamicVisual connector {connector_count} for region {region_name}: {len(vertices_list)} vertices, {len(faces_list)} faces")
             connector_count += 1
+            created_regions.add(region_name)  # Mark this region as created
     
     return connector_count
 

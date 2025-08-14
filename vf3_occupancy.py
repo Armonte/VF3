@@ -73,8 +73,27 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                             # For bilateral body parts in skin mode, merge instead of replace
                             print(f"  {group_name}: Slot {slot_idx} - Merging bilateral part {source} with existing {current_winner['source']}")
                             current_winner['attachments'].extend(attachments)
-                            if dynamic_mesh and not current_winner['dynamic_mesh']:
-                                current_winner['dynamic_mesh'] = dynamic_mesh
+                            
+                            # Merge DynamicVisual data for bilateral parts
+                            if dynamic_mesh:
+                                if not current_winner['dynamic_mesh']:
+                                    current_winner['dynamic_mesh'] = dynamic_mesh
+                                else:
+                                    # Merge the two DynamicVisual meshes
+                                    existing_mesh = current_winner['dynamic_mesh']
+                                    merged_vertices = existing_mesh['vertices'] + dynamic_mesh['vertices']
+                                    merged_faces = existing_mesh['faces'] + [
+                                        [f[0] + len(existing_mesh['vertices']), f[1] + len(existing_mesh['vertices']), f[2] + len(existing_mesh['vertices'])]
+                                        for f in dynamic_mesh['faces']
+                                    ]
+                                    merged_vertex_bones = existing_mesh.get('vertex_bones', []) + dynamic_mesh.get('vertex_bones', [])
+                                    
+                                    current_winner['dynamic_mesh'] = {
+                                        'vertices': merged_vertices,
+                                        'faces': merged_faces,
+                                        'vertex_bones': merged_vertex_bones
+                                    }
+                                    print(f"    DynamicVisual: Merged {len(dynamic_mesh['vertices'])} vertices from {source} with existing mesh")
                         elif current_winner is None or occ_value > current_winner['occupancy']:
                             # This source wins this slot
                             action = "REPLACED" if current_winner else "occupied"
