@@ -674,27 +674,87 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
                 vertices_in_region = [v_idx in vertex_mapping for v_idx in face]
                 vertices_in_region_count = sum(vertices_in_region)
                 
-                # Use majority rule: face belongs to this region if >= 2 vertices are in it
-                if vertices_in_region_count >= 2:
-                    # Create new face, adding missing vertices from other regions to this region
-                    new_face = []
-                    for v_idx in face:
-                        if v_idx in vertex_mapping:
-                            # Vertex already in this region
-                            new_face.append(vertex_mapping[v_idx])
+                # Special handling for specific regions
+                if region_name == 'torso':
+                    # For torso (midriff), allow connection between body and waist bones only
+                    if vertices_in_region_count == len(face):
+                        # Pure torso region faces - always include
+                        new_face = [vertex_mapping[v_idx] for v_idx in face]
+                        region_faces.append(new_face)
+                    elif vertices_in_region_count >= 2:
+                        # Check if this is a valid body-waist connection face
+                        face_bones = set(vertex_bones[v_idx] for v_idx in face if v_idx < len(vertex_bones))
+                        if face_bones.issubset({'body', 'waist'}):
+                            # Valid midriff connection - allow expansion for body-waist faces
+                            new_face = []
+                            for v_idx in face:
+                                if v_idx in vertex_mapping:
+                                    new_face.append(vertex_mapping[v_idx])
+                                else:
+                                    other_vertex = vertices[v_idx]
+                                    other_bone = vertex_bones[v_idx] if v_idx < len(vertex_bones) else 'unknown'
+                                    region_vertices.append(other_vertex)
+                                    region_vertex_bones.append(other_bone)
+                                    region_indices.append(v_idx)
+                                    new_idx = len(region_vertices) - 1
+                                    new_face.append(new_idx)
+                                    vertex_mapping[v_idx] = new_idx
+                            region_faces.append(new_face)
                         else:
-                            # Add vertex from another region to this region's vertex list
-                            other_vertex = vertices[v_idx]
-                            other_bone = vertex_bones[v_idx] if v_idx < len(vertex_bones) else 'unknown'
-                            region_vertices.append(other_vertex)
-                            region_vertex_bones.append(other_bone)
-                            region_indices.append(v_idx)
-                            new_idx = len(region_vertices) - 1
-                            new_face.append(new_idx)
-                            # Update mapping for future faces
-                            vertex_mapping[v_idx] = new_idx
-                    
-                    region_faces.append(new_face)
+                            # Invalid contamination from other regions - skip
+                            print(f"        TORSO: Skipping invalid face with bones: {face_bones}")
+                            continue
+                elif region_name == 'breast_connection':
+                    # For breast connection, allow connection between breast and body bones only
+                    if vertices_in_region_count == len(face):
+                        # Pure breast region faces - always include
+                        new_face = [vertex_mapping[v_idx] for v_idx in face]
+                        region_faces.append(new_face)
+                    elif vertices_in_region_count >= 2:
+                        # Check if this is a valid breast-body connection face
+                        face_bones = set(vertex_bones[v_idx] for v_idx in face if v_idx < len(vertex_bones))
+                        if face_bones.issubset({'body', 'l_breast', 'r_breast'}):
+                            # Valid breast connection - allow expansion for breast-body faces
+                            new_face = []
+                            for v_idx in face:
+                                if v_idx in vertex_mapping:
+                                    new_face.append(vertex_mapping[v_idx])
+                                else:
+                                    other_vertex = vertices[v_idx]
+                                    other_bone = vertex_bones[v_idx] if v_idx < len(vertex_bones) else 'unknown'
+                                    region_vertices.append(other_vertex)
+                                    region_vertex_bones.append(other_bone)
+                                    region_indices.append(v_idx)
+                                    new_idx = len(region_vertices) - 1
+                                    new_face.append(new_idx)
+                                    vertex_mapping[v_idx] = new_idx
+                            region_faces.append(new_face)
+                        else:
+                            # Invalid contamination from other regions - skip
+                            print(f"        BREAST: Skipping invalid face with bones: {face_bones}")
+                            continue
+                else:
+                    # Use majority rule: face belongs to this region if >= 2 vertices are in it
+                    if vertices_in_region_count >= 2:
+                        # Create new face, adding missing vertices from other regions to this region
+                        new_face = []
+                        for v_idx in face:
+                            if v_idx in vertex_mapping:
+                                # Vertex already in this region
+                                new_face.append(vertex_mapping[v_idx])
+                            else:
+                                # Add vertex from another region to this region's vertex list
+                                other_vertex = vertices[v_idx]
+                                other_bone = vertex_bones[v_idx] if v_idx < len(vertex_bones) else 'unknown'
+                                region_vertices.append(other_vertex)
+                                region_vertex_bones.append(other_bone)
+                                region_indices.append(v_idx)
+                                new_idx = len(region_vertices) - 1
+                                new_face.append(new_idx)
+                                # Update mapping for future faces
+                                vertex_mapping[v_idx] = new_idx
+                        
+                        region_faces.append(new_face)
             
             if len(region_faces) == 0:
                 print(f"      No faces for region {region_name}, skipping")

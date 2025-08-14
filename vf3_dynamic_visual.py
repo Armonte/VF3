@@ -74,6 +74,7 @@ def group_vertices_by_anatomical_region(vertices: List[Tuple], vertex_bones: Lis
     Group vertices by anatomical regions to create separate connectors.
     CRITICAL: Each bone maps to exactly ONE region to avoid duplicates.
     """
+# Debug output removed - fix confirmed working
     # Define bone-to-region mapping (each bone appears exactly once)
     # Based on user feedback: waist is handled by regular mesh, l_leg1/r_leg1 are HIPS not knees, merge breast connectors
     bone_to_region = {
@@ -112,6 +113,8 @@ def group_vertices_by_anatomical_region(vertices: List[Tuple], vertex_bones: Lis
     
     # Only create torso connector if allowed and has body+waist
     create_torso_connector = allow_torso and has_body and has_waist
+    
+# Debug output removed - fix confirmed working
     
     for i, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
         # Skip waist bone - it's handled by regular waist mesh
