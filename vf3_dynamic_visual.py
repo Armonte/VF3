@@ -288,7 +288,10 @@ def process_dynamic_visual_meshes(dynamic_meshes: List[Dict], world_transforms: 
                 region_faces_array = np.array(region_faces)
                 print(f"      Creating region trimesh: {len(snapped_vertices)} vertices, {len(region_faces_array)} faces")
                 
-                connector_mesh = trimesh.Trimesh(vertices=np.array(snapped_vertices), faces=region_faces_array)
+                connector_mesh = trimesh.Trimesh(vertices=np.array(snapped_vertices), faces=region_faces_array, process=True)
+                
+                # Ensure smooth vertex normals for Gouraud shading
+                _ = connector_mesh.vertex_normals  # Force computation of smooth normals
                 print(f"      ✅ Created {region_name} connector: {len(snapped_vertices)} vertices, {len(region_faces_array)} faces")
                 
                 # Determine material for this connector

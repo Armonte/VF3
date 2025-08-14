@@ -81,7 +81,10 @@ def test_naked_satsuki():
                     bone_pos = world_transforms.get(node_name, (0.0, 0.0, 0.0))
                     vertices = mesh.vertices.copy()
                     vertices += bone_pos
-                    context_mesh = trimesh.Trimesh(vertices=vertices, faces=mesh.faces)
+                    context_mesh = trimesh.Trimesh(vertices=vertices, faces=mesh.faces, process=True)
+                    
+                    # Ensure smooth vertex normals for Gouraud shading
+                    _ = context_mesh.vertex_normals  # Force computation of smooth normals
                     
                     # Apply material colors
                     if materials and len(materials) > 0:

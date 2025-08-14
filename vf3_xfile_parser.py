@@ -845,8 +845,24 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
         
         print(f"Parsed {len(vertices)} vertices, {len(faces)} faces, {len(materials)} materials, {len(textures)} textures from .X file")
         
-        # Create trimesh
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+        # Create trimesh with proper normals processing
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=True)
+        
+        # Apply normals from .X file if available
+        if scene.globalMeshes and scene.globalMeshes[0].normals:
+            x_normals = scene.globalMeshes[0].normals
+            if len(x_normals) == len(vertices):
+                # Apply vertex normals directly from .X file
+                mesh.vertex_normals = np.array(x_normals, dtype=np.float32)
+                print(f"Applied {len(x_normals)} vertex normals from .X file")
+            else:
+                # Let trimesh compute smooth vertex normals
+                mesh.vertex_normals
+                print(f"Generated smooth vertex normals ({len(x_normals)} .X normals != {len(vertices)} vertices)")
+        else:
+            # Let trimesh compute smooth vertex normals for Gouraud shading
+            mesh.vertex_normals
+            print("Generated smooth vertex normals for Gouraud shading")
         
         # Add UV coordinates if available
         if uv_coords and len(uv_coords) == len(vertices):
