@@ -1,6 +1,6 @@
-## VF3 model assembly notes: CIEL (`data/CIEL.TXT`, `data/CIEL/*`)
+## VF3 Model Assembly and Export Pipeline
 
-This document summarizes how VF3 assembles the CIEL character by combining a text descriptor with multiple DirectX `.X` meshes, and outlines a path to export to glTF.
+This document summarizes the reverse-engineered VF3 model system for assembling complete 3D characters by combining text descriptors with DirectX `.X` meshes, and documents the complete export pipeline to glTF format.
 
 ### Current implementation status (December 2024)
 - Export pipeline runs end-to-end and writes complete character models to `.glb` files.
@@ -49,11 +49,21 @@ This document summarizes how VF3 assembles the CIEL character by combining a tex
 - **Critical discovery**: Additional `*_vp` blocks contain essential connectors (leg-to-foot bridges, clothing connectors)
 - **Hybrid positioning system** handles both simple connectors and complex multi-bone connector meshes
 
+**?? Materials and Textures System (Major Breakthrough):**
+- **Multi-material DirectX .X parsing** - Complete extraction of materials, textures, UV coordinates, and per-face material assignments
+- **Mesh splitting by materials** - Meshes with multiple materials (e.g., head with face/hair textures) automatically split into separate primitives
+- **Black-as-alpha transparency** - Automatic conversion of black pixels (RGB < 10) to transparent alpha for proper hair/clothing rendering
+- **Gamma correction implementation** - Proper color space conversion using `color^2.2` to convert from linear RGB to sRGB for accurate color reproduction
+- **PBR material creation** - Both textured and color-only meshes get proper PBRMaterial with baseColorFactor and baseColorTexture
+- **UV coordinate preservation** - Original UV mappings from .X files preserved and restored after material application to prevent texture stretching
+- **DynamicVisual material application** - Connector meshes automatically receive matching skin tone materials with proper gamma correction
+
 **??? Scene Assembly Pipeline:**
 - Complete bone hierarchy processing with world transform calculation
 - Child frame positioning with proper parent bone scaling
 - Mesh loading and positioning at correct bone locations
 - 13 total DynamicVisual connectors processed per character (up from original 9)
+- **Material pipeline integration** - All meshes (regular and DynamicVisual) receive proper materials during assembly
 
 **?? Export Statistics:**
 - **Characters tested**: Satsuki, Kaede, Ayaka, Arcueid (100% success rate for all export modes)
@@ -63,23 +73,35 @@ This document summarizes how VF3 assembles the CIEL character by combining a tex
 - **DynamicVisual precision**: 0.000-0.058 distance snapping accuracy
 - **File formats**: Input (.TXT, .X), Output (.glb)
 
-### What Still Needs Work
+### Critical Issues Identified and Next Steps
 
-**?? Next Development Priorities (Required for Complete System):**
-- **Animation Support**: Implement bone rigging and animation export to GLTF
-  - Bones are currently positioned correctly but not rigged for animation
-  - Need to preserve bone hierarchy and weights for character animation
-  - GLTF supports skeletal animation - implementation path is clear
-- **Texture and Material Support**: Add texture mapping and material preservation
-  - Currently exports geometry-only (no textures or materials)  
-  - VF3 likely has texture files that need to be identified and mapped
-  - GLTF supports PBR materials - need to reverse-engineer VF3 material system
-- **Additional character testing** beyond Satsuki/Kaede for robustness
+**?? CRITICAL ISSUE - Bone Hierarchy:**
+The current implementation has a fundamental flaw: **all bones are positioned from world origin instead of being properly connected in a parent-child hierarchy**. This means:
+- Bones appear as separate objects branching from (0,0,0) rather than a connected skeleton
+- Animation/rigging will not work correctly without proper bone relationships  
+- Blender imports show disconnected bone segments instead of a unified armature
 
-**?? Current Limitations:**
-- Some clothing items may have minor positioning issues (similar to rear skirt)
-- Export focuses on static geometry rather than animated rigs
-- No material/texture preservation (geometry-only export)
+**?? IMMEDIATE PRIORITIES (Phase 4):**
+
+1. **Fix Bone Hierarchy (CRITICAL)**
+   - **Problem**: Current system calculates world positions but doesn't maintain parent-child bone relationships
+   - **Solution**: Implement proper bone hierarchy where each bone is positioned relative to its parent
+   - **Impact**: Essential for animation, proper armature display, and character rigging
+
+2. **Test Full Costume Export**
+   - **Goal**: Export Satsuki with complete clothing (`--base-costume` mode)
+   - **Expected challenges**: Clothing positioning, additional DynamicVisual connectors for garments
+   - **Validation**: Ensure clothing items (blazer, skirt, shoes) position correctly with body
+
+3. **Skeleton Integration for Animation**
+   - **Extract bone weights** from DirectX .X files (currently ignored)
+   - **Implement proper GLTF armature export** with bone relationships
+   - **Add skin binding** to connect meshes to bones for animation
+
+**?? Current System Status:**
+? **Fully Working**: Geometry export, materials, textures, DynamicVisual connectors, color accuracy
+? **Broken**: Bone hierarchy, animation support
+?? **Untested**: Full costume export, complex clothing systems
 
 ### Development Roadmap
 
@@ -99,22 +121,74 @@ This document summarizes how VF3 assembles the CIEL character by combining a tex
 - Character-specific attachment handling ?
 - Comprehensive testing across multiple characters ?
 
-**Phase 3: ?? CURRENT - Materials and Textures**
-- VF3 texture file discovery and parsing
-- Material system reverse-engineering  
-- PBR material mapping to GLTF
-- Texture coordinate preservation
+**Phase 3: ? COMPLETED - Materials and Textures**
+- **Multi-material mesh support** - DirectX .X files with multiple materials are correctly split into separate trimesh primitives ?
+- **Texture parsing and loading** - .bmp textures extracted from .X files and applied to meshes ?  
+- **Black-as-alpha transparency** - Implemented proper transparency handling where black pixels become transparent ?
+- **PBR material export** - Proper PBRMaterial creation for both textured and color-only meshes ?
+- **Gamma correction** - Correct color space conversion (linear RGB to sRGB) for accurate color reproduction ?
+- **UV coordinate preservation** - Original UV mappings from .X files preserved to prevent texture stretching ?
 
-**Phase 4: ?? NEXT - Animation System**
-- Bone rigging for animation
-- Skeletal weights preservation
-- Animation data extraction from VF3
-- GLTF animation export
+**Phase 4: ?? CURRENT - Skeleton and Animation System**
+- **CRITICAL ISSUE IDENTIFIED**: Bone hierarchy is broken - all bones are positioned from world origin instead of being properly connected in a parent-child chain
+- **Bone rigging implementation** - Convert current world-space positioning to proper hierarchical bone structure
+- **Skeletal weights preservation** - Extract and preserve bone weights from .X files for animation
+- **Animation data extraction** - Investigate VF3 animation data formats
+- **GLTF animation export** - Implement proper armature export for Blender compatibility
 
 **Phase 5: ?? FINAL - Complete Pipeline**
-- Fully animated, textured character export
-- Batch processing capabilities
+- Fully animated, textured character export with proper bone hierarchy
+- Batch processing capabilities for multiple characters
 - User-friendly tools and documentation
+
+### Detailed Implementation Plan for Phase 4
+
+**Step 1: Fix Bone Hierarchy (CRITICAL - Week 1)**
+```
+Current Problem:
+- parse_frame_bones() calculates world positions: world[bone] = parent_world + local_pos
+- Meshes are positioned using these world positions: mesh.apply_transform(world_position)
+- Result: All bones appear to branch from origin instead of connecting to parents
+
+Required Changes:
+1. Modify scene assembly to create proper bone nodes in GLTF
+2. Instead of baking world transforms into mesh vertices, create bone hierarchy
+3. Position meshes relative to their parent bones, not world origin
+4. Test: Blender should show connected armature, not disconnected bone segments
+```
+
+**Step 2: Test Full Costume Export (Week 2)**
+```
+Commands to test:
+- python3 export_ciel_to_gltf.py --desc data/satsuki.txt --base-costume --out satsuki_clothed.glb
+- python3 export_ciel_to_gltf.py --desc data/ayaka.txt --base-costume --out ayaka_clothed.glb
+
+Expected challenges:
+1. Additional DynamicVisual connectors for clothing (blazer, skirt connectors)
+2. Clothing mesh positioning relative to body parts
+3. Material conflicts between clothing and body parts
+4. Child frame positioning for complex garments (skirts with front/rear pieces)
+
+Success criteria:
+- All clothing pieces visible and positioned correctly
+- No missing or misaligned garment parts
+- DynamicVisual connectors properly bridge clothing to body
+```
+
+**Step 3: Implement Animation Support (Week 3-4)**
+```
+Technical requirements:
+1. Extract bone weights from DirectX .X files (currently parsed but ignored)
+2. Create GLTF skin objects that bind meshes to bones
+3. Preserve bone hierarchy in GLTF armature structure
+4. Test animation compatibility in Blender
+
+Implementation steps:
+1. Modify parse_directx_x_file_with_materials() to extract bone weights
+2. Create trimesh.visual.TextureVisuals with proper skin binding
+3. Export GLTF with armature + skin data instead of just static geometry
+4. Validate: Character should be riggable and animatable in Blender
+```
 
 ### What we know
 - **Skeleton** is defined in `data/CIEL.TXT` under a `<frame>` block; it specifies a bone hierarchy with per-bone local transforms and flags.

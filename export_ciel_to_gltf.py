@@ -651,9 +651,21 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
             
             # Extract materials from this mesh
             for i, mat in enumerate(mesh.materials):
+                # Debug material properties
+                raw_diffuse = getattr(mat, 'diffuse', [1.0, 1.0, 1.0, 1.0])
+                print(f"  DEBUG: Raw diffuse from .X file: {raw_diffuse} (type: {type(raw_diffuse)})")
+                
+                # Apply gamma correction for better color accuracy (sRGB -> linear)
+                # Gamma correction: color^2.2 for RGB components (makes colors darker/more saturated)
+                corrected_diffuse = list(raw_diffuse)
+                if len(corrected_diffuse) >= 3:
+                    for color_i in range(3):  # Only apply to RGB, not alpha
+                        corrected_diffuse[color_i] = pow(corrected_diffuse[color_i], 2.2)
+                print(f"  DEBUG: Gamma-corrected diffuse: {corrected_diffuse}")
+                
                 material_data = {
                     'name': getattr(mat, 'name', f'Material_{i}'),
-                    'diffuse': list(getattr(mat, 'diffuse', [1.0, 1.0, 1.0, 1.0])),
+                    'diffuse': corrected_diffuse,
                     'specular': list(getattr(mat, 'specular', [0.0, 0.0, 0.0])),
                     'emissive': list(getattr(mat, 'emissive', [0.0, 0.0, 0.0])),
                     'power': getattr(mat, 'specularExponent', 1.0),
@@ -714,9 +726,20 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                 for mesh in node.meshes:
                     # Extract materials from this mesh
                     for i, mat in enumerate(mesh.materials):
+                        # Debug material properties
+                        raw_diffuse = getattr(mat, 'diffuse', [1.0, 1.0, 1.0, 1.0])
+                        print(f"    DEBUG: Raw diffuse from .X file: {raw_diffuse} (type: {type(raw_diffuse)})")
+                        
+                        # Apply gamma correction for better color accuracy (sRGB -> linear)
+                        corrected_diffuse = list(raw_diffuse)
+                        if len(corrected_diffuse) >= 3:
+                            for color_i in range(3):  # Only apply to RGB, not alpha
+                                corrected_diffuse[color_i] = pow(corrected_diffuse[color_i], 2.2)
+                        print(f"    DEBUG: Gamma-corrected diffuse: {corrected_diffuse}")
+                        
                         material_data = {
                             'name': getattr(mat, 'name', f'Material_{len(materials)}'),
-                            'diffuse': list(getattr(mat, 'diffuse', [1.0, 1.0, 1.0, 1.0])),
+                            'diffuse': corrected_diffuse,
                             'specular': list(getattr(mat, 'specular', [0.0, 0.0, 0.0])),
                             'emissive': list(getattr(mat, 'emissive', [0.0, 0.0, 0.0])),
                             'power': getattr(mat, 'specularExponent', 1.0),
@@ -1318,8 +1341,8 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
         print(f"Found mesh file: {mesh_path}")
         try:
             # Get node and mesh names first
-        node_name = att.child_name or att.attach_bone
-        name = os.path.basename(mesh_path)
+            node_name = att.child_name or att.attach_bone
+            name = os.path.basename(mesh_path)
             
             mesh_data = load_mesh_with_materials(mesh_path)
             mesh = mesh_data['mesh']
@@ -1718,6 +1741,28 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                             
                             dyn_mesh = trimesh.Trimesh(vertices=combined_vertices, faces=combined_faces, process=False)
                             print(f"  DEBUG: Created mirrored skirt with {len(combined_vertices)} vertices and {len(combined_faces)} faces")
+                    
+                    # Apply skin tone material to DynamicVisual mesh
+                    # Use the same skin color as body parts, with gamma correction
+                    raw_skin_color = [1.0, 0.8823530077934265, 0.7843137979507446, 1.0]
+                    skin_color = raw_skin_color.copy()
+                    # Apply gamma correction to match the corrected colors from .X files
+                    for color_i in range(3):  # Only RGB, not alpha
+                        skin_color[color_i] = pow(skin_color[color_i], 2.2)
+                    
+                    # Create PBR material for DynamicVisual mesh
+                    material = trimesh.visual.material.PBRMaterial()
+                    material.name = f"dynamic_connector_{i}_material"
+                    material.baseColorFactor = skin_color
+                    
+                    # Apply material to mesh
+                    try:
+                        dyn_mesh.visual = trimesh.visual.TextureVisuals(material=material)
+                        print(f"  Applied skin tone material to DynamicVisual connector {i}")
+                    except Exception as e:
+                        # Fallback to face colors
+                        dyn_mesh.visual.face_colors = skin_color
+                        print(f"  Applied skin tone color to DynamicVisual connector {i} (fallback)")
                     
                     scene.add_geometry(dyn_mesh, node_name=f"dynamic_connector_{i}")
                     print(f"  Added DynamicVisual connector mesh {i} with {len(vertices)} vertices using vertex snapping")
