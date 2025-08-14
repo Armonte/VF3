@@ -1702,17 +1702,9 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
             pref = att.resource_id.split('.', 1)[0]
             prefix_counts[pref] = prefix_counts.get(pref, 0) + 1
 
-        # HYBRID APPROACH: Use world transforms for mesh positioning, keep bone hierarchy for structure
-        # Get the world transform for this mesh's bone
-        world_transforms = build_world_transforms(bones, attachments)
-        if att.attach_bone in world_transforms:
-            world_pos = world_transforms[att.attach_bone]
-            T = np.eye(4)
-            T[:3, 3] = np.array(world_pos, dtype=float)
-            print(f"    DEBUG: Applying world transform to mesh {name} at bone {att.attach_bone}: {world_pos}")
-        else:
-            T = np.eye(4)
-            print(f"    DEBUG: No world transform found for bone {att.attach_bone}, using identity")
+        # FIXED: With proper bone hierarchy, meshes should be at origin - bone nodes handle positioning
+        # The bone nodes already have the local transforms, so meshes should be at (0,0,0) relative to their parent
+        print(f"    DEBUG: Mesh {name} will be positioned at origin relative to bone {att.attach_bone} (scene graph handles positioning)")
         
         # Check if this mesh was split into multiple parts
         if mesh_data.get('is_split'):
@@ -1726,9 +1718,9 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                     base_path = os.path.dirname(mesh_path)
                     split_mesh = apply_materials_to_mesh(split_mesh, split_data['materials'], split_data['textures'], base_path)
                 
-                # Apply world transform to position mesh correctly in world space
+                # Apply local bone transform to position mesh correctly
                 split_mesh = split_mesh.copy()
-                split_mesh.apply_transform(T)
+                split_mesh.apply_transform(local_T)
                 
                 # Add to scene with proper parent bone relationship
                 split_name = f"{name}_mat{split_data['material_index']}"
@@ -1744,11 +1736,11 @@ def assemble_scene(descriptor_path: str, include_skin: bool = True, include_item
                     geometry_to_attachment_map[f"geometry_{len(scene.geometry) - 1}"] = att.resource_id
                     print(f"Added split mesh {split_name} to scene under parent bone {node_name}")
         else:
-            # Handle single mesh with world transform positioning
+            # Handle single mesh with proper scene graph parenting
             mesh = mesh_data['mesh']
             mesh = mesh.copy()
-            # Apply world transform to position mesh correctly in world space
-            mesh.apply_transform(T)
+            # Apply local bone transform to position mesh correctly
+            mesh.apply_transform(local_T)
 
             # If merging female body parts, collect them instead of adding individually
             if merge_female_body and att.resource_id.startswith('female.'):
