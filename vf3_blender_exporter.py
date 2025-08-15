@@ -206,6 +206,10 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         
         mesh_objects.append(mesh_obj)
     
+    # Step 6: Merge breast meshes with body mesh for seamless torso
+    print("? Merging breast meshes with body...")
+    _merge_breast_meshes_with_body(mesh_objects)
+    
     # Step 6.5: Process DynamicVisual connector meshes
     print("? Creating DynamicVisual connectors...")
     connector_count = _create_dynamic_visual_meshes(
@@ -753,6 +757,249 @@ def process_vf3_dynamic_visual_faces(vertices, vertex_bones, faces, dyn_idx, wor
     return connectors_created
 
 
+def _snap_vertex_to_nearest_mesh(candidate_pos: List[float], all_mesh_vertices: 'np.ndarray', snap_threshold: float = 1.5) -> List[float]:
+    """Snap a vertex to the nearest existing mesh vertex if within threshold to eliminate seams."""
+    import numpy as np
+    
+    if len(all_mesh_vertices) == 0:
+        return candidate_pos
+    
+    candidate_array = np.array(candidate_pos)
+    
+    # Find closest vertex using vectorized distance calculation
+    distances = np.linalg.norm(all_mesh_vertices - candidate_array, axis=1)
+    min_distance = np.min(distances)
+    
+    if min_distance <= snap_threshold:
+        closest_idx = np.argmin(distances)
+        snapped_pos = all_mesh_vertices[closest_idx].tolist()
+        # print(f"      Snapped vertex: distance {min_distance:.3f} -> snapped to existing vertex")
+        return snapped_pos
+    else:
+        return candidate_pos
+
+
+def _merge_breast_meshes_with_body(mesh_objects):
+    """
+    Merge breast meshes with the body mesh to create a unified torso mesh.
+    This eliminates seams between breasts and body.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find body and breast meshes
+    body_mesh = None
+    breast_meshes = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            if 'body_female.body' in mesh_name:
+                body_mesh = mesh_obj
+            elif 'breast_female' in mesh_name:
+                breast_meshes.append(mesh_obj)
+    
+    if not body_mesh or not breast_meshes:
+        print(f"  Body mesh: {body_mesh.name if body_mesh else 'Not found'}")
+        print(f"  Breast meshes: {len(breast_meshes)} found")
+        return
+    
+    print(f"  Found body mesh: {body_mesh.name}")
+    print(f"  Found {len(breast_meshes)} breast meshes: {[m.name for m in breast_meshes]}")
+    
+    # Store names BEFORE join operation since objects will become invalid
+    merged_names = [m.name for m in breast_meshes]
+    
+    try:
+        # Select all meshes to be merged
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        # Select body mesh as primary target
+        body_mesh.select_set(True)
+        
+        # Select all breast meshes
+        for breast_mesh in breast_meshes:
+            breast_mesh.select_set(True)
+        
+        # Set body mesh as active object
+        bpy.context.view_layer.objects.active = body_mesh
+        
+        # Join all selected meshes into the body mesh
+        bpy.ops.object.join()
+        
+        # Clean up seams between merged parts
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        # Remove merged breast meshes from mesh_objects list since they no longer exist
+        
+        # Filter out merged meshes - be careful with object validity 
+        valid_objects = []
+        for m in mesh_objects:
+            try:
+                # Test if object is still valid by accessing its name
+                mesh_name = m.name
+                if mesh_name not in merged_names:
+                    valid_objects.append(m)
+            except (ReferenceError, AttributeError):
+                # Object has been deleted, skip it
+                pass
+        mesh_objects[:] = valid_objects
+        
+        print(f"  ✅ Successfully merged {len(breast_meshes)} breast meshes with body mesh")
+        print(f"  Removed {len(merged_names)} merged meshes from export list")
+        
+    except Exception as e:
+        print(f"  ❌ Failed to merge breast meshes: {e}")
+
+
+def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names):
+    """
+    Try to merge a DynamicVisual connector mesh with an adjacent body mesh to create unified geometry.
+    This eliminates separate mesh instances and creates seamless connections.
+    Returns: (success, merged_mesh_names) - success bool and list of mesh names that were merged and removed
+    """
+    try:
+        import bpy
+        import bmesh
+        from mathutils import Vector
+    except ImportError:
+        return False, []
+    
+    if not connector_obj or not mesh_objects:
+        return False, []
+    
+    # Determine which body mesh this connector should merge with based on bone names
+    target_mesh = None
+    connector_name = connector_obj.name.lower()
+    
+    # Define merging candidates based on connector number (determined from DynamicVisual processing order)
+    # Order is based on the occupancy slot processing: body, arms, hands, waist, legs, foots
+    merge_candidates_by_number = {
+        '0': ['body_female'],  # Body/torso connectors (breasts already merged with body)
+        '1': ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female'],  # Arm connectors
+        '2': ['l_hand_female', 'r_hand_female'],  # Hand/wrist connectors  
+        '3': ['waist_female', 'body_female'],  # Waist connectors
+        '4': ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female'],  # Leg connectors (hips/knees/thighs)
+        '5': ['l_foot_female', 'r_foot_female', 'l_leg2_female', 'r_leg2_female']  # Foot/ankle connectors
+    }
+    
+    # Extract connector number from name (e.g., "dynamic_connector_0_vf3mesh" -> "0")
+    target_categories = []
+    import re
+    match = re.search(r'dynamic_connector_(\d+)_', connector_name)
+    if match:
+        connector_number = match.group(1)
+        target_categories = merge_candidates_by_number.get(connector_number, [])
+        print(f"      Connector {connector_number} -> merge targets: {target_categories}")
+    else:
+        # Fallback to old logic for non-numbered connectors
+        merge_candidates = {
+            'breast': ['l_breast_female', 'r_breast_female', 'breast'],
+            'shoulder': ['l_arm1_female', 'r_arm1_female', 'torso'],  
+            'elbow': ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female'],
+            'wrist': ['l_arm2_female', 'r_arm2_female', 'l_hand_female', 'r_hand_female'],
+            'hip': ['waist_female', 'l_leg1_female', 'r_leg1_female'],
+            'knee': ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female'],
+            'ankle': ['l_leg2_female', 'r_leg2_female', 'l_foot_female', 'r_foot_female'],
+            'thigh': ['l_leg1_female', 'r_leg1_female', 'waist_female'],
+            'torso': ['body_female', 'waist_female']
+        }
+        
+        for category, candidates in merge_candidates.items():
+            if category in connector_name:
+                target_categories = candidates
+                break
+    
+    if not target_categories:
+        print(f"      No merge candidates found for connector: {connector_name}")
+        return False, []
+    
+    # Find all target mesh objects that match the categories
+    target_meshes = []
+    for mesh_obj in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            mesh_name_lower = mesh_obj.name.lower()
+            for candidate in target_categories:
+                if candidate.lower() in mesh_name_lower:
+                    target_meshes.append(mesh_obj)
+                    break
+        except (ReferenceError, AttributeError):
+            # Object has been deleted, skip it
+            continue
+    
+    if not target_meshes:
+        print(f"      No suitable body mesh found to merge connector: {connector_name}")
+        return False, []
+    
+    # Perform the actual mesh merging
+    try:
+        # For breast connectors (connector 0), merge with all breast meshes first, then merge everything
+        if len(target_meshes) > 1:
+            print(f"      Found {len(target_meshes)} target meshes: {[m.name for m in target_meshes]}")
+            
+            # Collect names of meshes that will be merged (all except primary target) BEFORE merging
+            primary_target = target_meshes[0]  # Use first mesh as primary target
+            merged_names = [m.name for m in target_meshes[1:]]  # Exclude primary target which still exists
+            
+            # Select all target meshes and the connector
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            # Select all meshes to be merged
+            for mesh in target_meshes:
+                mesh.select_set(True)
+            connector_obj.select_set(True)
+            
+            # Set primary target as active object
+            bpy.context.view_layer.objects.active = primary_target
+            
+            # Join all selected meshes into the primary target
+            bpy.ops.object.join()
+            
+            # Clean up seams
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+            print(f"      ✅ Successfully merged connector {connector_name} with {len(target_meshes)} meshes into {primary_target.name}")
+            return True, merged_names
+        else:
+            # Single target mesh - use original logic
+            target_mesh = target_meshes[0]
+            
+            # Select both meshes
+            bpy.context.view_layer.objects.active = target_mesh
+            bpy.ops.object.select_all(action='DESELECT')
+            target_mesh.select_set(True)
+            connector_obj.select_set(True)
+            
+            # Join the meshes (connector into target)
+            bpy.context.view_layer.objects.active = target_mesh
+            bpy.ops.object.join()
+            
+            # Clean up any duplicate vertices at the seam
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+            print(f"      ✅ Successfully merged connector {connector_name} with {target_mesh.name}")
+            return True, []  # No additional meshes were removed in single target merge
+        
+    except Exception as e:
+        print(f"      ❌ Failed to merge connector {connector_name}: {e}")
+        return False, []
+
+
 def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, created_bones, 
                                 armature_obj, mesh_objects, mesh_data):
     """Create DynamicVisual connector meshes in Blender with proper bone binding."""
@@ -803,7 +1050,7 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         # Use faces EXACTLY as provided by VF3 FaceArray (no reconstruction)
         connector_faces = faces  # Use exact face connectivity from VF3
         
-        # Process vertices with their bone binding information
+        # Process vertices with their bone binding information + snap to eliminate seams
         processed_vertices = []
         vertex_bone_names = []
         
@@ -814,13 +1061,16 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
             bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
             
             # Use pos1 + bone transform (like regular meshes) - this is what VF3 does
-            world_pos = [
+            candidate_pos = [
                 pos1[0] + bone_pos[0],
                 pos1[1] + bone_pos[1], 
                 pos1[2] + bone_pos[2]
             ]
             
-            processed_vertices.append(world_pos)
+            # Snap to nearest existing mesh vertex to eliminate seams/gaps  
+            snapped_pos = _snap_vertex_to_nearest_mesh(candidate_pos, all_mesh_vertices, snap_threshold=0.5)
+            
+            processed_vertices.append(snapped_pos)
             vertex_bone_names.append(bone_name)
         
         # Create ONE Blender mesh for this entire DynamicVisual block (like VF3)
@@ -848,6 +1098,9 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         bsdf = material.node_tree.nodes.get("Principled BSDF")
         if bsdf:
             # Use actual material color from DynamicVisual Material section
+            skin_color = (1.000, 0.759, 0.586)  # Standard skin tone from regular meshes
+            applied_color = skin_color  # Default to skin tone for all connectors
+            
             if 'materials' in dyn_data and len(dyn_data['materials']) > 0:
                 # Parse the first material entry: (r,g,b,a)::
                 material_line = dyn_data['materials'][0]
@@ -862,18 +1115,23 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
                             g = (color_values[1] / 255.0) ** 2.2  
                             b = (color_values[2] / 255.0) ** 2.2
                             a = color_values[3] / 255.0 if len(color_values) > 3 else 1.0
-                            bsdf.inputs['Base Color'].default_value = (r, g, b, 1.0)
-                            print(f"      Applied VF3 material color: ({r:.3f}, {g:.3f}, {b:.3f})")
+                            
+                            # Only use parsed color if it's not pure white (which often means "use default")
+                            if not (r > 0.95 and g > 0.95 and b > 0.95):
+                                applied_color = (r, g, b)
+                                print(f"      Applied VF3 material color: ({r:.3f}, {g:.3f}, {b:.3f})")
+                            else:
+                                print(f"      VF3 material is white, using skin tone instead: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
                         else:
-                            bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Fallback
+                            print(f"      Invalid material values, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
                     else:
-                        bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Fallback
+                        print(f"      Invalid material format, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
                 except:
-                    bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Fallback
-                    print(f"      Failed to parse material color, using fallback")
+                    print(f"      Failed to parse material, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
             else:
-                bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Fallback
-                print(f"      No material data found, using fallback skin tone")
+                print(f"      No material data, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
+                
+            bsdf.inputs['Base Color'].default_value = (*applied_color, 1.0)
         connector_obj.data.materials.append(material)
         
         # Bind vertices to their respective bones (like VF3 does with bone flags)
@@ -893,12 +1151,32 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         armature_modifier.object = armature_obj
         armature_modifier.use_vertex_groups = True
         
-        # Add to mesh objects list for export
-        mesh_objects.append(connector_obj)
+        # Try to merge this connector with adjacent body meshes to eliminate seams completely
+        merged_with_existing, merged_mesh_names = _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names)
         
-        print(f"    ✅ Created TRUE VF3 connector: {connector_name} with {len(vertices_list)} vertices, {len(faces_list)} faces")
+        if not merged_with_existing:
+            # Add to mesh objects list for export only if not merged
+            mesh_objects.append(connector_obj)
+            print(f"    ✅ Created standalone VF3 connector: {connector_name} with {len(vertices_list)} vertices, {len(faces_list)} faces")
+        else:
+            # Remove merged meshes from mesh_objects list to prevent issues with subsequent connectors
+            if merged_mesh_names:
+                # Be careful with object filtering - check if objects are still valid
+                valid_objects = []
+                for m in mesh_objects:
+                    try:
+                        mesh_name = m.name
+                        if mesh_name not in merged_mesh_names:
+                            valid_objects.append(m)
+                    except (ReferenceError, AttributeError):
+                        # Object has been deleted, skip it
+                        pass
+                mesh_objects[:] = valid_objects
+                print(f"    ✅ Merged VF3 connector: {connector_name} with existing body mesh, removed {len(merged_mesh_names)} merged meshes from list")
+            else:
+                print(f"    ✅ Merged VF3 connector: {connector_name} with existing body mesh")
+        
         connector_count += 1
-    
     return connector_count
 
 
