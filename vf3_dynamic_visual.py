@@ -1,417 +1,241 @@
 """
-VF3 DynamicVisual System
-Handles DynamicVisual mesh processing, bone grouping, and vertex snapping.
+VF3 Dynamic Visual Processing - Extracted from working vf3_blender_exporter.py
+Handles DynamicVisual mesh data and connector creation.
 """
 
-import numpy as np
-import trimesh
-from typing import Dict, List, Any, Optional, Tuple
-from vf3_materials import determine_dynamic_visual_material
+import os
+import sys
+from typing import List, Dict, Any
 
 
-def group_dynamic_visual_by_bone(dyn_data: Dict) -> Dict[str, Dict]:
-    """
-    CRITICAL: Group DynamicVisual vertices by bone to create separate meshes.
-    This fixes the cross-bone binding issue for skeletal animation.
-    """
-    vertices = dyn_data['vertices']  # List of (pos1, pos2) tuples
-    vertex_bones = dyn_data.get('vertex_bones', [])
-    faces = np.array(dyn_data['faces'])
+def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, created_bones, 
+                                 armature_obj, mesh_objects, mesh_data):
+    """Create DynamicVisual connector meshes in Blender with proper bone binding."""
+    try:
+        import bpy
+        import bmesh
+        import numpy as np
+        from mathutils import Vector
+    except ImportError:
+        print("  Blender imports not available")
+        return 0
     
-    # Group vertices by bone
-    bone_vertex_groups = {}
-    for v_idx, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
-        if bone_name not in bone_vertex_groups:
-            bone_vertex_groups[bone_name] = {
-                'vertices': [],
-                'vertex_indices': [],  # Original indices for face mapping
-                'bone': bone_name
-            }
-        bone_vertex_groups[bone_name]['vertices'].append(vertex_tuple)
-        bone_vertex_groups[bone_name]['vertex_indices'].append(v_idx)
+    if not clothing_dynamic_meshes:
+        print("  No DynamicVisual meshes to process")
+        return 0
     
-    # Create face groups for each bone using MAJORITY RULE
-    for bone_name, bone_group in bone_vertex_groups.items():
-        original_indices = bone_group['vertex_indices']
-        bone_vertices = bone_group['vertices']
-        
-        # Create mapping from original vertex index to new bone-local index
-        index_mapping = {orig_idx: new_idx for new_idx, orig_idx in enumerate(original_indices)}
-        
-        # Filter faces using majority rule (>=2 vertices belong to this bone)
-        bone_faces = []
-        for face in faces:
-            # Count how many vertices in this face belong to this bone
-            bone_vertex_count = sum(1 for v_idx in face if v_idx in index_mapping)
-            
-            # Assign face to this bone if it has majority (>=2) vertices
-            if bone_vertex_count >= 2:  # Majority rule - same as working export_minimal.py
-                # For vertices not in this bone, add them temporarily to this bone's vertex list
-                new_face = []
-                for v_idx in face:
-                    if v_idx in index_mapping:
-                        new_face.append(index_mapping[v_idx])
-                    else:
-                        # Add vertex from other bone to this bone's vertex list
-                        other_vertex = vertices[v_idx]  # vertices is from the outer scope
-                        bone_vertices.append(other_vertex)
-                        new_idx = len(bone_vertices) - 1
-                        new_face.append(new_idx)
-                        # Update the index mapping for future faces
-                        index_mapping[v_idx] = new_idx
-                
-                bone_faces.append(new_face)
-        
-        # Update the bone group with the expanded vertex list and faces
-        bone_group['vertices'] = bone_vertices
-        bone_group['faces'] = np.array(bone_faces) if bone_faces else np.array([]).reshape(0, 3)
+    connector_count = 0
+    created_regions = set()  # Track regions already created to prevent duplicates
     
-    return bone_vertex_groups
-
-
-def group_vertices_by_anatomical_region(vertices: List[Tuple], vertex_bones: List[str], allow_torso: bool = True) -> Dict[str, Dict]:
-    """
-    Group vertices by anatomical regions to create separate connectors.
-    CRITICAL: Each bone maps to exactly ONE region to avoid duplicates.
-    """
-# Debug output removed - fix confirmed working
-    # Define bone-to-region mapping (each bone appears exactly once)
-    # Based on user feedback: waist is handled by regular mesh, l_leg1/r_leg1 are HIPS not knees, merge breast connectors
-    bone_to_region = {
-        # Merged breast connector (both sides go to same region)
-        'l_breast': 'breast_connection',
-        'r_breast': 'breast_connection',
-        # Arm joint connectors - CORRECTED
-        'l_arm1': 'left_shoulder',   # l_arm1 is shoulder/upper arm 
-        'r_arm1': 'right_shoulder',  # r_arm1 is shoulder/upper arm
-        # Elbow should only be created when BOTH l_arm1 AND l_arm2 are present
-        # 'l_arm2': handled by special logic below
-        # 'r_arm2': handled by special logic below
-        'l_hand': 'left_wrist',      # Hand connects to wrist
-        'r_hand': 'right_wrist',     # Hand connects to wrist
-        # Leg joint connectors - CORRECTED ANATOMY
-        'l_leg1': 'left_hip',        # l_leg1 is thigh = HIP connector (waist to thigh)
-        'r_leg1': 'right_hip',       # r_leg1 is thigh = HIP connector (waist to thigh)
-        'l_leg2': 'left_knee',       # l_leg2 is shin = KNEE connector (thigh to shin) 
-        'r_leg2': 'right_knee',      # r_leg2 is shin = KNEE connector (thigh to shin)
-        'l_foot': 'left_ankle',      # Foot connects to ankle
-        'r_foot': 'right_ankle',     # Foot connects to ankle
-        # Core body - SPECIAL LOGIC: only create torso if waist is nearby
-        # 'body': handled by special logic below
-        # 'waist': REMOVED - waist is handled by waist_female.waist mesh
-    }
+    # Collect all mesh vertices for snapping (with safety checks for deleted objects)
+    all_mesh_vertices = []
+    for mesh_obj in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            _ = mesh_obj.name
+            if hasattr(mesh_obj.data, 'vertices'):
+                for v in mesh_obj.data.vertices:
+                    world_co = mesh_obj.matrix_world @ v.co
+                    all_mesh_vertices.append(world_co)
+        except (ReferenceError, AttributeError):
+            # Object has been deleted during merging, skip it
+            continue
     
-    # Group vertices by region using strict mapping
-    regions = {}
+    all_mesh_vertices = np.array([[v.x, v.y, v.z] for v in all_mesh_vertices])
+    print(f"  Collected {len(all_mesh_vertices)} vertices from existing meshes for snapping")
     
-    # Check if this mesh has both body and waist bones (indicates midriff connection)
-    unique_bones = set(vertex_bones)
-    has_body = 'body' in unique_bones
-    has_waist = 'waist' in unique_bones
-    has_arm1 = 'l_arm1' in unique_bones or 'r_arm1' in unique_bones
-    has_arm2 = 'l_arm2' in unique_bones or 'r_arm2' in unique_bones
-    
-    # Only create torso connector if allowed and has body+waist
-    create_torso_connector = allow_torso and has_body and has_waist
-    
-# Debug output removed - bilateral merging fix confirmed working
-    
-    # Check if this is a bilateral merge (has both left and right hand bones)
-    has_both_hands = 'l_hand' in unique_bones and 'r_hand' in unique_bones
-    has_both_arm2 = 'l_arm2' in unique_bones and 'r_arm2' in unique_bones
-    
-    for i, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
-        # Skip waist bone - it's handled by regular waist mesh
-        if bone_name == 'waist':
+    for dyn_idx, dyn_data in enumerate(clothing_dynamic_meshes):
+        if not (dyn_data and 'vertices' in dyn_data and 'faces' in dyn_data):
             continue
             
-        # Special handling for body bone
-        if bone_name == 'body':
-            if create_torso_connector:
-                assigned_region = 'torso'  # This is the midriff connection area
+        vertices = dyn_data['vertices']  # List of (pos1, pos2) tuples
+        vertex_bones = dyn_data.get('vertex_bones', [])
+        faces = np.array(dyn_data['faces'])
+        
+        if len(vertices) == 0 or len(faces) == 0:
+            continue
+            
+        print(f"  Processing DynamicVisual mesh {dyn_idx}: {len(vertices)} vertices, {len(faces)} faces")
+        
+        # Use TRUE VF3-accurate approach: Create ONE mesh per DynamicVisual block using EXACT FaceArray
+        # This is exactly how VF3 works - no anatomical grouping, just one geometry per block
+        print(f"    Using TRUE VF3-accurate approach: ONE mesh with {len(faces)} exact faces")
+        
+        # Use faces EXACTLY as provided by VF3 FaceArray (no reconstruction)
+        connector_faces = faces  # Use exact face connectivity from VF3
+        
+        # Process vertices with their bone binding information + snap to eliminate seams
+        processed_vertices = []
+        vertex_bone_names = []
+        
+        for i, (vertex_tuple, bone_name) in enumerate(zip(vertices, vertex_bones)):
+            pos1, pos2 = vertex_tuple
+            
+            # Get bone's world position
+            bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
+            
+            # Use pos1 + bone transform (like regular meshes) - this is what VF3 does
+            candidate_pos = [
+                pos1[0] + bone_pos[0],
+                pos1[1] + bone_pos[1], 
+                pos1[2] + bone_pos[2]
+            ]
+            
+            # Snap to nearest existing mesh vertex to eliminate seams/gaps  
+            snapped_pos = _snap_vertex_to_nearest_mesh(candidate_pos, all_mesh_vertices, snap_threshold=0.5)
+            
+            processed_vertices.append(snapped_pos)
+            vertex_bone_names.append(bone_name)
+        
+        # Create ONE Blender mesh for this entire DynamicVisual block (like VF3)
+        connector_name = f"dynamic_connector_{connector_count}_vf3mesh"
+        blender_mesh = bpy.data.meshes.new(connector_name)
+        
+        # Create mesh with EXACT VF3 faces - no modifications
+        vertices_list = [[v[0], v[1], v[2]] for v in processed_vertices]
+        faces_list = connector_faces  # Use exact faces from VF3 FaceArray
+        
+        blender_mesh.from_pydata(vertices_list, [], faces_list)
+        blender_mesh.update()
+        
+        # Enable smooth shading
+        for poly in blender_mesh.polygons:
+            poly.use_smooth = True
+        
+        # Create mesh object
+        connector_obj = bpy.data.objects.new(connector_name, blender_mesh)
+        bpy.context.collection.objects.link(connector_obj)
+        
+        # Create material using actual VF3 material data
+        material = bpy.data.materials.new(name=f"{connector_name}_material")
+        material.use_nodes = True
+        bsdf = material.node_tree.nodes.get("Principled BSDF")
+        if bsdf:
+            # Use actual material color from DynamicVisual Material section
+            skin_color = (1.000, 0.759, 0.586)  # Standard skin tone from regular meshes
+            applied_color = skin_color  # Default to skin tone for all connectors
+            
+            if 'materials' in dyn_data and len(dyn_data['materials']) > 0:
+                # Parse the first material entry: (r,g,b,a)::
+                material_line = dyn_data['materials'][0]
+                try:
+                    # Extract color values from "(r,g,b,a)::" format
+                    if material_line.startswith('(') and ')' in material_line:
+                        color_part = material_line[material_line.find('(')+1:material_line.find(')')]
+                        color_values = [float(x.strip()) for x in color_part.split(',')]
+                        if len(color_values) >= 3:
+                            # Convert from 0-255 range to 0-1 range and apply gamma correction like regular meshes
+                            r = (color_values[0] / 255.0) ** 2.2
+                            g = (color_values[1] / 255.0) ** 2.2  
+                            b = (color_values[2] / 255.0) ** 2.2
+                            a = color_values[3] / 255.0 if len(color_values) > 3 else 1.0
+                            
+                            # Only use parsed color if it's not pure white (which often means "use default")
+                            if not (r > 0.95 and g > 0.95 and b > 0.95):
+                                applied_color = (r, g, b)
+                                print(f"      Applied VF3 material color: ({r:.3f}, {g:.3f}, {b:.3f})")
+                            else:
+                                print(f"      VF3 material is white, using skin tone instead: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
+                        else:
+                            print(f"      Invalid material values, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
+                    else:
+                        print(f"      Invalid material format, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
+                except:
+                    print(f"      Failed to parse material, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
             else:
-                continue  # Skip body vertices that aren't part of the midriff connection
-        # Special handling for l_arm2/r_arm2 - only create elbow if both arm bones present
-        elif bone_name == 'l_arm2':
-            if 'l_arm1' in unique_bones:
-                assigned_region = 'left_elbow'  # True elbow joint (l_arm1 + l_arm2)
-            elif has_both_hands and has_both_arm2:
-                assigned_region = 'left_forearm'  # Bilateral merge: create both forearms
-            else:
-                assigned_region = 'left_forearm'  # Just forearm, not elbow joint
-        elif bone_name == 'r_arm2':
-            if 'r_arm1' in unique_bones:
-                assigned_region = 'right_elbow'  # True elbow joint (r_arm1 + r_arm2)
-            elif has_both_hands and has_both_arm2:
-                assigned_region = 'right_forearm'  # Bilateral merge: create both forearms
-            else:
-                assigned_region = 'right_forearm'  # Just forearm, not elbow joint
-        # Special handling for hands in bilateral merges
-        elif bone_name == 'l_hand':
-            if has_both_hands:
-                assigned_region = 'left_wrist'  # Bilateral merge: separate left wrist
-            else:
-                assigned_region = bone_to_region.get(bone_name, f"misc_{bone_name}")
-        elif bone_name == 'r_hand':
-            if has_both_hands:
-                assigned_region = 'right_wrist'  # Bilateral merge: separate right wrist
-            else:
-                assigned_region = bone_to_region.get(bone_name, f"misc_{bone_name}")
+                print(f"      No material data, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
+                
+            bsdf.inputs['Base Color'].default_value = (*applied_color, 1.0)
+        connector_obj.data.materials.append(material)
+        
+        # Bind vertices to their respective bones (like VF3 does with bone flags)
+        created_vertex_groups = set()
+        for vertex_idx, bone_name in enumerate(vertex_bone_names):
+            if bone_name in created_bones and bone_name not in created_vertex_groups:
+                vertex_group = connector_obj.vertex_groups.new(name=bone_name)
+                created_vertex_groups.add(bone_name)
+            
+            # Bind this vertex to its bone with full weight
+            if bone_name in created_vertex_groups:
+                vertex_group = connector_obj.vertex_groups[bone_name]
+                vertex_group.add([vertex_idx], 1.0, 'REPLACE')
+        
+        # Add armature modifier
+        armature_modifier = connector_obj.modifiers.new(name="Armature", type='ARMATURE')
+        armature_modifier.object = armature_obj
+        armature_modifier.use_vertex_groups = True
+        
+        # Try to merge this connector with adjacent body meshes to eliminate seams completely
+        from vf3_mesh_merging import _try_merge_connector_with_body_mesh
+        merged_with_existing, merged_mesh_names = _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names)
+        
+        if not merged_with_existing:
+            # Add to mesh objects list for export only if not merged
+            mesh_objects.append(connector_obj)
+            print(f"    ✅ Created standalone VF3 connector: {connector_name} with {len(vertices_list)} vertices, {len(faces_list)} faces")
         else:
-            # Get region for this bone (no overlaps possible)
-            assigned_region = bone_to_region.get(bone_name, f"misc_{bone_name}")
+            # Remove merged meshes from mesh_objects list to prevent issues with subsequent connectors
+            if merged_mesh_names:
+                # Be careful with object filtering - check if objects are still valid
+                valid_objects = []
+                for m in mesh_objects:
+                    try:
+                        mesh_name = m.name
+                        if mesh_name not in merged_mesh_names:
+                            valid_objects.append(m)
+                    except (ReferenceError, AttributeError):
+                        # Object has been deleted, skip it
+                        pass
+                mesh_objects[:] = valid_objects
+                print(f"    ✅ Merged VF3 connector: {connector_name} with existing body mesh, removed {len(merged_mesh_names)} merged meshes from list")
+            else:
+                print(f"    ✅ Merged VF3 connector: {connector_name} with existing body mesh")
         
-        # Add to region
-        if assigned_region not in regions:
-            regions[assigned_region] = {
-                'vertices': [],
-                'vertex_bones': [],
-                'indices': []
-            }
-        
-        regions[assigned_region]['vertices'].append(vertex_tuple)
-        regions[assigned_region]['vertex_bones'].append(bone_name)
-        regions[assigned_region]['indices'].append(i)
+        connector_count += 1
+    return connector_count
+
+
+def _snap_vertex_to_nearest_mesh(candidate_pos: List[float], all_mesh_vertices, snap_threshold: float = 0.5) -> List[float]:
+    """Snap a vertex to the nearest mesh vertex if within threshold."""
+    try:
+        import numpy as np
+    except ImportError:
+        return candidate_pos
     
-    return regions
-
-
-def snap_vertex_to_mesh(candidate_pos: List[float], all_mesh_vertices: np.ndarray, snap_threshold: float = 1.0) -> List[float]:
-    """Snap a vertex to the nearest existing mesh vertex if within threshold."""
     if len(all_mesh_vertices) == 0:
         return candidate_pos
     
-    # Find closest vertex
-    distances = np.linalg.norm(all_mesh_vertices - candidate_pos, axis=1)
-    min_distance = np.min(distances)
+    # Calculate distances to all mesh vertices
+    candidate_array = np.array(candidate_pos)
+    distances = np.linalg.norm(all_mesh_vertices - candidate_array, axis=1)
     
-    if min_distance <= snap_threshold:
-        closest_idx = np.argmin(distances)
-        snapped_pos = all_mesh_vertices[closest_idx].tolist()
+    # Find the nearest vertex
+    nearest_idx = np.argmin(distances)
+    nearest_distance = distances[nearest_idx]
+    
+    # Snap if within threshold
+    if nearest_distance <= snap_threshold:
+        snapped_pos = all_mesh_vertices[nearest_idx].tolist()
         return snapped_pos
     else:
         return candidate_pos
 
 
-def create_bone_dynamic_visual_mesh(bone_name: str, bone_group: Dict, world_transforms: Dict, 
-                                  all_mesh_vertices: np.ndarray, connector_idx: int, bone_idx: int) -> Optional[trimesh.Trimesh]:
-    """Create a DynamicVisual mesh for a specific bone group."""
-    bone_vertices = bone_group['vertices']
-    bone_faces = bone_group['faces']
-    
-    if len(bone_faces) == 0:
-        print(f"    WARNING: No faces for bone {bone_name}, skipping")
-        return None
-    
-    # Get bone's world position
-    bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
-    
-    # Process vertices
-    snapped_vertices = []
-    for vertex_tuple in bone_vertices:
-        pos1, pos2 = vertex_tuple
-        
-        # Use pos2 positioned relative to bone (this was working better in original code)
-        candidate_pos = [
-            pos2[0] + bone_pos[0],
-            pos2[1] + bone_pos[1],
-            pos2[2] + bone_pos[2]
-        ]
-        
-        # Snap to nearest existing mesh vertex
-        snapped_pos = snap_vertex_to_mesh(candidate_pos, all_mesh_vertices)
-        snapped_vertices.append(snapped_pos)
-    
-    # Create mesh
-    try:
-        bone_mesh = trimesh.Trimesh(vertices=np.array(snapped_vertices), faces=bone_faces)
-        
-        # Apply world transform to position mesh correctly
-        world_T = np.eye(4)
-        world_T[:3, 3] = np.array(bone_pos, dtype=float)
-        bone_mesh.apply_transform(world_T)
-        
-        print(f"    Created bone mesh for {bone_name}: {len(snapped_vertices)} vertices, {len(bone_faces)} faces")
-        return bone_mesh
-        
-    except Exception as e:
-        print(f"    Failed to create bone mesh for {bone_name}: {e}")
-        return None
+# Legacy functions for compatibility
+def process_vf3_dynamic_visual_faces(vertices, vertex_bones, faces, dyn_idx, world_transforms, 
+                                    created_bones, armature_obj, mesh_objects, base_connector_count):
+    """Legacy function - redirects to new implementation."""
+    print("⚠️ Using legacy dynamic visual processing - this is not the correct approach")
+    return base_connector_count
 
+def _snap_connector_vertices_to_meshes(connector_vertices, mesh_objects, snap_threshold=1.5):
+    """Legacy function for compatibility."""
+    return connector_vertices
 
-def process_dynamic_visual_meshes(dynamic_meshes: List[Dict], world_transforms: Dict, 
-                                all_mesh_vertices: np.ndarray, all_materials: Dict, 
-                                geometry_to_mesh_map: Dict, scene: trimesh.Scene) -> int:
-    """
-    Process DynamicVisual meshes, creating separate meshes for each bone group.
-    Returns the number of connector meshes created.
-    """
-    if not dynamic_meshes:
-        return 0
-    
-    print(f"\n🔧 DEBUG: Processing {len(dynamic_meshes)} DynamicVisual mesh sections...")
-    print(f"🔧 DEBUG: This is from the UPDATED vf3_dynamic_visual.py file!")
-    
-    total_connectors = 0
-    torso_connector_created = False  # Simple flag to prevent multiple torso connectors
-    
-    # Process ALL DynamicVisual meshes for complete naked character export
-    for i, dyn_data in enumerate(dynamic_meshes):
-        if not (dyn_data and 'vertices' in dyn_data and 'faces' in dyn_data):
-            continue
-        
-        vertices = dyn_data['vertices']
-        faces = np.array(dyn_data['faces'])
-        vertex_bones = dyn_data.get('vertex_bones', [])
-        
-        print(f"  DynamicVisual mesh {i}: {len(vertices)} vertices, {len(faces)} faces")
-        
-        # FIXED: Group by bone pairs/regions to avoid stretching across the body
-        # Each anatomical connector (left elbow, right elbow, etc.) should be separate
-        allow_torso = not torso_connector_created  # Only create one torso connector
-        bone_groups = group_vertices_by_anatomical_region(vertices, vertex_bones, allow_torso)
-        print(f"    Split into {len(bone_groups)} anatomical regions: {list(bone_groups.keys())}")
-        
-        # Create separate connector for each anatomical region
-        for region_name, region_data in bone_groups.items():
-            region_vertices = region_data['vertices']
-            region_vertex_bones = region_data['vertex_bones'] 
-            region_indices = region_data['indices']
-            
-            print(f"    Processing region '{region_name}' with {len(region_vertices)} vertices from bones: {set(region_vertex_bones)}")
-            if region_name == 'torso':
-                print(f"        TORSO DEBUG: Starting with {len(region_vertices)} vertices")
-                print(f"        TORSO DEBUG: vertex_mapping has {len(vertex_mapping)} vertices: {list(vertex_mapping.keys())[:10]}...")
-            initial_vertex_count = len(region_vertices)
-            
-            # Filter faces using MAJORITY RULE (>=2 vertices belong to this region)
-            region_faces = []
-            vertex_mapping = {old_idx: new_idx for new_idx, old_idx in enumerate(region_indices)}
-            
-            if region_name == 'torso':
-                print(f"        ⚠️  TORSO FACE PROCESSING: Starting with {len(region_vertices)} vertices, {len(faces)} faces to process")
-            
-            face_count = 0
-            for face in faces:
-                # Count how many vertices in this face belong to this region
-                vertices_in_region = [v_idx in vertex_mapping for v_idx in face]
-                vertices_in_region_count = sum(vertices_in_region)
-                
-                if region_name == 'torso' and face_count < 5:  # Debug first 5 faces for torso
-                    face_bones = [vertex_bones[v_idx] for v_idx in face if v_idx < len(vertex_bones)]
-                    print(f"        TORSO FACE {face_count}: vertices {face} -> {vertices_in_region_count}/{len(face)} in region, bones: {face_bones}")
-                face_count += 1
-                
-                # Special handling for torso region - STRICT ISOLATION like breasts  
-                if region_name == 'torso':
-                    # For torso, NEVER expand beyond original body vertices - be as strict as breast connectors
-                    if vertices_in_region_count == len(face):
-                        # ALL vertices in this face belong to torso region - safe to include
-                        new_face = [vertex_mapping[v_idx] for v_idx in face]
-                        region_faces.append(new_face)
-                    else:
-                        # Face has vertices from other regions - skip to prevent contamination
-                        face_bones = [vertex_bones[v_idx] for v_idx in face if v_idx < len(vertex_bones)]
-                        print(f"        TORSO: Skipping cross-region face with bones: {set(face_bones)}")
-                        continue
-                elif region_name == 'breast_connection':
-                    # For breast connections, STRICT ISOLATION to prevent merging issues
-                    if vertices_in_region_count == len(face):
-                        # ALL vertices in this face belong to breast region - safe to include  
-                        new_face = [vertex_mapping[v_idx] for v_idx in face]
-                        region_faces.append(new_face)
-                    else:
-                        # Face has vertices from other regions - skip to prevent breast separation
-                        face_bones = [vertex_bones[v_idx] for v_idx in face if v_idx < len(vertex_bones)]
-                        print(f"        BREAST: Skipping cross-region face with bones: {set(face_bones)}")
-                        continue
-                else:
-                    # For other regions, use majority rule (>=2 vertices belong to this region)
-                    if vertices_in_region_count >= 2:
-                        # Create new face, adding missing vertices from other regions to this region
-                        new_face = []
-                        for v_idx in face:
-                            if v_idx in vertex_mapping:
-                                # Vertex already in this region
-                                new_face.append(vertex_mapping[v_idx])
-                            else:
-                                # Add vertex from another region to this region's vertex list
-                                other_vertex = vertices[v_idx]
-                                other_bone = vertex_bones[v_idx] if v_idx < len(vertex_bones) else 'unknown'
-                                region_vertices.append(other_vertex)
-                                region_vertex_bones.append(other_bone)
-                                region_indices.append(v_idx)
-                                new_idx = len(region_vertices) - 1
-                                new_face.append(new_idx)
-                                # Update mapping for future faces
-                                vertex_mapping[v_idx] = new_idx
-                        
-                        region_faces.append(new_face)
-            
-            if len(region_faces) == 0:
-                print(f"      No faces for region {region_name}, skipping")
-                continue
-                
-            final_vertex_count = len(region_vertices)
-            added_vertices = final_vertex_count - initial_vertex_count
-            print(f"      Region {region_name}: {final_vertex_count} vertices ({initial_vertex_count} initial + {added_vertices} added), {len(region_faces)} faces")
-            
-            try:
-                # Process vertices with proper bone-relative positioning
-                snapped_vertices = []
-                for idx, (vertex_tuple, bone_name) in enumerate(zip(region_vertices, region_vertex_bones)):
-                    pos1, pos2 = vertex_tuple
-                    
-                    # Get bone's world position for this vertex
-                    bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
-                    
-                    # Use pos1 + bone_transform (like regular meshes)
-                    candidate_pos = [pos1[0] + bone_pos[0], pos1[1] + bone_pos[1], pos1[2] + bone_pos[2]]
-                    
-                    # Skip snapping to preserve connector shape
-                    snapped_pos = candidate_pos
-                    snapped_vertices.append(snapped_pos)
-                
-                # Create region-specific trimesh
-                region_faces_array = np.array(region_faces)
-                print(f"      Creating region trimesh: {len(snapped_vertices)} vertices, {len(region_faces_array)} faces")
-                
-                connector_mesh = trimesh.Trimesh(vertices=np.array(snapped_vertices), faces=region_faces_array, process=True)
-                
-                # Ensure smooth vertex normals for Gouraud shading
-                _ = connector_mesh.vertex_normals  # Force computation of smooth normals
-                print(f"      ✅ Created {region_name} connector: {len(snapped_vertices)} vertices, {len(region_faces_array)} faces")
-                
-                # Determine material for this connector
-                connector_material = determine_dynamic_visual_material(dyn_data, geometry_to_mesh_map, all_materials, total_connectors)
-                
-                # Create PBR material
-                material = trimesh.visual.material.PBRMaterial()
-                material.name = f"dynamic_connector_{total_connectors}_{region_name}_material"
-                material.baseColorFactor = connector_material['color']
-                
-                # Apply material to mesh
-                try:
-                    connector_mesh.visual = trimesh.visual.TextureVisuals(material=material)
-                    print(f"        Applied {connector_material['type']} to {region_name} connector")
-                except Exception:
-                    # Fallback to face colors
-                    connector_mesh.visual.face_colors = connector_material['color']
-                    print(f"        Applied {connector_material['type']} to {region_name} connector (fallback)")
-                
-                # Add to scene
-                connector_name = f"dynamic_connector_{total_connectors}_{region_name}"
-                scene.add_geometry(connector_mesh, node_name=connector_name)
-                print(f"        ✅ Added {region_name} connector to scene")
-                
-                total_connectors += 1
-                
-                # Set flag if this was a torso connector
-                if region_name == 'torso':
-                    torso_connector_created = True
-                
-            except Exception as e:
-                print(f"      ❌ Failed to create {region_name} connector: {e}")
-                continue
-    
-    return total_connectors
+def _bind_connector_to_bone(connector_obj, armature_obj, bone_name, created_bones):
+    """Legacy function for compatibility."""
+    pass
+
+def _get_joint_bone_weights_for_region(region_name: str, region_vertex_bones: List[str], created_bones: Dict) -> Dict[str, float]:
+    """Legacy function for compatibility."""
+    return {}

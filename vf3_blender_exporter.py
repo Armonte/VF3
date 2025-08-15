@@ -128,25 +128,8 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         blender_mesh.from_pydata(vertices.tolist(), [], faces)
         blender_mesh.update()
 
-        # Assign UVs if available
-        try:
-            if hasattr(trimesh_mesh.visual, 'uv') and trimesh_mesh.visual.uv is not None:
-                import numpy as np
-                uv = trimesh_mesh.visual.uv
-                if len(uv) == len(blender_mesh.vertices):
-                    blender_mesh.uv_layers.new(name="UVMap")
-                    uv_layer = blender_mesh.uv_layers.active.data
-                    # Map per-loop UVs
-                    loop_index = 0
-                    for poly in blender_mesh.polygons:
-                        for li in poly.loop_indices:
-                            vidx = blender_mesh.loops[li].vertex_index
-                            if vidx < len(uv):
-                                # DirectX uses V=0 at top, Blender uses V=0 at bottom, so flip V
-                                uv_layer[loop_index].uv = (uv[vidx][0], 1.0 - uv[vidx][1])
-                            loop_index += 1
-        except Exception as e:
-            print(f"  UV assignment failed for {mesh_name}: {e}")
+        # Assign UVs if available (now uses mesh_info as primary source)
+        assign_uv_coordinates(blender_mesh, trimesh_mesh, mesh_info, mesh_name)
         
         # Clean up mesh to reduce z-fighting
         blender_mesh.validate()  # Fix invalid geometry
@@ -201,6 +184,8 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
             armature_modifier.use_vertex_groups = True
             
             print(f"  Created mesh '{mesh_name}' with {len(vertices)} vertices, bound to bone '{att.attach_bone}'")
+            
+        
         else:
             print(f"  WARNING: No bone found for '{att.attach_bone}', mesh '{mesh_name}' will not be rigged")
         
@@ -210,17 +195,25 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     print("? Merging breast meshes with body...")
     _merge_breast_meshes_with_body(mesh_objects)
     
-    print("? Merging upper legs with body...")
+    # Build complete leg chains: feet → leg2 → leg1, then merge with body
+    print("? Merging feet with lower legs...")
+    _merge_feet_meshes_with_legs(mesh_objects)
+    
+    print("? Merging lower legs with thighs...")
+    _merge_lower_legs_meshes_with_thighs(mesh_objects)
+    
+    print("? Merging complete legs with body...")
     _merge_legs_meshes_with_body(mesh_objects)
     
-    print("? Merging arms with body...")
-    _merge_arms_meshes_with_body(mesh_objects)
-    
-    print("? Merging feet with legs...")
-    _merge_feet_meshes_with_legs(mesh_objects)
+    # Build complete arm chains: arm2 → arm1, hands → arm1, then merge with body
+    print("? Merging forearms with arms...")
+    _merge_forearms_meshes_with_arms(mesh_objects)
     
     print("? Merging hands with arms...")
     _merge_hands_meshes_with_arms(mesh_objects)
+    
+    print("? Merging complete arms with body...")
+    _merge_arms_meshes_with_body(mesh_objects)
     
     # Step 6.5: Process DynamicVisual connector meshes
     print("? Creating DynamicVisual connectors...")
@@ -230,7 +223,19 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     )
     print(f"? Created {connector_count} DynamicVisual connector meshes")
     
-    # Step 7: Select all objects for export
+    # Step 7: Configure viewport for texture display and select all objects for export
+    try:
+        # Set viewport shading to Material Preview to show textures
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                        space.shading.type = 'MATERIAL_PREVIEW'
+                        print("? Set viewport to Material Preview mode for texture display")
+                        break
+    except:
+        print("? Could not set viewport mode (running headless)")
+    
     bpy.ops.object.select_all(action='DESELECT')
     armature_obj.select_set(True)
     for mesh_obj in mesh_objects:
@@ -238,30 +243,110 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     
     bpy.context.view_layer.objects.active = armature_obj
     
+    # Step 7.5: Save .blend file for debugging (optional)
+    blend_path = output_path.replace('.glb', '_debug.blend')
+    try:
+        bpy.ops.wm.save_as_mainfile(filepath=blend_path)
+        print(f"? Saved debug .blend file: {blend_path}")
+    except Exception as e:
+        print(f"? Could not save .blend file: {e}")
+    
     # Step 8: Export to glTF
     print(f"? Exporting to {output_path}...")
     try:
         bpy.ops.export_scene.gltf(
             filepath=output_path,
+            check_existing=False,
             export_format='GLB',
+            use_selection=True,
             export_apply=True,
-            export_animations=False,  # No animations yet
-            export_skins=True,        # Include armature/skinning
-            export_morph=False,
-            export_force_sampling=False,
-            export_materials='EXPORT',  # Ensure materials are exported
-            export_colors=True,        # Export vertex colors
-            export_normals=True,       # Export normals to help with z-fighting
-            export_tangents=True,      # Export tangents for better lighting
-            export_texcoords=True,     # Export UV coordinates
-            export_yup=True           # Use Y-up convention
+            export_yup=True,
+            export_materials='EXPORT',
+            export_colors=True,
+            export_cameras=False,
+            export_extras=False,
+            export_lights=False,
+            export_skins=True,
+            export_def_bones=False,
+            export_rest_position_armature=False,
+            export_anim_slide_to_zero=False,
+            export_animations=False
         )
-        print(f"? Successfully exported VF3 character to {output_path}")
+        print(f"? Export completed successfully: {output_path}")
         return True
-        
     except Exception as e:
         print(f"? Export failed: {e}")
         return False
+
+
+def assign_uv_coordinates(blender_mesh, trimesh_mesh, mesh_info, mesh_name):
+    """
+    Assign UV coordinates using the WORKING approach from export_ciel_to_gltf.py
+    Key insight: Don't overcomplicate it - just preserve the original UV coordinates!
+    """
+    try:
+        # Check for existing UV coordinates (same as working export_ciel_to_gltf.py)
+        existing_uv = None
+        if hasattr(trimesh_mesh.visual, 'uv') and trimesh_mesh.visual.uv is not None:
+            existing_uv = trimesh_mesh.visual.uv.copy()
+            print(f"  Preserving UV coordinates from .X file: {existing_uv.shape}")
+        
+        # Create UV layer
+        if not blender_mesh.uv_layers:
+            blender_mesh.uv_layers.new(name="UVMap")
+        uv_layer = blender_mesh.uv_layers.active.data
+        
+        if existing_uv is not None:
+            # Apply UV coordinates - use simple per-vertex mapping like the working code
+            print(f"  Applying {len(existing_uv)} UV coordinates to {mesh_name}")
+            
+            loop_index = 0
+            for poly in blender_mesh.polygons:
+                for loop_idx in poly.loop_indices:
+                    vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                    
+                    # Use vertex index to get UV (most common case)
+                    if vertex_idx < len(existing_uv):
+                        u, v = existing_uv[vertex_idx]
+                        # Don't flip or modify - use original coordinates
+                        uv_layer[loop_index].uv = (u, v)
+                    else:
+                        # Fallback: wrap around
+                        uv_idx = vertex_idx % len(existing_uv)
+                        u, v = existing_uv[uv_idx]
+                        uv_layer[loop_index].uv = (u, v)
+                    
+                    loop_index += 1
+            
+            print(f"  ✅ Successfully applied UV coordinates to {mesh_name}")
+        else:
+            # Generate simple planar UV mapping as fallback (same as working code)
+            print(f"  Generating simple UV mapping for {mesh_name}")
+            vertices = [v.co for v in blender_mesh.vertices]
+            if vertices:
+                bounds = [min(vertices, key=lambda v: v[i])[i] for i in range(3)] + \
+                        [max(vertices, key=lambda v: v[i])[i] for i in range(3)]
+                width = bounds[3] - bounds[0]
+                height = bounds[4] - bounds[1]
+                
+                loop_index = 0
+                for poly in blender_mesh.polygons:
+                    for loop_idx in poly.loop_indices:
+                        vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                        vertex = blender_mesh.vertices[vertex_idx]
+                        
+                        u = (vertex.co.x - bounds[0]) / width if width > 0 else 0.5
+                        v = (vertex.co.y - bounds[1]) / height if height > 0 else 0.5
+                        u = max(0.0, min(1.0, u))
+                        v = max(0.0, min(1.0, v))
+                        
+                        uv_layer[loop_index].uv = (u, v)
+                        loop_index += 1
+            
+            print(f"  ✅ Generated simple UV mapping for {mesh_name}")
+        
+    except Exception as e:
+        print(f"  ❌ UV assignment failed for {mesh_name}: {e}")
 
 
 def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info: dict = None):
@@ -301,16 +386,19 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
         blender_mat.use_backface_culling = True  # Enable backface culling
         blender_mat.blend_method = 'OPAQUE'      # Use opaque blending (no alpha issues)
         
-        # Set material properties
+        # Set material properties (will be overridden by texture if present)
+        diffuse_color = (0.8, 0.8, 0.8, 1.0)  # Default
         if 'diffuse' in material_data:
             diffuse = material_data['diffuse']
             if len(diffuse) >= 3:
-                color = (*diffuse[:3], 1.0)
-                bsdf.inputs['Base Color'].default_value = color
-                print(f"      Diffuse: {color}")
+                diffuse_color = (*diffuse[:3], 1.0)
+                print(f"      Diffuse: {diffuse_color}")
         else:
-            # Default color if no diffuse
-            bsdf.inputs['Base Color'].default_value = (0.8, 0.8, 0.8, 1.0)
+            print(f"      Diffuse: {diffuse_color} (default)")
+        
+        # Only set diffuse as base color if we don't have a texture
+        # Textures will override this connection
+        bsdf.inputs['Base Color'].default_value = diffuse_color
         
         if 'specular' in material_data:
             specular = material_data['specular']
@@ -350,20 +438,59 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                 # Create texture node and load image (packed) with optional black->alpha conversion, without writing files
                 tex_image = nodes.new(type='ShaderNodeTexImage')
                 try:
-                    img = _load_image_with_black_as_alpha(resolved_path, make_alpha=('hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower()))
+                    # Hair textures (stkhair_t.bmp) should have black-as-alpha, face textures should not
+                    make_alpha = 'stkhair' in resolved_path.lower()
+                    img = _load_image_with_black_as_alpha(resolved_path, make_alpha=make_alpha)
+                    print(f"      Debug: make_alpha={make_alpha} for {os.path.basename(resolved_path)} on {mesh_obj.name}")
                     tex_image.image = img
                     # Set texture interpolation to Closest for sharp pixelated look like VF3
                     tex_image.interpolation = 'Closest'
-                    # Base Color
-                    links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
-                    # Alpha hookup - use gentler settings to avoid white sheen
-                    if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
+                    print(f"      Debug: texture image loaded: {img.name}, size: {img.size[:]}")
+                    print(f"      Debug: tex_image.image assigned: {tex_image.image.name if tex_image.image else 'None'}")
+                    
+                    # For textured materials, multiply texture with diffuse color (like VF3 does)
+                    if 'diffuse' in material_data and diffuse_color != (1.0, 1.0, 1.0, 1.0):
+                        # Create ColorMix node to multiply texture with diffuse color
+                        color_mix = nodes.new(type='ShaderNodeMix')
+                        color_mix.data_type = 'RGBA'
+                        color_mix.blend_type = 'MULTIPLY'
+                        color_mix.inputs['Fac'].default_value = 1.0
+                        color_mix.inputs['Color2'].default_value = diffuse_color
+                        
+                        # Connect: Texture → ColorMix → Base Color
+                        links.new(tex_image.outputs['Color'], color_mix.inputs['Color1'])
+                        links.new(color_mix.outputs['Result'], bsdf.inputs['Base Color'])
+                        print(f"      Debug: Connected texture '{img.name}' via ColorMix to Base Color")
+                    else:
+                        # Pure texture, no color mixing needed
+                        links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
+                        print(f"      Debug: Connected texture '{img.name}' directly to Base Color")
+                    # Alpha hookup - only for hair textures
+                    if make_alpha:
                         blender_mat.blend_method = 'CLIP'
                         blender_mat.alpha_threshold = 0.1  # Lower threshold to avoid white edges
                         blender_mat.shadow_method = 'CLIP'
                         blender_mat.use_backface_culling = True  # Enable backface culling for hair
-                        if 'Alpha' in [s.name for s in tex_image.outputs]:
-                            links.new(tex_image.outputs['Alpha'], bsdf.inputs['Alpha'])
+                        print(f"      Debug: Set CLIP blend mode for hair texture")
+                    else:
+                        # Face textures should stay opaque
+                        blender_mat.blend_method = 'OPAQUE'
+                        print(f"      Debug: Set OPAQUE blend mode for face texture")
+                        # Check what alpha outputs are actually available
+                        alpha_output = None
+                        output_names = [s.name for s in tex_image.outputs]
+                        print(f"      Debug: Texture node outputs: {output_names}")
+                        
+                        for output_name in ['Alpha', 'alpha', 'A']:
+                            if output_name in output_names:
+                                alpha_output = output_name
+                                break
+                        
+                        if alpha_output:
+                            links.new(tex_image.outputs[alpha_output], bsdf.inputs['Alpha'])
+                            print(f"      Debug: Connected {alpha_output} to BSDF Alpha")
+                        else:
+                            print(f"      Debug: No alpha output found in {output_names}")
                     print(f"      ? Loaded texture (packed): {img.name}")
                 except Exception as e:
                     print(f"      ? Failed to load texture: {resolved_path} - {e}")
@@ -376,18 +503,56 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                 print(f"      ? Auto texture: {auto_tex}")
                 tex_image = nodes.new(type='ShaderNodeTexImage')
                 try:
-                    img = _load_image_with_black_as_alpha(auto_tex, make_alpha=('hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower()))
+                    # Face textures should NOT have black-as-alpha, only hair textures should
+                    make_alpha = 'hair' in mesh_obj.name.lower() and 'stkhair' in auto_tex.lower()
+                    img = _load_image_with_black_as_alpha(auto_tex, make_alpha=make_alpha)
+                    print(f"      Debug: make_alpha={make_alpha} for {os.path.basename(auto_tex)} on {mesh_obj.name}")
                     tex_image.image = img
                     # Set texture interpolation to Closest for sharp pixelated look like VF3
                     tex_image.interpolation = 'Closest'
-                    links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
-                    if 'hair' in mesh_obj.name.lower() or 'head' in mesh_obj.name.lower() or 'face' in mesh_obj.name.lower():
+                    
+                    # For textured materials, multiply texture with diffuse color (like VF3 does)
+                    if 'diffuse' in material_data and diffuse_color != (1.0, 1.0, 1.0, 1.0):
+                        # Create ColorMix node to multiply texture with diffuse color
+                        color_mix = nodes.new(type='ShaderNodeMix')
+                        color_mix.data_type = 'RGBA'
+                        color_mix.blend_type = 'MULTIPLY'
+                        color_mix.inputs['Fac'].default_value = 1.0
+                        color_mix.inputs['Color2'].default_value = diffuse_color
+                        
+                        # Connect: Texture → ColorMix → Base Color
+                        links.new(tex_image.outputs['Color'], color_mix.inputs['Color1'])
+                        links.new(color_mix.outputs['Result'], bsdf.inputs['Base Color'])
+                        print(f"      Debug: Connected texture '{img.name}' via ColorMix to Base Color")
+                    else:
+                        # Pure texture, no color mixing needed
+                        links.new(tex_image.outputs['Color'], bsdf.inputs['Base Color'])
+                        print(f"      Debug: Connected texture '{img.name}' directly to Base Color")
+                    if make_alpha and 'hair' in mesh_obj.name.lower():
                         blender_mat.blend_method = 'CLIP'
                         blender_mat.alpha_threshold = 0.1  # Lower threshold to avoid white edges
                         blender_mat.shadow_method = 'CLIP'
                         blender_mat.use_backface_culling = True  # Enable backface culling for hair
-                        if 'Alpha' in [s.name for s in tex_image.outputs]:
-                            links.new(tex_image.outputs['Alpha'], bsdf.inputs['Alpha'])
+                        print(f"      Debug: Set CLIP blend mode for hair texture")
+                    else:
+                        # Face textures should stay opaque
+                        blender_mat.blend_method = 'OPAQUE'
+                        print(f"      Debug: Set OPAQUE blend mode for face texture")
+                        # Check what alpha outputs are actually available
+                        alpha_output = None
+                        output_names = [s.name for s in tex_image.outputs]
+                        print(f"      Debug: Texture node outputs: {output_names}")
+                        
+                        for output_name in ['Alpha', 'alpha', 'A']:
+                            if output_name in output_names:
+                                alpha_output = output_name
+                                break
+                        
+                        if alpha_output:
+                            links.new(tex_image.outputs[alpha_output], bsdf.inputs['Alpha'])
+                            print(f"      Debug: Connected {alpha_output} to BSDF Alpha")
+                        else:
+                            print(f"      Debug: No alpha output found in {output_names}")
                     print(f"      ? Loaded texture (packed): {img.name}")
                 except Exception as e:
                     print(f"      ? Failed to load texture: {auto_tex} - {e}")
@@ -434,11 +599,15 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
         mesh_obj.data.update()
         if len(mesh_obj.data.polygons) > 0:
             assigned_count = 0
+            material_usage = {}
             for face_idx, mat_idx in enumerate(face_materials):
                 if face_idx < len(mesh_obj.data.polygons) and mat_idx < len(materials):
                     mesh_obj.data.polygons[face_idx].material_index = mat_idx
                     assigned_count += 1
+                    material_usage[mat_idx] = material_usage.get(mat_idx, 0) + 1
             print(f"    ? Assigned materials to {assigned_count}/{len(face_materials)} faces")
+            if 'head' in mesh_obj.name.lower():
+                print(f"    Debug: Material usage for {mesh_obj.name}: {material_usage}")
     else:
         print("    ? No face material mapping found - all faces will use first material (white)")
 
@@ -1041,24 +1210,212 @@ def _merge_arms_meshes_with_body(mesh_objects):
         print(f"  ❌ Failed to merge arm meshes: {e}")
 
 
-def _merge_hands_meshes_with_arms(mesh_objects):
+def _merge_lower_legs_meshes_with_thighs(mesh_objects):
     """
-    Merge hand meshes with their corresponding arm2 meshes to create unified arm-hand structures.
-    This eliminates seams between hands and forearms.
+    Merge lower leg meshes (leg2) with their corresponding thigh meshes (leg1) to create unified leg structures.
+    This eliminates seams between thighs and lower legs at knees.
     """
     try:
         import bpy
     except ImportError:
         return
     
-    # Find arm2 and hand meshes
+    # Find leg1 and leg2 meshes
+    thigh_lowerleg_pairs = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            # Match left leg1 with left leg2
+            if 'l_leg1_female.l_leg1' in mesh_name:
+                # Find corresponding left lower leg
+                left_lowerleg = None
+                for lowerleg_obj in mesh_objects:
+                    if hasattr(lowerleg_obj, 'name') and 'l_leg2_female.l_leg2' in lowerleg_obj.name.lower():
+                        left_lowerleg = lowerleg_obj
+                        break
+                if left_lowerleg:
+                    thigh_lowerleg_pairs.append((mesh_obj, left_lowerleg, 'left'))
+            
+            # Match right leg1 with right leg2
+            elif 'r_leg1_female.r_leg1' in mesh_name:
+                # Find corresponding right lower leg
+                right_lowerleg = None
+                for lowerleg_obj in mesh_objects:
+                    if hasattr(lowerleg_obj, 'name') and 'r_leg2_female.r_leg2' in lowerleg_obj.name.lower():
+                        right_lowerleg = lowerleg_obj
+                        break
+                if right_lowerleg:
+                    thigh_lowerleg_pairs.append((mesh_obj, right_lowerleg, 'right'))
+    
+    if not thigh_lowerleg_pairs:
+        print("  No thigh-lowerleg pairs found for merging")
+        return
+    
+    print(f"  Found {len(thigh_lowerleg_pairs)} thigh-lowerleg pairs to merge")
+    
+    merged_names = []
+    
+    for thigh_mesh, lowerleg_mesh, side in thigh_lowerleg_pairs:
+        print(f"  Merging {side} lower leg ({lowerleg_mesh.name}) with thigh ({thigh_mesh.name})")
+        
+        # Store lower leg name before merging
+        merged_names.append(lowerleg_mesh.name)
+        
+        try:
+            # Select meshes to be merged
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            # Select thigh mesh as primary target
+            thigh_mesh.select_set(True)
+            # Select lower leg mesh to merge
+            lowerleg_mesh.select_set(True)
+            
+            # Set thigh mesh as active object
+            bpy.context.view_layer.objects.active = thigh_mesh
+            
+            # Join lower leg into thigh mesh
+            bpy.ops.object.join()
+            
+            # Clean up seams between merged parts
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+        except Exception as e:
+            print(f"  ❌ Failed to merge {side} lower leg with thigh: {e}")
+    
+    # Remove merged lower leg meshes from mesh_objects list
+    valid_objects = []
+    for m in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            mesh_name = m.name
+            if mesh_name not in merged_names:
+                valid_objects.append(m)
+        except (ReferenceError, AttributeError):
+            # Object has been deleted, skip it
+            pass
+    mesh_objects[:] = valid_objects
+    
+    print(f"  ✅ Successfully merged {len(thigh_lowerleg_pairs)} lower leg meshes with thigh meshes")
+    print(f"  Removed {len(merged_names)} merged lower leg meshes from export list")
+
+
+def _merge_forearms_meshes_with_arms(mesh_objects):
+    """
+    Merge forearm meshes (arm2) with their corresponding upper arm meshes (arm1) to create unified arm structures.
+    This eliminates seams between upper arms and forearms at elbows.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find arm1 and arm2 meshes
+    arm_forearm_pairs = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            # Match left arm1 with left arm2
+            if 'l_arm1_female.l_arm1' in mesh_name:
+                # Find corresponding left forearm
+                left_forearm = None
+                for forearm_obj in mesh_objects:
+                    if hasattr(forearm_obj, 'name') and 'l_arm2_female.l_arm2' in forearm_obj.name.lower():
+                        left_forearm = forearm_obj
+                        break
+                if left_forearm:
+                    arm_forearm_pairs.append((mesh_obj, left_forearm, 'left'))
+            
+            # Match right arm1 with right arm2
+            elif 'r_arm1_female.r_arm1' in mesh_name:
+                # Find corresponding right forearm
+                right_forearm = None
+                for forearm_obj in mesh_objects:
+                    if hasattr(forearm_obj, 'name') and 'r_arm2_female.r_arm2' in forearm_obj.name.lower():
+                        right_forearm = forearm_obj
+                        break
+                if right_forearm:
+                    arm_forearm_pairs.append((mesh_obj, right_forearm, 'right'))
+    
+    if not arm_forearm_pairs:
+        print("  No arm-forearm pairs found for merging")
+        return
+    
+    print(f"  Found {len(arm_forearm_pairs)} arm-forearm pairs to merge")
+    
+    merged_names = []
+    
+    for arm_mesh, forearm_mesh, side in arm_forearm_pairs:
+        print(f"  Merging {side} forearm ({forearm_mesh.name}) with arm ({arm_mesh.name})")
+        
+        # Store forearm name before merging
+        merged_names.append(forearm_mesh.name)
+        
+        try:
+            # Select meshes to be merged
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            # Select arm mesh as primary target
+            arm_mesh.select_set(True)
+            # Select forearm mesh to merge
+            forearm_mesh.select_set(True)
+            
+            # Set arm mesh as active object
+            bpy.context.view_layer.objects.active = arm_mesh
+            
+            # Join forearm into arm mesh
+            bpy.ops.object.join()
+            
+            # Clean up seams between merged parts
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+        except Exception as e:
+            print(f"  ❌ Failed to merge {side} forearm with arm: {e}")
+    
+    # Remove merged forearm meshes from mesh_objects list
+    valid_objects = []
+    for m in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            mesh_name = m.name
+            if mesh_name not in merged_names:
+                valid_objects.append(m)
+        except (ReferenceError, AttributeError):
+            # Object has been deleted, skip it
+            pass
+    mesh_objects[:] = valid_objects
+    
+    print(f"  ✅ Successfully merged {len(arm_forearm_pairs)} forearm meshes with arm meshes")
+    print(f"  Removed {len(merged_names)} merged forearm meshes from export list")
+
+
+def _merge_hands_meshes_with_arms(mesh_objects):
+    """
+    Merge hand meshes with their corresponding arm1 meshes (which now contain arm2) to create unified arm-hand structures.
+    This eliminates seams between hands and arms at wrists.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find arm1 and hand meshes (arm1 now contains arm2 after previous merging)
     arm_hand_pairs = []
     
     for mesh_obj in mesh_objects:
         if hasattr(mesh_obj, 'name'):
             mesh_name = mesh_obj.name.lower()
-            # Match left arm2 with left hand
-            if 'l_arm2_female.l_arm2' in mesh_name:
+            # Match left arm1 (which contains arm2) with left hand
+            if 'l_arm1_female.l_arm1' in mesh_name:
                 # Find corresponding left hand
                 left_hand = None
                 for hand_obj in mesh_objects:
@@ -1068,8 +1425,8 @@ def _merge_hands_meshes_with_arms(mesh_objects):
                 if left_hand:
                     arm_hand_pairs.append((mesh_obj, left_hand, 'left'))
             
-            # Match right arm2 with right hand  
-            elif 'r_arm2_female.r_arm2' in mesh_name:
+            # Match right arm1 (which contains arm2) with right hand  
+            elif 'r_arm1_female.r_arm1' in mesh_name:
                 # Find corresponding right hand
                 right_hand = None
                 for hand_obj in mesh_objects:
@@ -1289,8 +1646,21 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
             continue
     
     if not target_meshes:
-        print(f"      No suitable body mesh found to merge connector: {connector_name}")
-        return False, []
+        # If no specific targets found, try to merge with the unified body mesh
+        # This handles cases where limbs have been merged into the body
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name_lower = mesh_obj.name.lower()
+                if 'body_female.body' in mesh_name_lower:
+                    target_meshes.append(mesh_obj)
+                    print(f"      Fallback: merging connector {connector_name} with unified body mesh")
+                    break
+            except (ReferenceError, AttributeError):
+                continue
+        
+        if not target_meshes:
+            print(f"      No suitable body mesh found to merge connector: {connector_name}")
+            return False, []
     
     # Perform the actual mesh merging
     try:

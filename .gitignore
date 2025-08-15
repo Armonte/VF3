@@ -80,3 +80,5 @@ reverse_keygen.py
 vf3_keygen.py
 *.bin
 *.gltf
+*.blend
+*.blend1
