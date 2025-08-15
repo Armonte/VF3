@@ -206,9 +206,21 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         
         mesh_objects.append(mesh_obj)
     
-    # Step 6: Merge breast meshes with body mesh for seamless torso
+    # Step 6: Merge body parts for seamless connections (order matters for proper merging)
     print("? Merging breast meshes with body...")
     _merge_breast_meshes_with_body(mesh_objects)
+    
+    print("? Merging upper legs with body...")
+    _merge_legs_meshes_with_body(mesh_objects)
+    
+    print("? Merging arms with body...")
+    _merge_arms_meshes_with_body(mesh_objects)
+    
+    print("? Merging feet with legs...")
+    _merge_feet_meshes_with_legs(mesh_objects)
+    
+    print("? Merging hands with arms...")
+    _merge_hands_meshes_with_arms(mesh_objects)
     
     # Step 6.5: Process DynamicVisual connector meshes
     print("? Creating DynamicVisual connectors...")
@@ -856,6 +868,348 @@ def _merge_breast_meshes_with_body(mesh_objects):
         
     except Exception as e:
         print(f"  ❌ Failed to merge breast meshes: {e}")
+
+
+def _merge_feet_meshes_with_legs(mesh_objects):
+    """
+    Merge foot meshes with their corresponding leg meshes to create unified leg-foot structures.
+    This eliminates seams between feet and legs.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find leg and foot meshes
+    leg_foot_pairs = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            # Match left leg2 with left foot
+            if 'l_leg2_female.l_leg2' in mesh_name:
+                # Find corresponding left foot
+                left_foot = None
+                for foot_obj in mesh_objects:
+                    if hasattr(foot_obj, 'name') and 'l_foot_female.l_foot' in foot_obj.name.lower():
+                        left_foot = foot_obj
+                        break
+                if left_foot:
+                    leg_foot_pairs.append((mesh_obj, left_foot, 'left'))
+            
+            # Match right leg2 with right foot  
+            elif 'r_leg2_female.r_leg2' in mesh_name:
+                # Find corresponding right foot
+                right_foot = None
+                for foot_obj in mesh_objects:
+                    if hasattr(foot_obj, 'name') and 'r_foot_female.r_foot' in foot_obj.name.lower():
+                        right_foot = foot_obj
+                        break
+                if right_foot:
+                    leg_foot_pairs.append((mesh_obj, right_foot, 'right'))
+    
+    if not leg_foot_pairs:
+        print("  No leg-foot pairs found for merging")
+        return
+    
+    print(f"  Found {len(leg_foot_pairs)} leg-foot pairs to merge")
+    
+    merged_names = []
+    
+    for leg_mesh, foot_mesh, side in leg_foot_pairs:
+        print(f"  Merging {side} foot ({foot_mesh.name}) with leg ({leg_mesh.name})")
+        
+        # Store foot name before merging
+        merged_names.append(foot_mesh.name)
+        
+        try:
+            # Select meshes to be merged
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            # Select leg mesh as primary target
+            leg_mesh.select_set(True)
+            # Select foot mesh to merge
+            foot_mesh.select_set(True)
+            
+            # Set leg mesh as active object
+            bpy.context.view_layer.objects.active = leg_mesh
+            
+            # Join foot into leg mesh
+            bpy.ops.object.join()
+            
+            # Clean up seams between merged parts
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+        except Exception as e:
+            print(f"  ❌ Failed to merge {side} foot with leg: {e}")
+    
+    # Remove merged foot meshes from mesh_objects list
+    valid_objects = []
+    for m in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            mesh_name = m.name
+            if mesh_name not in merged_names:
+                valid_objects.append(m)
+        except (ReferenceError, AttributeError):
+            # Object has been deleted, skip it
+            pass
+    mesh_objects[:] = valid_objects
+    
+    print(f"  ✅ Successfully merged {len(leg_foot_pairs)} foot meshes with leg meshes")
+    print(f"  Removed {len(merged_names)} merged foot meshes from export list")
+
+
+def _merge_arms_meshes_with_body(mesh_objects):
+    """
+    Merge arm meshes with the body mesh to create unified torso-arm structures.
+    This eliminates seams between arms and body at shoulders.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find body and arm meshes
+    body_mesh = None
+    arm_meshes = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            if 'body_female.body' in mesh_name:
+                body_mesh = mesh_obj
+            elif 'arm1_female' in mesh_name:  # Upper arms attach to shoulders
+                arm_meshes.append(mesh_obj)
+    
+    if not body_mesh or not arm_meshes:
+        print(f"  Body mesh: {body_mesh.name if body_mesh else 'Not found'}")
+        print(f"  Arm meshes: {len(arm_meshes)} found")
+        return
+    
+    print(f"  Found body mesh: {body_mesh.name}")
+    print(f"  Found {len(arm_meshes)} arm meshes: {[m.name for m in arm_meshes]}")
+    
+    # Store names BEFORE join operation since objects will become invalid
+    merged_names = [m.name for m in arm_meshes]
+    
+    try:
+        # Select all meshes to be merged
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        # Select body mesh as primary target
+        body_mesh.select_set(True)
+        
+        # Select all arm meshes
+        for arm_mesh in arm_meshes:
+            arm_mesh.select_set(True)
+        
+        # Set body mesh as active object
+        bpy.context.view_layer.objects.active = body_mesh
+        
+        # Join all selected meshes into the body mesh
+        bpy.ops.object.join()
+        
+        # Clean up seams between merged parts
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        # Remove merged arm meshes from mesh_objects list
+        valid_objects = []
+        for m in mesh_objects:
+            try:
+                # Test if object is still valid by accessing its name
+                mesh_name = m.name
+                if mesh_name not in merged_names:
+                    valid_objects.append(m)
+            except (ReferenceError, AttributeError):
+                # Object has been deleted, skip it
+                pass
+        mesh_objects[:] = valid_objects
+        
+        print(f"  ✅ Successfully merged {len(arm_meshes)} arm meshes with body mesh")
+        print(f"  Removed {len(merged_names)} merged arm meshes from export list")
+        
+    except Exception as e:
+        print(f"  ❌ Failed to merge arm meshes: {e}")
+
+
+def _merge_hands_meshes_with_arms(mesh_objects):
+    """
+    Merge hand meshes with their corresponding arm2 meshes to create unified arm-hand structures.
+    This eliminates seams between hands and forearms.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find arm2 and hand meshes
+    arm_hand_pairs = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            # Match left arm2 with left hand
+            if 'l_arm2_female.l_arm2' in mesh_name:
+                # Find corresponding left hand
+                left_hand = None
+                for hand_obj in mesh_objects:
+                    if hasattr(hand_obj, 'name') and 'l_hand_female.l_hand' in hand_obj.name.lower():
+                        left_hand = hand_obj
+                        break
+                if left_hand:
+                    arm_hand_pairs.append((mesh_obj, left_hand, 'left'))
+            
+            # Match right arm2 with right hand  
+            elif 'r_arm2_female.r_arm2' in mesh_name:
+                # Find corresponding right hand
+                right_hand = None
+                for hand_obj in mesh_objects:
+                    if hasattr(hand_obj, 'name') and 'r_hand_female.r_hand' in hand_obj.name.lower():
+                        right_hand = hand_obj
+                        break
+                if right_hand:
+                    arm_hand_pairs.append((mesh_obj, right_hand, 'right'))
+    
+    if not arm_hand_pairs:
+        print("  No arm-hand pairs found for merging")
+        return
+    
+    print(f"  Found {len(arm_hand_pairs)} arm-hand pairs to merge")
+    
+    merged_names = []
+    
+    for arm_mesh, hand_mesh, side in arm_hand_pairs:
+        print(f"  Merging {side} hand ({hand_mesh.name}) with arm ({arm_mesh.name})")
+        
+        # Store hand name before merging
+        merged_names.append(hand_mesh.name)
+        
+        try:
+            # Select meshes to be merged
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            # Select arm mesh as primary target
+            arm_mesh.select_set(True)
+            # Select hand mesh to merge
+            hand_mesh.select_set(True)
+            
+            # Set arm mesh as active object
+            bpy.context.view_layer.objects.active = arm_mesh
+            
+            # Join hand into arm mesh
+            bpy.ops.object.join()
+            
+            # Clean up seams between merged parts
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+        except Exception as e:
+            print(f"  ❌ Failed to merge {side} hand with arm: {e}")
+    
+    # Remove merged hand meshes from mesh_objects list
+    valid_objects = []
+    for m in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            mesh_name = m.name
+            if mesh_name not in merged_names:
+                valid_objects.append(m)
+        except (ReferenceError, AttributeError):
+            # Object has been deleted, skip it
+            pass
+    mesh_objects[:] = valid_objects
+    
+    print(f"  ✅ Successfully merged {len(arm_hand_pairs)} hand meshes with arm meshes")
+    print(f"  Removed {len(merged_names)} merged hand meshes from export list")
+
+
+def _merge_legs_meshes_with_body(mesh_objects):
+    """
+    Merge upper leg meshes (leg1) with the body mesh to create unified torso-leg structures.
+    This eliminates seams between upper legs and body at hips.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find body and leg1 meshes
+    body_mesh = None
+    leg_meshes = []
+    
+    for mesh_obj in mesh_objects:
+        if hasattr(mesh_obj, 'name'):
+            mesh_name = mesh_obj.name.lower()
+            if 'body_female.body' in mesh_name:
+                body_mesh = mesh_obj
+            elif 'leg1_female' in mesh_name:  # Upper legs attach to hips
+                leg_meshes.append(mesh_obj)
+    
+    if not body_mesh or not leg_meshes:
+        print(f"  Body mesh: {body_mesh.name if body_mesh else 'Not found'}")
+        print(f"  Leg meshes: {len(leg_meshes)} found")
+        return
+    
+    print(f"  Found body mesh: {body_mesh.name}")
+    print(f"  Found {len(leg_meshes)} leg meshes: {[m.name for m in leg_meshes]}")
+    
+    # Store names BEFORE join operation since objects will become invalid
+    merged_names = [m.name for m in leg_meshes]
+    
+    try:
+        # Select all meshes to be merged
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        # Select body mesh as primary target
+        body_mesh.select_set(True)
+        
+        # Select all leg meshes
+        for leg_mesh in leg_meshes:
+            leg_mesh.select_set(True)
+        
+        # Set body mesh as active object
+        bpy.context.view_layer.objects.active = body_mesh
+        
+        # Join all selected meshes into the body mesh
+        bpy.ops.object.join()
+        
+        # Clean up seams between merged parts
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge very close vertices
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        # Remove merged leg meshes from mesh_objects list
+        valid_objects = []
+        for m in mesh_objects:
+            try:
+                # Test if object is still valid by accessing its name
+                mesh_name = m.name
+                if mesh_name not in merged_names:
+                    valid_objects.append(m)
+            except (ReferenceError, AttributeError):
+                # Object has been deleted, skip it
+                pass
+        mesh_objects[:] = valid_objects
+        
+        print(f"  ✅ Successfully merged {len(leg_meshes)} leg meshes with body mesh")
+        print(f"  Removed {len(merged_names)} merged leg meshes from export list")
+        
+    except Exception as e:
+        print(f"  ❌ Failed to merge leg meshes: {e}")
 
 
 def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names):
