@@ -43,7 +43,7 @@ def _create_anatomical_mesh_groups(mesh_objects):
                 continue
             
             # Classify by dominant vertex groups (bone assignments)
-            if any(vg.name in ['body', 'l_breast', 'r_breast', 'waist'] for vg in mesh_obj.vertex_groups):
+            if any(vg.name in ['body', 'l_breast', 'r_breast', 'waist', 'skirt_f', 'skirt_r'] for vg in mesh_obj.vertex_groups):
                 body_meshes.append(mesh_obj)
                 print(f"    🫀 Body: {mesh_obj.name} (vertex groups: {vg_names})")
             elif any(vg.name in ['l_arm1', 'l_arm2', 'l_hand'] for vg in mesh_obj.vertex_groups):
@@ -111,34 +111,115 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
     vg_names = [vg.name for vg in connector_obj.vertex_groups]
     print(f"    Connector {connector_obj.name} vertex groups: {vg_names}")
     
-    # Determine target anatomical group based on connector content
+    # IMPROVED: Analyze bone patterns more intelligently
+    # Use bone-specific weights and pattern analysis
+    
+    # Define bone weights (more important bones get higher weights)
+    bone_weights = {
+        # Upper body
+        'body': 3, 'waist': 2, 'l_breast': 2, 'r_breast': 2,
+        # Arms (upper arm is most defining)
+        'l_arm1': 3, 'l_arm2': 2, 'l_hand': 1,
+        'r_arm1': 3, 'r_arm2': 2, 'r_hand': 1,
+        # Legs (upper leg is most defining)
+        'l_leg1': 3, 'l_leg2': 2, 'l_foot': 1,
+        'r_leg1': 3, 'r_leg2': 2, 'r_foot': 1,
+        # Head
+        'head': 3, 'neck': 2
+    }
+    
+    # Calculate weighted region scores
+    region_weighted_scores = {
+        'body': sum(bone_weights.get(bone, 1) for bone in vg_names if bone in ['body', 'l_breast', 'r_breast', 'waist']),
+        'left_arm': sum(bone_weights.get(bone, 1) for bone in vg_names if bone in ['l_arm1', 'l_arm2', 'l_hand']),
+        'right_arm': sum(bone_weights.get(bone, 1) for bone in vg_names if bone in ['r_arm1', 'r_arm2', 'r_hand']),
+        'left_leg': sum(bone_weights.get(bone, 1) for bone in vg_names if bone in ['l_leg1', 'l_leg2', 'l_foot']),
+        'right_leg': sum(bone_weights.get(bone, 1) for bone in vg_names if bone in ['r_leg1', 'r_leg2', 'r_foot']),
+        'head': sum(bone_weights.get(bone, 1) for bone in vg_names if bone in ['head', 'neck'])
+    }
+    
+    # Also keep simple bone type counts for reference
+    region_counts = {
+        'body': sum(1 for vg in vg_names if vg in ['body', 'l_breast', 'r_breast', 'waist']),
+        'left_arm': sum(1 for vg in vg_names if vg in ['l_arm1', 'l_arm2', 'l_hand']),
+        'right_arm': sum(1 for vg in vg_names if vg in ['r_arm1', 'r_arm2', 'r_hand']),
+        'left_leg': sum(1 for vg in vg_names if vg in ['l_leg1', 'l_leg2', 'l_foot']),
+        'right_leg': sum(1 for vg in vg_names if vg in ['r_leg1', 'r_leg2', 'r_foot']),
+        'head': sum(1 for vg in vg_names if vg in ['head', 'neck'])
+    }
+    
+    print(f"    Region weighted scores: {region_weighted_scores}")
+    print(f"    Region bone counts: {region_counts}")
+    
+    # Find the dominant region (most bone types present)
     target_group = None
     target_meshes = []
+    max_count = 0
     
-    # Body connectors (chest, torso, waist)
-    if any(vg_name in ['body', 'l_breast', 'r_breast', 'waist'] for vg_name in vg_names):
-        target_group = 'body'
-        target_meshes = anatomical_groups['body']
-    # Left arm connectors
-    elif any(vg_name in ['l_arm1', 'l_arm2', 'l_hand'] for vg_name in vg_names):
-        target_group = 'left_arm'
-        target_meshes = anatomical_groups['left_arm']
-    # Right arm connectors  
-    elif any(vg_name in ['r_arm1', 'r_arm2', 'r_hand'] for vg_name in vg_names):
-        target_group = 'right_arm'
-        target_meshes = anatomical_groups['right_arm']
-    # Left leg connectors
-    elif any(vg_name in ['l_leg1', 'l_leg2', 'l_foot'] for vg_name in vg_names):
-        target_group = 'left_leg'
-        target_meshes = anatomical_groups['left_leg']
-    # Right leg connectors
-    elif any(vg_name in ['r_leg1', 'r_leg2', 'r_foot'] for vg_name in vg_names):
-        target_group = 'right_leg'
-        target_meshes = anatomical_groups['right_leg']
-    # Head connectors
-    elif any(vg_name in ['head', 'neck'] for vg_name in vg_names):
-        target_group = 'head'
-        target_meshes = anatomical_groups['head']
+    # SIMPLE AND CORRECT: Assign connector to the anatomical group with the HIGHEST weighted score
+    # This matches VF3 bone group assignment - if a connector has more body bones, it goes to body
+    # If it has more left arm bones, it goes to left arm, etc.
+    
+    # Find the region with the highest weighted score
+    max_score = 0
+    tied_regions = []
+    
+    # First pass: find the maximum score
+    for region, score in region_weighted_scores.items():
+        if score > max_score:
+            max_score = score
+    
+    # Second pass: find all regions with the maximum score
+    for region, score in region_weighted_scores.items():
+        if score == max_score and score > 0:
+            tied_regions.append(region)
+    
+    # Handle ties with simple alternating logic
+    if len(tied_regions) == 1:
+        target_group = tied_regions[0]
+    elif len(tied_regions) > 1:
+        # Use connector number for tie-breaking
+        import re
+        connector_match = re.search(r'dynamic_connector_(\d+)_', connector_name)
+        connector_num = int(connector_match.group(1)) if connector_match else 0
+        
+        # For legs: alternate between left and right
+        if 'left_leg' in tied_regions and 'right_leg' in tied_regions:
+            if connector_num % 2 == 0:
+                target_group = 'right_leg'
+            else:
+                target_group = 'left_leg'
+            print(f"    Tie-breaker: connector {connector_num} -> {target_group} (alternating assignment)")
+        # For arms: alternate between left and right
+        elif 'left_arm' in tied_regions and 'right_arm' in tied_regions:
+            if connector_num % 2 == 0:
+                target_group = 'right_arm'
+            else:
+                target_group = 'left_arm'
+            print(f"    Tie-breaker: connector {connector_num} -> {target_group} (alternating assignment)")
+        else:
+            # Other ties: just pick the first one
+            target_group = tied_regions[0]
+            print(f"    Tie-breaker: connector {connector_num} -> {target_group} (first in list)")
+    else:
+        target_group = None
+    
+    if target_group and max_score > 0:
+        target_meshes = anatomical_groups[target_group]
+        print(f"    Connector -> {target_group} group (highest score: {max_score}, scores: {region_weighted_scores})")
+        
+    else:
+        # Fallback to bone type counts if all scores are 0
+        for region, count in region_counts.items():
+            if count > max_count:
+                max_count = count
+                target_group = region
+                target_meshes = anatomical_groups[region]
+        
+        if target_group:
+            print(f"    Fallback: connector -> {target_group} (bone count: {max_count})")
+        else:
+            print(f"    ERROR: No valid assignment found for connector!")
     
     if target_group and target_meshes:
         print(f"    🎯 Merging connector {connector_obj.name} with {target_group} group ({len(target_meshes)} meshes)")

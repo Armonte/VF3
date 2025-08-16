@@ -145,8 +145,11 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
             except (ReferenceError, AttributeError):
                 print(f"        Invalid mesh object (deleted)")
         
-        from vf3_mesh_merging import _try_merge_connector_with_body_mesh
-        merged_with_existing, merged_mesh_names = _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names)
+        # DISABLED: Old connector merging - now handled by anatomical grouping system
+        # from vf3_mesh_merging import _try_merge_connector_with_body_mesh
+        # merged_with_existing, merged_mesh_names = _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names)
+        merged_with_existing = False
+        merged_mesh_names = []
         
         if not merged_with_existing:
             # Add to mesh objects list for export only if not merged
