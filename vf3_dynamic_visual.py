@@ -51,6 +51,8 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         vertices = dyn_data['vertices']  # List of (pos1, pos2) tuples
         vertex_bones = dyn_data.get('vertex_bones', [])
         faces = np.array(dyn_data['faces'])
+        face_materials = dyn_data.get('face_materials', [])  # Face-to-material mapping from FaceArray
+        materials = dyn_data.get('materials', [])  # Pre-defined materials from Material: section
         
         if len(vertices) == 0 or len(faces) == 0:
             continue
@@ -106,10 +108,14 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         connector_obj = bpy.data.objects.new(connector_name, blender_mesh)
         bpy.context.collection.objects.link(connector_obj)
         
-        # Create anatomically appropriate materials for connectors based on bone content
-        # This ensures connectors get proper skin/clothing materials based on their anatomical location
-        _assign_anatomical_material_to_connector(connector_obj, vertex_bone_names, mesh_objects)
-        print(f"      Created anatomically appropriate material for connector {connector_name}")
+        # CRITICAL FIX: Use actual VF3-defined materials instead of guessing from bone content
+        if materials and face_materials:
+            _assign_vf3_materials_to_connector(connector_obj, materials, face_materials)
+            print(f"      ✅ Applied {len(materials)} VF3-defined materials to connector {connector_name}")
+        else:
+            # Fallback for connectors without materials (shouldn't happen with proper parsing)
+            _assign_anatomical_material_to_connector(connector_obj, vertex_bone_names, mesh_objects)
+            print(f"      ⚠️ Fallback: Created anatomical material for connector {connector_name} (no VF3 materials found)")
         
         # Bind vertices to their respective bones (like VF3 does with bone flags)
         created_vertex_groups = set()
@@ -216,6 +222,65 @@ def process_vf3_dynamic_visual_faces(vertices, vertex_bones, faces, dyn_idx, wor
 def _snap_connector_vertices_to_meshes(connector_vertices, mesh_objects, snap_threshold=1.5):
     """Legacy function for compatibility."""
     return connector_vertices
+
+def _assign_vf3_materials_to_connector(connector_obj, materials, face_materials):
+    """Assign VF3-defined materials to connector faces using exact FaceArray mapping."""
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    print(f"        Creating {len(materials)} VF3 materials from DynamicVisual Material: section")
+    
+    # Parse and create Blender materials from VF3 material strings
+    blender_materials = []
+    for i, mat_str in enumerate(materials):
+        material_name = f"VF3_DynamicVisual_Material_{i}"
+        
+        # Parse VF3 material format: (r,g,b,a)::
+        rgba = _parse_vf3_material_color(mat_str)
+        if rgba:
+            # Create Blender material with parsed color
+            blender_mat = bpy.data.materials.new(name=material_name)
+            blender_mat.use_nodes = True
+            bsdf = blender_mat.node_tree.nodes.get("Principled BSDF")
+            if bsdf:
+                # Convert from 0-255 to 0-1 range and apply VF3 gamma correction
+                corrected_color = [
+                    pow(rgba[0] / 255.0, 2.2),  # VF3 uses gamma 2.2
+                    pow(rgba[1] / 255.0, 2.2), 
+                    pow(rgba[2] / 255.0, 2.2),
+                    rgba[3] / 255.0  # Alpha stays linear
+                ]
+                bsdf.inputs['Base Color'].default_value = corrected_color
+                bsdf.inputs['Alpha'].default_value = corrected_color[3]
+            
+            blender_materials.append(blender_mat)
+            connector_obj.data.materials.append(blender_mat)
+            print(f"          Material {i}: {rgba} -> {material_name}")
+        else:
+            print(f"          ❌ Failed to parse material {i}: {mat_str}")
+    
+    # Assign materials to faces using FaceArray mapping
+    if len(face_materials) == len(connector_obj.data.polygons):
+        for face_idx, material_index in enumerate(face_materials):
+            if 0 <= material_index < len(blender_materials):
+                connector_obj.data.polygons[face_idx].material_index = material_index
+            else:
+                print(f"          ⚠️ Face {face_idx} material index {material_index} out of range (0-{len(blender_materials)-1})")
+        print(f"        ✅ Assigned per-face materials: {len(face_materials)} faces mapped to {len(blender_materials)} materials")
+    else:
+        print(f"        ❌ Face material count mismatch: {len(face_materials)} mappings vs {len(connector_obj.data.polygons)} faces")
+
+
+def _parse_vf3_material_color(mat_str):
+    """Parse VF3 material string like '(255,255,255,255)::' to RGBA tuple."""
+    import re
+    match = re.search(r'\((\d+),(\d+),(\d+),(\d+)\)', mat_str)
+    if match:
+        return tuple(int(x) for x in match.groups())
+    return None
+
 
 def _assign_anatomical_material_to_connector(connector_obj, vertex_bone_names, mesh_objects):
     """Assign anatomically appropriate material to connector based on bone content."""

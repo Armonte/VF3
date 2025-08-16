@@ -61,6 +61,7 @@ def parse_dynamic_visual_mesh(lines: List[str]) -> Optional[Dict]:
     vertices = []
     vertex_bones = []
     faces = []
+    face_materials = []  # CRITICAL FIX: Store face-to-material mapping
     materials = []
     
     mode = None
@@ -111,8 +112,10 @@ def parse_dynamic_visual_mesh(lines: List[str]) -> Optional[Dict]:
                 face_part, mat_idx = line.split(':', 1)
                 try:
                     indices = [int(x) for x in face_part.split(',')]
+                    material_index = int(mat_idx)  # CRITICAL FIX: Parse and store material index
                     if len(indices) == 3:
                         faces.append(indices)
+                        face_materials.append(material_index)  # CRITICAL FIX: Store face-to-material mapping
                 except:
                     continue
     
@@ -121,6 +124,7 @@ def parse_dynamic_visual_mesh(lines: List[str]) -> Optional[Dict]:
             'vertices': vertices,
             'vertex_bones': vertex_bones,
             'faces': faces,
+            'face_materials': face_materials,  # CRITICAL FIX: Include face-to-material mapping
             'materials': materials,
             'original_faces': True  # Flag to indicate this has original VF3 FaceArray data
         }
