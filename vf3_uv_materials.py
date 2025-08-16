@@ -39,12 +39,13 @@ def assign_uv_coordinates(blender_mesh, trimesh_mesh, mesh_info, mesh_name):
                     # Use vertex index to get UV (most common case)
                     if vertex_idx < len(existing_uv):
                         u, v = existing_uv[vertex_idx]
-                        # Don't flip or modify - use original coordinates
+                        # Don't flip or modify - use original coordinates (they were correct)
                         uv_layer[loop_index].uv = (u, v)
                     else:
                         # Fallback: wrap around
                         uv_idx = vertex_idx % len(existing_uv)
                         u, v = existing_uv[uv_idx]
+                        # Don't flip - original coordinates were correct
                         uv_layer[loop_index].uv = (u, v)
                     
                     loop_index += 1
@@ -97,7 +98,7 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
         mesh_name = mesh_obj.name.replace('.', '_').replace(':', '_')  # Sanitize mesh name for material name
         mat_name = f"{mesh_name}_Material_{i}"
         if material_data.get('name'):
-            mat_name = f"{mesh_name}_{material_data['name']}"
+            mat_name = f"{mesh_name}_{material_data['name']}_{i}"  # Add index to ensure uniqueness
         
         # Check if material already exists to avoid duplicates (using unique name now)
         if mat_name in bpy.data.materials:
@@ -169,7 +170,7 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                 except Exception as e:
                     print(f"      ❌ Failed to load texture {texture_name}: {e}")
             else:
-                print(f"      ⚠️ Texture not found: {texture_name}")
+                print(f"      ❌ Texture file not found for material {i}: {texture_name} (searched: {texture_path})")
         
         # Add material to mesh
         mesh_obj.data.materials.append(material)

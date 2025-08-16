@@ -166,13 +166,24 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         armature_modifier.use_vertex_groups = True
         
         # Try to merge this connector with adjacent body meshes to eliminate seams completely
+        print(f"      DEBUG: Attempting to merge connector {connector_name} with available meshes:")
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name
+                materials = [mat.name for mat in mesh_obj.data.materials] if mesh_obj.data.materials else ['NO_MATERIALS']
+                bone_groups = [vg.name for vg in mesh_obj.vertex_groups]
+                print(f"        Available mesh: {mesh_name}, materials: {materials}, bones: {bone_groups[:5]}...")
+            except (ReferenceError, AttributeError):
+                print(f"        Invalid mesh object (deleted)")
+        
         from vf3_mesh_merging import _try_merge_connector_with_body_mesh
         merged_with_existing, merged_mesh_names = _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names)
         
         if not merged_with_existing:
             # Add to mesh objects list for export only if not merged
             mesh_objects.append(connector_obj)
-            print(f"    ✅ Created standalone VF3 connector: {connector_name} with {len(vertices_list)} vertices, {len(faces_list)} faces")
+            connector_materials = [mat.name for mat in connector_obj.data.materials] if connector_obj.data.materials else ['NO_MATERIALS']
+            print(f"    ✅ Created standalone VF3 connector: {connector_name} with {len(vertices_list)} vertices, {len(faces_list)} faces, materials: {connector_materials}")
         else:
             # Remove merged meshes from mesh_objects list to prevent issues with subsequent connectors
             if merged_mesh_names:
@@ -190,6 +201,17 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
                 print(f"    ✅ Merged VF3 connector: {connector_name} with existing body mesh, removed {len(merged_mesh_names)} merged meshes from list")
             else:
                 print(f"    ✅ Merged VF3 connector: {connector_name} with existing body mesh")
+            
+            # DEBUG: Check final material on remaining merged mesh
+            remaining_meshes = [obj for obj in mesh_objects if obj.type == 'MESH']
+            for mesh_obj in remaining_meshes:
+                try:
+                    if any(vg.name == 'body' for vg in mesh_obj.vertex_groups):
+                        final_materials = [mat.name for mat in mesh_obj.data.materials] if mesh_obj.data.materials else ['NO_MATERIALS']
+                        print(f"      Final merged mesh {mesh_obj.name} materials: {final_materials}")
+                        break
+                except (ReferenceError, AttributeError):
+                    continue
         
         connector_count += 1
     return connector_count

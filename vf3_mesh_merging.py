@@ -18,17 +18,22 @@ def _merge_breast_meshes_with_body(mesh_objects):
     except ImportError:
         return
     
-    # Find body and breast meshes
+    # Find body and breast meshes using bone-based detection (costume-agnostic)
     body_mesh = None
     breast_meshes = []
     
     for mesh_obj in mesh_objects:
-        if hasattr(mesh_obj, 'name'):
-            mesh_name = mesh_obj.name.lower()
-            if 'body_female' in mesh_name:
+        try:
+            # Look for body mesh - check if bound to 'body' bone by checking vertex groups
+            if any(vg.name == 'body' for vg in mesh_obj.vertex_groups):
                 body_mesh = mesh_obj
-            elif any(breast in mesh_name for breast in ['l_breast_female', 'r_breast_female', 'breast']):
+                print(f"  Found body mesh: {mesh_obj.name}")
+            # Look for breast meshes - check for breast bone groups
+            elif any(vg.name in ['l_breast', 'r_breast'] for vg in mesh_obj.vertex_groups):
                 breast_meshes.append(mesh_obj)
+                print(f"  Found breast mesh: {mesh_obj.name}")
+        except (ReferenceError, AttributeError):
+            continue
     
     if not body_mesh:
         print("  No body mesh found for breast merging")
@@ -56,7 +61,7 @@ def _merge_breast_meshes_with_body(mesh_objects):
 
 
 def _merge_feet_meshes_with_legs(mesh_objects):
-    """Merge foot meshes with leg2 meshes."""
+    """Merge foot meshes with leg2 meshes using bone-based detection."""
     try:
         import bpy
     except ImportError:
@@ -68,10 +73,10 @@ def _merge_feet_meshes_with_legs(mesh_objects):
         
         for mesh_obj in mesh_objects:
             try:
-                mesh_name = mesh_obj.name.lower()
-                if f'{side}_foot_female' in mesh_name:
+                # Use bone groups instead of name patterns (costume-agnostic)
+                if any(vg.name == f'{side}_foot' for vg in mesh_obj.vertex_groups):
                     foot_mesh = mesh_obj
-                elif f'{side}_leg2_female' in mesh_name:
+                elif any(vg.name == f'{side}_leg2' for vg in mesh_obj.vertex_groups):
                     leg2_mesh = mesh_obj
             except (ReferenceError, AttributeError):
                 continue
@@ -91,7 +96,7 @@ def _merge_feet_meshes_with_legs(mesh_objects):
 
 
 def _merge_lower_legs_meshes_with_thighs(mesh_objects):
-    """Merge leg2 meshes with leg1 meshes."""
+    """Merge leg2 meshes with leg1 meshes using bone-based detection."""
     try:
         import bpy
     except ImportError:
@@ -103,10 +108,10 @@ def _merge_lower_legs_meshes_with_thighs(mesh_objects):
         
         for mesh_obj in mesh_objects:
             try:
-                mesh_name = mesh_obj.name.lower()
-                if f'{side}_leg1_female' in mesh_name:
+                # Use bone groups instead of name patterns (costume-agnostic)
+                if any(vg.name == f'{side}_leg1' for vg in mesh_obj.vertex_groups):
                     leg1_mesh = mesh_obj
-                elif f'{side}_leg2_female' in mesh_name:
+                elif any(vg.name == f'{side}_leg2' for vg in mesh_obj.vertex_groups):
                     leg2_mesh = mesh_obj
             except (ReferenceError, AttributeError):
                 continue
@@ -126,7 +131,7 @@ def _merge_lower_legs_meshes_with_thighs(mesh_objects):
 
 
 def _merge_legs_meshes_with_body(mesh_objects):
-    """Merge complete leg assemblies with body."""
+    """Merge complete leg assemblies with body using bone-based detection."""
     try:
         import bpy
     except ImportError:
@@ -137,10 +142,10 @@ def _merge_legs_meshes_with_body(mesh_objects):
     
     for mesh_obj in mesh_objects:
         try:
-            mesh_name = mesh_obj.name.lower()
-            if 'body_female' in mesh_name:
+            # Use bone groups instead of name patterns (costume-agnostic)
+            if any(vg.name == 'body' for vg in mesh_obj.vertex_groups):
                 body_mesh = mesh_obj
-            elif any(leg in mesh_name for leg in ['l_leg1_female', 'r_leg1_female']):
+            elif any(vg.name in ['l_leg1', 'r_leg1'] for vg in mesh_obj.vertex_groups):
                 leg_meshes.append(mesh_obj)
         except (ReferenceError, AttributeError):
             continue
@@ -165,7 +170,7 @@ def _merge_legs_meshes_with_body(mesh_objects):
 
 
 def _merge_forearms_meshes_with_arms(mesh_objects):
-    """Merge forearm meshes with upper arm meshes."""
+    """Merge forearm meshes with upper arm meshes using bone-based detection."""
     try:
         import bpy
     except ImportError:
@@ -177,10 +182,10 @@ def _merge_forearms_meshes_with_arms(mesh_objects):
         
         for mesh_obj in mesh_objects:
             try:
-                mesh_name = mesh_obj.name.lower()
-                if f'{side}_arm1_female' in mesh_name:
+                # Use bone groups instead of name patterns (costume-agnostic)
+                if any(vg.name == f'{side}_arm1' for vg in mesh_obj.vertex_groups):
                     arm1_mesh = mesh_obj
-                elif f'{side}_arm2_female' in mesh_name:
+                elif any(vg.name == f'{side}_arm2' for vg in mesh_obj.vertex_groups):
                     arm2_mesh = mesh_obj
             except (ReferenceError, AttributeError):
                 continue
@@ -200,7 +205,7 @@ def _merge_forearms_meshes_with_arms(mesh_objects):
 
 
 def _merge_hands_meshes_with_arms(mesh_objects):
-    """Merge hand meshes with arm assemblies."""
+    """Merge hand meshes with arm assemblies using bone-based detection."""
     try:
         import bpy
     except ImportError:
@@ -212,10 +217,10 @@ def _merge_hands_meshes_with_arms(mesh_objects):
         
         for mesh_obj in mesh_objects:
             try:
-                mesh_name = mesh_obj.name.lower()
-                if f'{side}_arm1_female' in mesh_name:
+                # Use bone groups instead of name patterns (costume-agnostic)
+                if any(vg.name == f'{side}_arm1' for vg in mesh_obj.vertex_groups):
                     arm_mesh = mesh_obj
-                elif f'{side}_hand_female' in mesh_name:
+                elif any(vg.name == f'{side}_hand' for vg in mesh_obj.vertex_groups):
                     hand_mesh = mesh_obj
             except (ReferenceError, AttributeError):
                 continue
@@ -235,7 +240,7 @@ def _merge_hands_meshes_with_arms(mesh_objects):
 
 
 def _merge_arms_meshes_with_body(mesh_objects):
-    """Merge complete arm assemblies with body."""
+    """Merge complete arm assemblies with body using bone-based detection."""
     try:
         import bpy
     except ImportError:
@@ -246,10 +251,10 @@ def _merge_arms_meshes_with_body(mesh_objects):
     
     for mesh_obj in mesh_objects:
         try:
-            mesh_name = mesh_obj.name.lower()
-            if 'body_female' in mesh_name:
+            # Use bone groups instead of name patterns (costume-agnostic)
+            if any(vg.name == 'body' for vg in mesh_obj.vertex_groups):
                 body_mesh = mesh_obj
-            elif any(arm in mesh_name for arm in ['l_arm1_female', 'r_arm1_female']):
+            elif any(vg.name in ['l_arm1', 'r_arm1'] for vg in mesh_obj.vertex_groups):
                 arm_meshes.append(mesh_obj)
         except (ReferenceError, AttributeError):
             continue
@@ -293,57 +298,59 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
     target_mesh = None
     connector_name = connector_obj.name.lower()
     
-    # Define merging candidates based on connector number (determined from DynamicVisual processing order)
+    # Define merging candidates based on connector number using bone groups (costume-agnostic)
     # Order is based on the occupancy slot processing: body, arms, hands, waist, legs, foots
-    merge_candidates_by_number = {
-        '0': ['body_female'],  # Body/torso connectors (breasts already merged with body)
-        '1': ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female'],  # Arm connectors
-        '2': ['l_hand_female', 'r_hand_female'],  # Hand/wrist connectors  
-        '3': ['waist_female', 'body_female'],  # Waist connectors
-        '4': ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female'],  # Leg connectors (hips/knees/thighs)
-        '5': ['l_foot_female', 'r_foot_female', 'l_leg2_female', 'r_leg2_female']  # Foot/ankle connectors
+    merge_bone_groups_by_number = {
+        '0': ['body'],  # Body/torso connectors (breasts already merged with body)
+        '1': ['l_arm1', 'r_arm1', 'l_arm2', 'r_arm2'],  # Arm connectors
+        '2': ['l_hand', 'r_hand'],  # Hand/wrist connectors  
+        '3': ['waist', 'body'],  # Waist connectors
+        '4': ['l_leg1', 'r_leg1', 'l_leg2', 'r_leg2'],  # Leg connectors (hips/knees/thighs)
+        '5': ['l_foot', 'r_foot', 'l_leg2', 'r_leg2']  # Foot/ankle connectors
     }
     
     # Extract connector number from name (e.g., "dynamic_connector_0_vf3mesh" -> "0")
-    target_categories = []
+    target_bone_groups = []
     import re
     match = re.search(r'dynamic_connector_(\d+)_', connector_name)
     if match:
         connector_number = match.group(1)
-        target_categories = merge_candidates_by_number.get(connector_number, [])
-        print(f"      Connector {connector_number} -> merge targets: {target_categories}")
+        target_bone_groups = merge_bone_groups_by_number.get(connector_number, [])
+        print(f"      Connector {connector_number} -> merge bone groups: {target_bone_groups}")
     else:
-        # Fallback to old logic for non-numbered connectors
-        merge_candidates = {
-            'breast': ['l_breast_female', 'r_breast_female', 'breast'],
-            'shoulder': ['l_arm1_female', 'r_arm1_female', 'torso'],  
-            'elbow': ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female'],
-            'wrist': ['l_arm2_female', 'r_arm2_female', 'l_hand_female', 'r_hand_female'],
-            'hip': ['waist_female', 'l_leg1_female', 'r_leg1_female'],
-            'knee': ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female'],
-            'ankle': ['l_leg2_female', 'r_leg2_female', 'l_foot_female', 'r_foot_female'],
-            'thigh': ['l_leg1_female', 'r_leg1_female', 'waist_female'],
-            'torso': ['body_female', 'waist_female']
+        # Fallback to old logic for non-numbered connectors using bone groups
+        merge_bone_groups = {
+            'breast': ['l_breast', 'r_breast', 'body'],
+            'shoulder': ['l_arm1', 'r_arm1', 'body'],  
+            'elbow': ['l_arm1', 'r_arm1', 'l_arm2', 'r_arm2'],
+            'wrist': ['l_arm2', 'r_arm2', 'l_hand', 'r_hand'],
+            'hip': ['waist', 'l_leg1', 'r_leg1'],
+            'knee': ['l_leg1', 'r_leg1', 'l_leg2', 'r_leg2'],
+            'ankle': ['l_leg2', 'r_leg2', 'l_foot', 'r_foot'],
+            'thigh': ['l_leg1', 'r_leg1', 'waist'],
+            'torso': ['body', 'waist']
         }
         
-        for category, candidates in merge_candidates.items():
+        for category, bone_groups in merge_bone_groups.items():
             if category in connector_name:
-                target_categories = candidates
+                target_bone_groups = bone_groups
                 break
     
-    if not target_categories:
-        print(f"      No merge candidates found for connector: {connector_name}")
+    if not target_bone_groups:
+        print(f"      ❌ No merge bone groups found for connector: {connector_name}")
         return False, []
     
-    # Find all target mesh objects that match the categories
+    # Find all target mesh objects that match the bone groups (costume-agnostic)
     target_meshes = []
     for mesh_obj in mesh_objects:
         try:
             # Test if object is still valid by accessing its name
-            mesh_name_lower = mesh_obj.name.lower()
-            for candidate in target_categories:
-                if candidate.lower() in mesh_name_lower:
+            _ = mesh_obj.name
+            # Check if mesh has any of the target bone groups in its vertex groups
+            for bone_group in target_bone_groups:
+                if any(vg.name == bone_group for vg in mesh_obj.vertex_groups):
                     target_meshes.append(mesh_obj)
+                    print(f"      Found target mesh {mesh_obj.name} with bone group {bone_group}")
                     break
         except (ReferenceError, AttributeError):
             # Object has been deleted, skip it
@@ -354,10 +361,11 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
         # This handles cases where limbs have been merged into the body
         for mesh_obj in mesh_objects:
             try:
-                mesh_name_lower = mesh_obj.name.lower()
-                if 'body_female.body' in mesh_name_lower:
+                _ = mesh_obj.name
+                # Look for any mesh with 'body' bone group (works for both naked and costume)
+                if any(vg.name == 'body' for vg in mesh_obj.vertex_groups):
                     target_meshes.append(mesh_obj)
-                    print(f"      Fallback: merging connector {connector_name} with unified body mesh")
+                    print(f"      Fallback: merging connector {connector_name} with unified body mesh {mesh_obj.name}")
                     break
             except (ReferenceError, AttributeError):
                 continue
@@ -375,6 +383,35 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
             # Collect names of meshes that will be merged (all except primary target) BEFORE merging
             primary_target = target_meshes[0]  # Use first mesh as primary target
             merged_names = [m.name for m in target_meshes[1:]]  # Exclude primary target which still exists
+            
+            # CRITICAL FIX: Choose the BEST target mesh for this connector type, then inherit its material
+            # This ensures connectors inherit from the specific part they're connecting (arms, skirt, etc.)
+            best_target_mesh = _choose_best_target_mesh_for_connector(target_meshes, connector_name)
+            if best_target_mesh and best_target_mesh.data.materials and connector_obj.data.materials:
+                # Get the most appropriate material from the chosen target mesh
+                target_material = _choose_best_material_for_connector(best_target_mesh, connector_name)
+                if target_material:
+                    print(f"      ✅ Inheriting SPECIFIC material from chosen target {best_target_mesh.name}: {target_material.name}")
+                    
+                    # Replace connector's skin-tone material with target's costume material
+                    connector_obj.data.materials.clear()
+                    connector_obj.data.materials.append(target_material)
+                    
+                    # Update face material assignments to use the inherited material
+                    for face in connector_obj.data.polygons:
+                        face.material_index = 0
+                        
+                    final_materials = [mat.name for mat in connector_obj.data.materials]
+                    print(f"      ✅ Connector {connector_name} final materials after specific target inheritance: {final_materials}")
+                else:
+                    print(f"      ❌ Could not find suitable material from chosen target {best_target_mesh.name}")
+            else:
+                print(f"      ❌ Could not find suitable target mesh for connector {connector_name}")
+                
+            # Use the best target as primary for merging
+            if best_target_mesh:
+                primary_target = best_target_mesh
+                merged_names = [m.name for m in target_meshes if m != primary_target]
             
             # Select all target meshes and the connector
             bpy.ops.object.select_all(action='DESELECT')
@@ -400,8 +437,28 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
             print(f"      ✅ Successfully merged connector {connector_name} with {len(target_meshes)} meshes into {primary_target.name}")
             return True, merged_names
         else:
-            # Single target mesh - use original logic
+            # Single target mesh - use the same specific targeting logic
             target_mesh = target_meshes[0]
+            
+            # CRITICAL FIX: For single target, just use that target directly
+            if target_mesh.data.materials and connector_obj.data.materials:
+                # Smart material selection from the single target
+                target_material = _choose_best_material_for_connector(target_mesh, connector_name)
+                if target_material:
+                    print(f"      ✅ Inheriting SPECIFIC material from single target {target_mesh.name}: {target_material.name}")
+                    
+                    # Replace connector's skin-tone material with target's costume material
+                    connector_obj.data.materials.clear()
+                    connector_obj.data.materials.append(target_material)
+                    
+                    # Update face material assignments to use the inherited material
+                    for face in connector_obj.data.polygons:
+                        face.material_index = 0
+                        
+                    final_materials = [mat.name for mat in connector_obj.data.materials]
+                    print(f"      ✅ Connector {connector_name} final materials after single target inheritance: {final_materials}")
+                else:
+                    print(f"      ❌ Could not find suitable material from {target_mesh.name}")
             
             # Select both meshes
             bpy.context.view_layer.objects.active = target_mesh
@@ -426,3 +483,137 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
     except Exception as e:
         print(f"      ❌ Failed to merge connector {connector_name}: {e}")
         return False, []
+
+
+def _choose_best_material_for_connector(target_mesh, connector_name):
+    """Choose the best material from target mesh for connector inheritance.
+    Simple approach: just inherit the most dominant non-flesh material from the target.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return None
+    
+    if not target_mesh.data.materials:
+        return None
+    
+    print(f"        Simple material inheritance for connector {connector_name} from {target_mesh.name}")
+    
+    # Define flesh color range (skin tones to avoid)
+    def is_flesh_color(color):
+        if len(color) < 3:
+            return False
+        r, g, b = color[:3]
+        return (r > 0.7 and g > 0.5 and b > 0.3 and r >= g and g >= b * 1.2)
+    
+    # Find the first non-flesh material, or use first material if all are flesh
+    for i, material in enumerate(target_mesh.data.materials):
+        if not material.use_nodes:
+            continue
+            
+        bsdf = material.node_tree.nodes.get("Principled BSDF")
+        if not bsdf:
+            continue
+            
+        base_color = bsdf.inputs['Base Color'].default_value[:3]
+        
+        if not is_flesh_color(base_color):
+            print(f"        Using non-flesh material: {material.name}, color: {base_color}")
+            return material
+    
+    # Fallback to first material
+    first_material = target_mesh.data.materials[0]
+    print(f"        Fallback to first material: {first_material.name}")
+    return first_material
+
+
+def _choose_best_target_mesh_for_connector(target_meshes, connector_name):
+    """Choose the best target mesh for a connector based on connector type and mesh specificity.
+    Returns the most relevant mesh for this connector to inherit materials from.
+    """
+    if not target_meshes:
+        return None
+    
+    # Extract connector number for type detection
+    import re
+    connector_number = "unknown"
+    match = re.search(r'dynamic_connector_(\d+)_', connector_name)
+    if match:
+        connector_number = match.group(1)
+    
+    print(f"        Choosing best target mesh for connector {connector_name} (type {connector_number}) from {len(target_meshes)} options")
+    
+    # Score each target mesh based on relevance to connector type
+    mesh_scores = []
+    
+    for mesh in target_meshes:
+        try:
+            mesh_name = mesh.name.lower()
+            score = 0
+            reason = ""
+            
+            # Connector-specific scoring
+            if connector_number == "0":  # Body/torso connectors
+                if 'blazer' in mesh_name and 'arm' not in mesh_name and 'hand' not in mesh_name:
+                    score = 100
+                    reason = "body blazer mesh"
+                elif 'body' in mesh_name:
+                    score = 80
+                    reason = "body mesh"
+                    
+            elif connector_number == "1":  # Arm connectors
+                if 'arm' in mesh_name or 'blazer' in mesh_name:
+                    if 'l_' in mesh_name or 'r_' in mesh_name:  # Specific arm
+                        score = 100
+                        reason = "specific arm mesh"
+                    else:
+                        score = 70
+                        reason = "general arm mesh"
+                        
+            elif connector_number == "2":  # Hand/wrist connectors
+                if 'hand' in mesh_name or 'blazer3' in mesh_name:
+                    score = 100
+                    reason = "hand mesh"
+                elif 'arm' in mesh_name:
+                    score = 60
+                    reason = "arm mesh (hand fallback)"
+                    
+            elif connector_number == "3":  # Waist connectors  
+                if 'skirt' in mesh_name:
+                    score = 100
+                    reason = "skirt mesh (primary waist - should be blue)"
+                elif 'waist' in mesh_name:
+                    score = 90
+                    reason = "waist mesh"
+                elif 'blazer' in mesh_name and 'arm' not in mesh_name:
+                    score = 50
+                    reason = "blazer mesh (waist fallback)"
+                    
+            elif connector_number == "4":  # Leg connectors
+                if 'leg' in mesh_name or 'shoe' in mesh_name:
+                    score = 100
+                    reason = "leg/shoe mesh"
+                elif 'skirt' in mesh_name:
+                    score = 70
+                    reason = "skirt mesh (leg area)"
+                    
+            # General penalties
+            if 'body_satsuki.blazer' == mesh_name:
+                score -= 30  # Prefer specific parts over unified body
+                reason += " (unified body penalty)"
+                
+            mesh_scores.append((mesh, score, reason))
+            print(f"          {mesh_name}: score {score} ({reason})")
+            
+        except (ReferenceError, AttributeError):
+            continue
+    
+    # Sort by score and return best mesh
+    if mesh_scores:
+        mesh_scores.sort(key=lambda x: x[1], reverse=True)
+        best_mesh, best_score, best_reason = mesh_scores[0]
+        print(f"        Selected best target: {best_mesh.name} (score: {best_score}, {best_reason})")
+        return best_mesh
+    
+    # Fallback to first mesh
+    return target_meshes[0]

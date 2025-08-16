@@ -1,0 +1,44 @@
+Blender 4.0.2
+Info: Total files 0 | Changed 0 | Failed 0
+/usr/share/blender/scripts/addons/io_scene_gltf2/io/exp/gltf2_io_image_data.py:25: SyntaxWarning: invalid escape sequence '\.'
+  regex_dot = re.compile("\.")
+/usr/share/blender/scripts/addons/io_scene_gltf2/io/exp/gltf2_io_image_data.py:27: SyntaxWarning: invalid escape sequence '\]'
+  new_name = "".join([char for char in adjusted_name if char not in "!#$&'()*+,/:;<>?@[\]^`{|}~"])
+🎌 Blender VF3 Export: data/userdata.TXT -> satsuki_debug_materials.glb
+OCCUPANCY: Collecting attachments with proper clothing replacement logic...
+👘 COSTUME MODE: Enabling costume loading
+OCCUPANCY FILTER: Processing 0 skin + 0 clothing attachments
+OCCUPANCY FILTER: Final result: 0 attachments, 0 dynamic meshes (deduplicated)
+OCCUPANCY: Filtered to 0 attachments (0 dynamic meshes)
+🎌 Total attachments collected: 0 (after occupancy filtering)
+🎌 Creating VF3 character in Blender...
+🦴 Creating armature...
+🔧 Creating and binding meshes...
+🔧 Creating DynamicVisual connectors (before merging)...
+  No DynamicVisual meshes to process
+🔧 Created 0 DynamicVisual connector meshes
+  Filtered mesh objects after connector creation: 0 valid objects
+🔧 Merging breast meshes with body...
+  No body mesh found for breast merging
+🔧 Merging feet with lower legs...
+🔧 Merging lower legs with thighs...
+🔧 Merging complete leg assemblies with body...
+  No body or leg meshes found for merging
+🔧 Merging forearms with upper arms...
+🔧 Merging hands with arm assemblies...
+🔧 Merging complete arm assemblies with body...
+  No body or arm meshes found for merging
+🔧 Could not set viewport mode (running headless)
+  Selected 0 mesh objects for export
+Info: Saved "satsuki_debug_materials_debug.blend"
+🔧 Saved debug .blend file: satsuki_debug_materials_debug.blend
+📦 Exporting to satsuki_debug_materials.glb...
+19:18:18 | ERROR: Draco mesh compression is not available because library could not be found at /usr/bin/4.0/python/lib/python3.12/site-packages/libextern_draco.so
+19:18:18 | INFO: Starting glTF 2.0 export
+19:18:18 | INFO: Finished glTF 2.0 export in 0.002689838409423828 s
+
+🎉 Export completed successfully: satsuki_debug_materials.glb
+🎉 VF3 character created successfully in Blender!
+
+Blender quit
+Error: Not freed memory blocks: 1, total unfreed memory 0.000023 MB

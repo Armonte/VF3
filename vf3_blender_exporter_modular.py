@@ -202,7 +202,31 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         
         mesh_objects.append(mesh_obj)
     
-    # Step 6: Merge body parts for seamless connections (order matters for proper merging)
+    # Step 6: Create DynamicVisual connectors FIRST (before merging)
+    # This allows connectors to inherit materials from individual costume parts
+    print("🔧 Creating DynamicVisual connectors (before merging)...")
+    
+    from vf3_dynamic_visual import _create_dynamic_visual_meshes
+    connector_count = _create_dynamic_visual_meshes(
+        clothing_dynamic_meshes, world_transforms, created_bones, 
+        armature_obj, mesh_objects, mesh_data
+    )
+    print(f"🔧 Created {connector_count} DynamicVisual connector meshes")
+    
+    # Filter out any deleted/invalid objects from mesh_objects list after connector creation
+    valid_mesh_objects = []
+    for mesh_obj in mesh_objects:
+        try:
+            # Test if object is still valid by accessing its name
+            _ = mesh_obj.name
+            valid_mesh_objects.append(mesh_obj)
+        except (ReferenceError, AttributeError):
+            # Object has been deleted during connector merging, skip it
+            continue
+    mesh_objects = valid_mesh_objects
+    print(f"  Filtered mesh objects after connector creation: {len(mesh_objects)} valid objects")
+    
+    # Step 7: Merge body parts for seamless connections (order matters for proper merging)
     print("🔧 Merging breast meshes with body...")
     from vf3_mesh_merging import _merge_breast_meshes_with_body
     _merge_breast_meshes_with_body(mesh_objects)
@@ -233,30 +257,9 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     from vf3_mesh_merging import _merge_arms_meshes_with_body
     _merge_arms_meshes_with_body(mesh_objects)
     
-    # Step 6.5: Process DynamicVisual connector meshes
-    print("🔧 Creating DynamicVisual connectors...")
+    # Connectors were already created before merging (moved above)
     
-    # Filter out any deleted/invalid objects from mesh_objects list before processing
-    valid_mesh_objects = []
-    for mesh_obj in mesh_objects:
-        try:
-            # Test if object is still valid by accessing its name
-            _ = mesh_obj.name
-            valid_mesh_objects.append(mesh_obj)
-        except (ReferenceError, AttributeError):
-            # Object has been deleted during merging, skip it
-            continue
-    
-    print(f"  Filtered mesh objects: {len(mesh_objects)} -> {len(valid_mesh_objects)} valid objects")
-    
-    from vf3_dynamic_visual import _create_dynamic_visual_meshes
-    connector_count = _create_dynamic_visual_meshes(
-        clothing_dynamic_meshes, world_transforms, created_bones, 
-        armature_obj, valid_mesh_objects, mesh_data
-    )
-    print(f"🔧 Created {connector_count} DynamicVisual connector meshes")
-    
-    # Step 7: Configure viewport for texture display and select all objects for export
+    # Step 8: Configure viewport for texture display and select all objects for export
     try:
         # Set viewport shading to Material Preview to show textures
         for area in bpy.context.screen.areas:
@@ -285,7 +288,7 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     
     bpy.context.view_layer.objects.active = armature_obj
     
-    # Step 7.5: Save .blend file for debugging (optional)
+    # Step 8.5: Save .blend file for debugging (optional)
     blend_path = output_path.replace('.glb', '_debug.blend')
     try:
         bpy.ops.wm.save_as_mainfile(filepath=blend_path)
@@ -293,7 +296,7 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     except Exception as e:
         print(f"🔧 Could not save .blend file: {e}")
     
-    # Step 8: Export to glTF
+    # Step 9: Export to glTF
     print(f"📦 Exporting to {output_path}...")
     try:
         bpy.ops.export_scene.gltf(
@@ -509,6 +512,8 @@ def _collect_attachments_with_occupancy_filtering(desc):
     # Parse costume attachments with occupancy vectors
     costume_attachments_with_occupancy = []
     
+    # Parse costume attachments with occupancy vectors
+    print("👘 COSTUME MODE: Enabling costume loading")
     for costume_resource in parse_defaultcos(desc):
         if '.' not in costume_resource:
             continue
