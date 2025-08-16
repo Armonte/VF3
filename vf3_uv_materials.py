@@ -39,14 +39,14 @@ def assign_uv_coordinates(blender_mesh, trimesh_mesh, mesh_info, mesh_name):
                     # Use vertex index to get UV (most common case)
                     if vertex_idx < len(existing_uv):
                         u, v = existing_uv[vertex_idx]
-                        # Don't flip or modify - use original coordinates (they were correct)
-                        uv_layer[loop_index].uv = (u, v)
+                        # Use original UV coordinates directly (working approach)
+                        uv_layer[loop_index].uv = (float(u), float(v))
                     else:
                         # Fallback: wrap around
                         uv_idx = vertex_idx % len(existing_uv)
                         u, v = existing_uv[uv_idx]
-                        # Don't flip - original coordinates were correct
-                        uv_layer[loop_index].uv = (u, v)
+                        # Use original UV coordinates directly (working approach)
+                        uv_layer[loop_index].uv = (float(u), float(v))
                     
                     loop_index += 1
             
@@ -155,6 +155,10 @@ def _create_blender_materials(mesh_obj, materials: List, trimesh_mesh, mesh_info
                         # Create texture node and connect it
                         texture_node = material.node_tree.nodes.new(type='ShaderNodeTexImage')
                         texture_node.image = image
+                        
+                        # CRITICAL: Set texture interpolation to Closest (nearest neighbor) for pixel-perfect textures
+                        # This fixes the UV mapping "golden ratio spiral" issue for Satsuki's head
+                        texture_node.interpolation = 'Closest'
                         
                         # Connect to BSDF
                         material.node_tree.links.new(texture_node.outputs['Color'], bsdf.inputs['Base Color'])

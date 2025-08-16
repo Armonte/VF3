@@ -138,8 +138,8 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         blender_mesh.update()
 
         # Assign UVs if available (now uses mesh_info as primary source)
-        from vf3_uv_materials import assign_uv_coordinates
-        assign_uv_coordinates(blender_mesh, trimesh_mesh, mesh_info, mesh_name)
+        from vf3_uv_handler import preserve_and_apply_uv_coordinates
+        preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info)
         
         # Clean up mesh to reduce z-fighting
         blender_mesh.validate()  # Fix invalid geometry

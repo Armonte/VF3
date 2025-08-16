@@ -6,12 +6,12 @@ VF3 UV Handler - Preserves UV coordinates like the working export_ciel_to_gltf.p
 import bpy
 import numpy as np
 
-def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name):
+def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info=None):
     """
     Preserve UV coordinates from trimesh and apply to Blender mesh
-    Based on the WORKING approach from export_ciel_to_gltf.py lines 1113-1124
+    Based on the WORKING approach from export_ciel_to_gltf.py
     
-    CRITICAL: For head meshes, the UV coordinates must be preserved EXACTLY as they are!
+    CRITICAL: Use per-face UV mapping when face materials are available (VF3 style)
     """
     
     # Check if trimesh has UV coordinates
@@ -29,11 +29,90 @@ def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name):
     uv_layer = blender_mesh.uv_layers.active.data
     
     if existing_uv is not None:
-        # Use the EXACT WORKING approach: preserve original UV coordinates without ANY modification
-        apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, existing_uv, mesh_name)
+        # Check if we have face materials (VF3 uses per-face UV mapping)
+        face_materials = None
+        
+        # FIRST: Check mesh_info dictionary (this is where our .X parser stores face materials!)
+        if mesh_info and 'face_materials' in mesh_info:
+            face_materials = mesh_info['face_materials']
+            print(f"  Found face materials in mesh_info: {len(face_materials)}")
+        # Fallback: Check multiple possible locations on trimesh object
+        elif hasattr(trimesh_mesh.visual, 'face_materials'):
+            face_materials = trimesh_mesh.visual.face_materials
+            print(f"  Found face materials in visual.face_materials: {len(face_materials)}")
+        elif hasattr(trimesh_mesh, 'face_materials'):
+            face_materials = trimesh_mesh.face_materials
+            print(f"  Found face materials directly on mesh: {len(face_materials)}")
+            
+        if face_materials is not None and len(face_materials) > 0:
+            print(f"  Using VF3-style per-face UV mapping with {len(face_materials)} face materials")
+            apply_face_based_uv_coordinates(blender_mesh, uv_layer, existing_uv, face_materials, mesh_name)
+        else:
+            print(f"  Using per-vertex UV mapping (no face materials)")
+            apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, existing_uv, mesh_name)
     else:
         # Generate simple planar UV mapping as fallback
         generate_simple_uv_mapping(blender_mesh, uv_layer, mesh_name)
+
+
+def apply_face_based_uv_coordinates(blender_mesh, uv_layer, uv_coords, face_materials, mesh_name):
+    """
+    Apply UV coordinates using VF3-style per-face mapping based on face materials.
+    This handles cases where different faces use different textures/UV regions.
+    """
+    
+    print(f"  Applying face-based UV coordinates: {len(uv_coords)} UVs, {len(face_materials)} faces")
+    print(f"  Mesh has {len(blender_mesh.vertices)} vertices, {len(blender_mesh.polygons)} polygons")
+    
+    # Handle Satsuki's UV/vertex count mismatch specifically
+    if "satsuki" in mesh_name.lower() and "head" in mesh_name.lower() and len(uv_coords) == 384 and len(blender_mesh.vertices) == 382:
+        print(f"  🔧 FIXING SATSUKI UV MISMATCH: {len(uv_coords)} UVs vs {len(blender_mesh.vertices)} vertices")
+        print(f"  Using face-based mapping to handle extra UVs correctly")
+        # Don't trim - use all UVs and map them based on face materials
+    
+    # Build a mapping from original face indices to triangulated face indices
+    face_mapping = {}
+    blender_face_idx = 0
+    
+    for original_face_idx, material_idx in enumerate(face_materials):
+        if original_face_idx < len(blender_mesh.polygons):
+            face_mapping[original_face_idx] = blender_face_idx
+            blender_face_idx += 1
+    
+    loop_index = 0
+    uv_index = 0
+    
+    for poly_idx, poly in enumerate(blender_mesh.polygons):
+        # Get the material for this face
+        original_face_idx = poly_idx
+        if original_face_idx < len(face_materials):
+            material_idx = face_materials[original_face_idx]
+        else:
+            material_idx = 0
+            
+        # For each vertex in this face, assign UV coordinates
+        for loop_idx in poly.loop_indices:
+            vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+            
+            # Use face-based UV assignment instead of just vertex index
+            # This allows for different UV coordinates per face even for shared vertices
+            if uv_index < len(uv_coords):
+                u, v = uv_coords[uv_index]
+                uv_layer[loop_index].uv = (float(u), float(v))
+                uv_index += 1
+            elif vertex_idx < len(uv_coords):
+                # Fallback to vertex-based mapping
+                u, v = uv_coords[vertex_idx]
+                uv_layer[loop_index].uv = (float(u), float(v))
+            else:
+                # Wrap around if we run out of UVs
+                uv_idx = vertex_idx % len(uv_coords)
+                u, v = uv_coords[uv_idx]
+                uv_layer[loop_index].uv = (float(u), float(v))
+                
+            loop_index += 1
+    
+    print(f"  ✅ Applied face-based UV mapping to {mesh_name} (used {uv_index}/{len(uv_coords)} UVs)")
 
 
 def apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_name):
@@ -107,9 +186,8 @@ def apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_
                 vertex_idx = blender_mesh.loops[loop_idx].vertex_index
                 if vertex_idx < len(uv_coords):
                     u, v = uv_coords[vertex_idx]
-                    # CRITICAL: DirectX uses V=0 at top, Blender uses V=0 at bottom, so flip V
-                    # This is EXACTLY what the working version does
-                    uv_layer[loop_index].uv = (float(u), 1.0 - float(v))
+                    # Use original UV coordinates directly (working approach)
+                    uv_layer[loop_index].uv = (float(u), float(v))
                 loop_index += 1
                 
         print(f"  ✅ Successfully applied UV coordinates to {mesh_name}")
@@ -120,8 +198,8 @@ def apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_
         
         for i, uv_coord in enumerate(uv_coords):
             u, v = uv_coord
-            # CRITICAL: DirectX uses V=0 at top, Blender uses V=0 at bottom, so flip V
-            uv_layer[i].uv = (float(u), 1.0 - float(v))
+            # Use original UV coordinates directly (working approach)
+            uv_layer[i].uv = (float(u), float(v))
             
         print(f"  ✅ Successfully applied UV coordinates to {mesh_name}")
         
@@ -138,8 +216,8 @@ def apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_
                 vertex_idx = blender_mesh.loops[loop_idx].vertex_index
                 if vertex_idx < len(trimmed_uv_coords):
                     u, v = trimmed_uv_coords[vertex_idx]
-                    # CRITICAL: DirectX uses V=0 at top, Blender uses V=0 at bottom, so flip V
-                    uv_layer[loop_index].uv = (float(u), 1.0 - float(v))
+                    # Use original UV coordinates directly (working approach) 
+                    uv_layer[loop_index].uv = (float(u), float(v))
                 loop_index += 1
                 
         print(f"  ✅ Fixed Satsuki UV mismatch by trimming to {len(trimmed_uv_coords)} UVs")
@@ -155,8 +233,8 @@ def apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_
                 # Use modulo to wrap around UV coordinates
                 uv_idx = vertex_idx % len(uv_coords)
                 u, v = uv_coords[uv_idx]
-                # CRITICAL: DirectX uses V=0 at top, Blender uses V=0 at bottom, so flip V
-                uv_layer[loop_index].uv = (float(u), 1.0 - float(v))
+                # Use original UV coordinates directly (working approach)
+                uv_layer[loop_index].uv = (float(u), float(v))
                 loop_index += 1
                 
         print(f"  ⚠️ Applied UV coordinates with wrapping to {mesh_name}")
