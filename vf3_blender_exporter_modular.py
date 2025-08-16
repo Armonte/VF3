@@ -140,22 +140,13 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         # Clean up mesh to reduce z-fighting FIRST
         blender_mesh.validate()  # Fix invalid geometry
         
-        # Clean up mesh to reduce z-fighting (apply to all meshes EXCEPT Satsuki head)
-        if not ("satsuki" in mesh_name.lower() and "head" in mesh_name.lower()):
-            import bmesh
-            bm = bmesh.new()
-            bm.from_mesh(blender_mesh)
-            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)  # Very small threshold
-            bm.to_mesh(blender_mesh)
-            bm.free()
-            blender_mesh.update()
-        else:
-            print(f"  Skipping vertex deduplication for {mesh_name} to preserve UV mapping")
+        # DISABLE vertex deduplication entirely - like working export_ciel_to_gltf.py
+        # The working version doesn't do vertex deduplication at all
+        print(f"  Preserving exact vertex count for {mesh_name} (no deduplication)")
         
-        # Assign UVs AFTER vertex deduplication (critical for Satsuki!)
+        # Assign UVs with exact preservation like working export_ciel_to_gltf.py
         from vf3_uv_handler import preserve_and_apply_uv_coordinates
         preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info)
-        print(f"  Cleaned duplicate vertices for {mesh_name}: final {len(blender_mesh.vertices)} vertices")
         
         # Enable smooth shading for Gouraud-like appearance (same as VF3)
         for poly in blender_mesh.polygons:

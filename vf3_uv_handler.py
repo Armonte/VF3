@@ -8,8 +8,8 @@ import numpy as np
 
 def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info=None):
     """
-    Preserve UV coordinates from trimesh and apply to Blender mesh - SIMPLE approach
-    Apply AFTER vertex deduplication to fix Satsuki's head issue
+    Preserve UV coordinates EXACTLY as they are from trimesh - like working export_ciel_to_gltf.py
+    NO MODIFICATIONS, NO FLIPS, NO COMPLEX LOGIC
     """
     
     # Check if trimesh has UV coordinates
@@ -27,11 +27,41 @@ def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mes
     uv_layer = blender_mesh.uv_layers.active.data
     
     if existing_uv is not None:
-        # Apply UV coordinates using SIMPLE approach
-        apply_uv_coordinates_simple(blender_mesh, uv_layer, existing_uv, mesh_name)
+        # Apply UV coordinates EXACTLY like working export_ciel_to_gltf.py
+        apply_uv_coordinates_exact(blender_mesh, uv_layer, existing_uv, mesh_name)
     else:
         # Generate simple planar UV mapping as fallback
         generate_simple_uv_mapping(blender_mesh, uv_layer, mesh_name)
+
+
+def apply_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_name):
+    """
+    Apply UV coordinates EXACTLY like the working export_ciel_to_gltf.py
+    No modifications, no flips, just preserve exactly
+    """
+    
+    print(f"  Exact UV mapping: {len(uv_coords)} UVs to {len(blender_mesh.vertices)} vertices")
+    
+    loop_index = 0
+    
+    # Simple per-vertex mapping - exactly like working version
+    for poly in blender_mesh.polygons:
+        for loop_idx in poly.loop_indices:
+            vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+            
+            # Use vertex index directly, wrap if needed
+            if vertex_idx < len(uv_coords):
+                u, v = uv_coords[vertex_idx]
+            else:
+                # Wrap around if vertex index exceeds UV count
+                uv_idx = vertex_idx % len(uv_coords)
+                u, v = uv_coords[uv_idx]
+            
+            # Apply UV coordinates EXACTLY as they are - no modifications
+            uv_layer[loop_index].uv = (float(u), float(v))
+            loop_index += 1
+    
+    print(f"  ✅ Applied exact UV mapping to {mesh_name}")
 
 
 def apply_uv_coordinates_simple(blender_mesh, uv_layer, uv_coords, mesh_name):

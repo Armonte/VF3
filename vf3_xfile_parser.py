@@ -855,8 +855,8 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
         
         print(f"Parsed {len(vertices)} vertices, {len(faces)} faces, {len(materials)} materials, {len(textures)} textures from .X file")
         
-        # Create trimesh with proper normals processing
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=True)
+        # Create trimesh WITHOUT processing to preserve exact vertex count (fixes Satsuki!)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
         
         # Apply normals from .X file if available
         if scene.globalMeshes and scene.globalMeshes[0].normals:
