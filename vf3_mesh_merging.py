@@ -8,6 +8,218 @@ import sys
 from typing import List, Dict, Any
 
 
+def _create_anatomical_mesh_groups(mesh_objects):
+    """
+    Create proper anatomical mesh groups for smooth character export.
+    Groups meshes into: Body, Left Arm, Right Arm, Left Leg, Right Leg, Head
+    Also merges dynamic connectors with their target anatomical groups.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    print("  🎯 Creating anatomical mesh groups...")
+    
+    # Step 1: Group meshes by anatomical region using vertex groups
+    body_meshes = []
+    left_arm_meshes = []
+    right_arm_meshes = []
+    left_leg_meshes = []
+    right_leg_meshes = []
+    head_meshes = []
+    connector_meshes = []
+    other_meshes = []
+    
+    for mesh_obj in mesh_objects:
+        try:
+            mesh_name = mesh_obj.name.lower()
+            vg_names = [vg.name for vg in mesh_obj.vertex_groups]
+            
+            # Classify dynamic connectors separately
+            if 'dynamic_connector' in mesh_name:
+                connector_meshes.append(mesh_obj)
+                print(f"    🔌 Connector: {mesh_obj.name}")
+                continue
+            
+            # Classify by dominant vertex groups (bone assignments)
+            if any(vg.name in ['body', 'l_breast', 'r_breast', 'waist'] for vg in mesh_obj.vertex_groups):
+                body_meshes.append(mesh_obj)
+                print(f"    🫀 Body: {mesh_obj.name} (vertex groups: {vg_names})")
+            elif any(vg.name in ['l_arm1', 'l_arm2', 'l_hand'] for vg in mesh_obj.vertex_groups):
+                left_arm_meshes.append(mesh_obj)
+                print(f"    🫲 Left Arm: {mesh_obj.name} (vertex groups: {vg_names})")
+            elif any(vg.name in ['r_arm1', 'r_arm2', 'r_hand'] for vg in mesh_obj.vertex_groups):
+                right_arm_meshes.append(mesh_obj)
+                print(f"    🫱 Right Arm: {mesh_obj.name} (vertex groups: {vg_names})")
+            elif any(vg.name in ['l_leg1', 'l_leg2', 'l_foot'] for vg in mesh_obj.vertex_groups):
+                left_leg_meshes.append(mesh_obj)
+                print(f"    🦵 Left Leg: {mesh_obj.name} (vertex groups: {vg_names})")
+            elif any(vg.name in ['r_leg1', 'r_leg2', 'r_foot'] for vg in mesh_obj.vertex_groups):
+                right_leg_meshes.append(mesh_obj)
+                print(f"    🦵 Right Leg: {mesh_obj.name} (vertex groups: {vg_names})")
+            elif any(vg.name in ['head', 'neck'] for vg in mesh_obj.vertex_groups):
+                head_meshes.append(mesh_obj)
+                print(f"    🗣️ Head: {mesh_obj.name} (vertex groups: {vg_names})")
+            else:
+                other_meshes.append(mesh_obj)
+                print(f"    ❓ Other: {mesh_obj.name} (vertex groups: {vg_names})")
+                
+        except (ReferenceError, AttributeError):
+            continue
+    
+    # Step 2: Merge connectors with their target anatomical groups first
+    print("  🔌 Merging connectors with target anatomical groups...")
+    for connector_obj in connector_meshes:
+        _merge_connector_with_anatomical_groups(
+            connector_obj, 
+            {
+                'body': body_meshes,
+                'left_arm': left_arm_meshes, 
+                'right_arm': right_arm_meshes,
+                'left_leg': left_leg_meshes,
+                'right_leg': right_leg_meshes,
+                'head': head_meshes
+            }
+        )
+    
+    # Step 3: Merge each anatomical group into a single mesh
+    _merge_anatomical_group(body_meshes, "Body")
+    _merge_anatomical_group(left_arm_meshes, "LeftArm") 
+    _merge_anatomical_group(right_arm_meshes, "RightArm")
+    _merge_anatomical_group(left_leg_meshes, "LeftLeg")
+    _merge_anatomical_group(right_leg_meshes, "RightLeg")
+    _merge_anatomical_group(head_meshes, "Head")
+    _merge_anatomical_group(other_meshes, "Other")
+    
+    print("  ✅ Anatomical mesh grouping complete!")
+
+
+def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
+    """Merge a dynamic connector with the most appropriate anatomical group."""
+    try:
+        import bpy
+    except ImportError:
+        return False
+    
+    if not connector_obj:
+        return False
+    
+    connector_name = connector_obj.name.lower()
+    
+    # Analyze connector's vertex groups to determine target
+    vg_names = [vg.name for vg in connector_obj.vertex_groups]
+    print(f"    Connector {connector_obj.name} vertex groups: {vg_names}")
+    
+    # Determine target anatomical group based on connector content
+    target_group = None
+    target_meshes = []
+    
+    # Body connectors (chest, torso, waist)
+    if any(vg_name in ['body', 'l_breast', 'r_breast', 'waist'] for vg_name in vg_names):
+        target_group = 'body'
+        target_meshes = anatomical_groups['body']
+    # Left arm connectors
+    elif any(vg_name in ['l_arm1', 'l_arm2', 'l_hand'] for vg_name in vg_names):
+        target_group = 'left_arm'
+        target_meshes = anatomical_groups['left_arm']
+    # Right arm connectors  
+    elif any(vg_name in ['r_arm1', 'r_arm2', 'r_hand'] for vg_name in vg_names):
+        target_group = 'right_arm'
+        target_meshes = anatomical_groups['right_arm']
+    # Left leg connectors
+    elif any(vg_name in ['l_leg1', 'l_leg2', 'l_foot'] for vg_name in vg_names):
+        target_group = 'left_leg'
+        target_meshes = anatomical_groups['left_leg']
+    # Right leg connectors
+    elif any(vg_name in ['r_leg1', 'r_leg2', 'r_foot'] for vg_name in vg_names):
+        target_group = 'right_leg'
+        target_meshes = anatomical_groups['right_leg']
+    # Head connectors
+    elif any(vg_name in ['head', 'neck'] for vg_name in vg_names):
+        target_group = 'head'
+        target_meshes = anatomical_groups['head']
+    
+    if target_group and target_meshes:
+        print(f"    🎯 Merging connector {connector_obj.name} with {target_group} group ({len(target_meshes)} meshes)")
+        
+        # Choose the first target mesh to merge with
+        target_mesh = target_meshes[0]
+        
+        # Select target mesh and connector
+        bpy.ops.object.select_all(action='DESELECT')
+        target_mesh.select_set(True)
+        connector_obj.select_set(True)
+        bpy.context.view_layer.objects.active = target_mesh
+        
+        try:
+            # Join the meshes (connector into target)
+            bpy.ops.object.join()
+            
+            # Enter Edit mode and merge overlapping vertices to eliminate seams
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+            print(f"      ✅ Successfully merged connector {connector_name} with {target_mesh.name}")
+            return True
+            
+        except Exception as e:
+            print(f"      ❌ Failed to merge connector {connector_name}: {e}")
+            return False
+    else:
+        print(f"    ❓ No target group found for connector {connector_obj.name}")
+        return False
+
+
+def _merge_anatomical_group(mesh_group, group_name):
+    """Merge all meshes in an anatomical group into a single smooth mesh."""
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    if not mesh_group or len(mesh_group) <= 1:
+        if len(mesh_group) == 1:
+            mesh_group[0].name = f"VF3_{group_name}"
+            print(f"    ✅ Renamed single mesh to VF3_{group_name}")
+        return
+    
+    print(f"  🔧 Merging {len(mesh_group)} meshes into {group_name} group...")
+    
+    # Select all meshes in the group
+    primary_mesh = mesh_group[0]
+    bpy.ops.object.select_all(action='DESELECT')
+    
+    for mesh_obj in mesh_group:
+        try:
+            mesh_obj.select_set(True)
+        except (ReferenceError, AttributeError):
+            continue
+    
+    bpy.context.view_layer.objects.active = primary_mesh
+    
+    try:
+        # Join all meshes in the group
+        bpy.ops.object.join()
+        
+        # Rename the merged mesh
+        primary_mesh.name = f"VF3_{group_name}"
+        
+        # Enter Edit mode and merge overlapping vertices to create smooth connections
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+        bpy.ops.mesh.normals_make_consistent(inside=False)  # Fix normals
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print(f"    ✅ Successfully created VF3_{group_name} with merged geometry")
+        
+    except Exception as e:
+        print(f"    ❌ Failed to merge {group_name} group: {e}")
+
+
 def _merge_breast_meshes_with_body(mesh_objects):
     """
     Merge breast meshes with the body mesh to create a unified torso mesh.

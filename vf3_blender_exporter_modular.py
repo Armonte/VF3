@@ -267,35 +267,12 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     mesh_objects = valid_mesh_objects
     print(f"  Filtered mesh objects after connector creation: {len(mesh_objects)} valid objects")
     
-    # Step 7: Selective merging for better object hierarchy
-    # Only merge connectors and closely related parts, keep major limbs separate
+    # Step 7: PROPER ANATOMICAL GROUPING for smooth mesh export
+    # Create proper anatomical groups: body, left arm, right arm, left leg, right leg, head
     
-    print("🔧 Merging breast meshes with body...")
-    from vf3_mesh_merging import _merge_breast_meshes_with_body
-    _merge_breast_meshes_with_body(mesh_objects)
-    
-    # Build leg chains but keep them as separate leg objects (don't merge to body)
-    print("🔧 Merging feet with lower legs...")
-    from vf3_mesh_merging import _merge_feet_meshes_with_legs
-    _merge_feet_meshes_with_legs(mesh_objects)
-    
-    print("🔧 Merging lower legs with thighs...")
-    from vf3_mesh_merging import _merge_lower_legs_meshes_with_thighs
-    _merge_lower_legs_meshes_with_thighs(mesh_objects)
-    
-    # Skip: Don't merge complete legs with body - keep as separate l_leg1/r_leg1 objects
-    print("🔧 Keeping leg assemblies separate from body for better hierarchy")
-    
-    # Build arm chains but keep them as separate arm objects (don't merge to body)  
-    print("🔧 Merging forearms with upper arms...")
-    from vf3_mesh_merging import _merge_forearms_meshes_with_arms
-    _merge_forearms_meshes_with_arms(mesh_objects)
-    
-    # Skip: Don't merge hands with arms - keep hands separate
-    print("🔧 Keeping hands separate from arms for better hierarchy")
-    
-    # Skip: Don't merge arms with body - keep as separate l_arm1/r_arm1 objects
-    print("🔧 Keeping arm assemblies separate from body for better hierarchy")
+    print("🔧 Creating proper anatomical groups for smooth export...")
+    from vf3_mesh_merging import _create_anatomical_mesh_groups
+    _create_anatomical_mesh_groups(mesh_objects)
     
     # Connectors were already created before merging (moved above)
     
