@@ -1589,16 +1589,65 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
     target_mesh = None
     connector_name = connector_obj.name.lower()
     
-    # Define merging candidates based on connector number (determined from DynamicVisual processing order)
-    # Order is based on the occupancy slot processing: body, arms, hands, waist, legs, foots
-    merge_candidates_by_number = {
-        '0': ['body_female'],  # Body/torso connectors (breasts already merged with body)
-        '1': ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female'],  # Arm connectors
-        '2': ['l_hand_female', 'r_hand_female'],  # Hand/wrist connectors  
-        '3': ['waist_female', 'body_female'],  # Waist connectors
-        '4': ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female'],  # Leg connectors (hips/knees/thighs)
-        '5': ['l_foot_female', 'r_foot_female', 'l_leg2_female', 'r_leg2_female']  # Foot/ankle connectors
-    }
+    # DYNAMIC connector targeting based on what meshes actually exist after occupancy filtering
+    # This adapts to both naked (female) and clothed (blazer/skirt/shoes) configurations
+    def get_dynamic_merge_candidates(connector_number, existing_mesh_names):
+        """Get appropriate merge targets based on what meshes actually exist."""
+        existing_names_lower = [name.lower() for name in existing_mesh_names]
+        
+        if connector_number == '0':  # Body/torso connectors
+            # Prefer blazer body, fallback to female body
+            candidates = []
+            for name in existing_names_lower:
+                if 'body' in name and ('blazer' in name or 'female' in name):
+                    candidates.append(name)
+            return candidates or ['body_female']
+            
+        elif connector_number == '1':  # Arm connectors (elbows)
+            # Prefer blazer arms, fallback to female arms
+            candidates = []
+            for name in existing_names_lower:
+                if ('arm1' in name or 'arm2' in name) and ('blazer' in name or 'female' in name):
+                    candidates.append(name)
+            return candidates or ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female']
+            
+        elif connector_number == '2':  # Hand/wrist connectors
+            # Prefer blazer hands, fallback to female hands
+            candidates = []
+            for name in existing_names_lower:
+                if 'hand' in name and ('blazer' in name or 'female' in name):
+                    candidates.append(name)
+            return candidates or ['l_hand_female', 'r_hand_female']
+            
+        elif connector_number == '3':  # Waist connectors
+            # This should target waist/skirt area - prefer skirt, fallback to female waist
+            candidates = []
+            for name in existing_names_lower:
+                if ('waist' in name or 'skirt' in name) and ('satsuki' in name or 'female' in name):
+                    candidates.append(name)
+            return candidates or ['waist_female', 'body_female']
+            
+        elif connector_number == '4':  # Leg connectors (knees)
+            # Should target skin legs (not shoes), prefer female legs
+            candidates = []
+            for name in existing_names_lower:
+                if ('leg1' in name or 'leg2' in name) and 'female' in name:
+                    candidates.append(name)
+            return candidates or ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female']
+            
+        elif connector_number == '5':  # Foot/ankle connectors
+            # Prefer shoes, fallback to female feet
+            candidates = []
+            for name in existing_names_lower:
+                if ('foot' in name or 'shoe' in name) and ('satsuki' in name or 'female' in name):
+                    candidates.append(name)
+            return candidates or ['l_foot_female', 'r_foot_female', 'l_leg2_female', 'r_leg2_female']
+            
+        return []  # Unknown connector number
+    
+    # Get list of existing mesh names for dynamic targeting
+    existing_mesh_names = [mesh_obj.name for mesh_obj in mesh_objects if hasattr(mesh_obj, 'name')]
+    merge_candidates_by_number = {}
     
     # Extract connector number from name (e.g., "dynamic_connector_0_vf3mesh" -> "0")
     target_categories = []
@@ -1606,8 +1655,9 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
     match = re.search(r'dynamic_connector_(\d+)_', connector_name)
     if match:
         connector_number = match.group(1)
-        target_categories = merge_candidates_by_number.get(connector_number, [])
-        print(f"      Connector {connector_number} -> merge targets: {target_categories}")
+        target_categories = get_dynamic_merge_candidates(connector_number, existing_mesh_names)
+        print(f"      Connector {connector_number} -> DYNAMIC merge targets: {target_categories}")
+        print(f"        Available meshes: {[name for name in existing_mesh_names if any(keyword in name.lower() for keyword in ['body', 'arm', 'hand', 'waist', 'leg', 'foot', 'skirt', 'blazer'])]}")
     else:
         # Fallback to old logic for non-numbered connectors
         merge_candidates = {
@@ -1841,11 +1891,21 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
                             a = color_values[3] / 255.0 if len(color_values) > 3 else 1.0
                             
                             # Only use parsed color if it's not pure white (which often means "use default")
-                            if not (r > 0.95 and g > 0.95 and b > 0.95):
+                            # SPECIAL CASE: Override VF3 material for skin connectors (knees, shoulders) with skin tone
+                            connector_name = connector_obj.name.lower()
+                            should_use_skin = False
+                            if 'dynamic_connector_4_' in connector_name:  # Knee connectors should use skin
+                                should_use_skin = True
+                                print(f"      Overriding VF3 material for knee connector to use skin tone")
+                            elif 'dynamic_connector_0_' in connector_name and any('female' in name.lower() for name in [mesh_obj.name for mesh_obj in bpy.context.scene.objects if mesh_obj.type == 'MESH']):  # Body connectors in naked mode
+                                should_use_skin = True
+                                print(f"      Overriding VF3 material for body connector to use skin tone (naked mode)")
+                            
+                            if should_use_skin or (r > 0.95 and g > 0.95 and b > 0.95):
+                                print(f"      VF3 material overridden/white, using skin tone instead: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
+                            else:
                                 applied_color = (r, g, b)
                                 print(f"      Applied VF3 material color: ({r:.3f}, {g:.3f}, {b:.3f})")
-                            else:
-                                print(f"      VF3 material is white, using skin tone instead: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
                         else:
                             print(f"      Invalid material values, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
                     else:
@@ -2012,9 +2072,9 @@ def _collect_attachments_with_occupancy_filtering(desc):
     clothing_attachments_with_occupancy = []
     clothing_dynamic_meshes = []
     
-    # TEMP: Disable clothing to focus on naked base body DynamicVisual connectors
-    default_costume = []  # parse_defaultcos(desc)
-    print(f"  DEBUG: NAKED MODE - Disabled clothing, only loading base skin")
+    # Parse clothing from default costume
+    default_costume = parse_defaultcos(desc)
+    print(f"  DEBUG: COSTUME MODE - Loading {len(default_costume)} costume items from defaultcos")
     for costume_item in default_costume:
         # Look for the costume item definition
         # Handle namespace: "satsuki.blazer" -> try both "satsuki.blazer" and "blazer"

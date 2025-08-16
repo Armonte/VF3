@@ -94,16 +94,62 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                                         'vertex_bones': merged_vertex_bones
                                     }
                                     print(f"    DynamicVisual: Merged {len(dynamic_mesh['vertices'])} vertices from {source} with existing mesh")
-                        elif current_winner is None or occ_value > current_winner['occupancy']:
-                            # This source wins this slot
-                            action = "REPLACED" if current_winner else "occupied"
+                        elif current_winner is None:
+                            # First source to occupy this slot
                             slot_winners[slot_idx] = {
                                 'occupancy': occ_value,
                                 'source': source,
                                 'attachments': attachments,
-                                'dynamic_mesh': dynamic_mesh
+                                'dynamic_mesh': dynamic_mesh,
+                                'layers': [{'source': source, 'attachments': attachments, 'occupancy': occ_value}]
                             }
-                            print(f"  {group_name}: Slot {slot_idx} {action} by {source} with occupancy {occ_value}")
+                            print(f"  {group_name}: Slot {slot_idx} occupied by {source} with occupancy {occ_value}")
+                        elif occ_value > current_winner['occupancy']:
+                            # VF3 Occupancy Rules:
+                            # - Occupancy 2: ADDITIVE (costume + underwear both kept)
+                            # - Occupancy 3: REPLACEMENT (only costume kept, underwear discarded)
+                            
+                            if occ_value == 2:
+                                # ADDITIVE: Keep both base and costume (e.g., skirt + underwear)
+                                if 'layers' not in current_winner:
+                                    current_winner['layers'] = [{'source': current_winner['source'], 'attachments': current_winner['attachments'], 'occupancy': current_winner['occupancy']}]
+                                
+                                # Add new layer on top, keeping base layer
+                                current_winner['layers'].append({'source': source, 'attachments': attachments, 'occupancy': occ_value})
+                                
+                                # Update primary winner to highest occupancy
+                                current_winner.update({
+                                    'occupancy': occ_value,
+                                    'source': source,
+                                    'attachments': attachments,
+                                    'dynamic_mesh': dynamic_mesh
+                                })
+                                print(f"  {group_name}: Slot {slot_idx} ADDITIVE by {source} with occupancy {occ_value} (keeping base layer)")
+                                
+                            elif occ_value >= 3:
+                                # REPLACEMENT: Completely replace base with costume (e.g., blazer replaces skin)
+                                current_winner.update({
+                                    'occupancy': occ_value,
+                                    'source': source,
+                                    'attachments': attachments,
+                                    'dynamic_mesh': dynamic_mesh
+                                })
+                                # Remove layers to indicate complete replacement
+                                if 'layers' in current_winner:
+                                    del current_winner['layers']
+                                print(f"  {group_name}: Slot {slot_idx} REPLACED by {source} with occupancy {occ_value} (discarding base layer)")
+                            
+                            else:
+                                # For occupancy 1 or unknown, default to replacement
+                                current_winner.update({
+                                    'occupancy': occ_value,
+                                    'source': source,
+                                    'attachments': attachments,
+                                    'dynamic_mesh': dynamic_mesh
+                                })
+                                if 'layers' in current_winner:
+                                    del current_winner['layers']
+                                print(f"  {group_name}: Slot {slot_idx} DEFAULT REPLACED by {source} with occupancy {occ_value}")
                         else:
                             print(f"  {group_name}: Slot {slot_idx} - {source} (occupancy {occ_value}) loses to existing winner (occupancy {current_winner['occupancy']})")
     
@@ -111,9 +157,41 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
     final_attachments = []
     final_dynamic_meshes = []
     seen_dynamic_meshes = set()  # Track sources to avoid duplicates
+    seen_attachment_sources = set()  # Track attachment sources to avoid duplicates
     
     for slot_idx, winner in slot_winners.items():
-        final_attachments.extend(winner['attachments'])
+        # Process according to VF3 occupancy rules
+        if 'layers' in winner:
+            # ADDITIVE (occupancy 2): Include all layers (base + costume)
+            print(f"  FINAL: Slot {slot_idx} ADDITIVE with {len(winner['layers'])} layers:")
+            for layer_idx, layer in enumerate(winner['layers']):
+                layer_source = layer['source']
+                layer_attachments = layer['attachments']
+                
+                # Add all layer attachments, but avoid duplicates from same source across layers
+                if layer_source not in seen_attachment_sources:
+                    final_attachments.extend(layer_attachments)
+                    seen_attachment_sources.add(layer_source)
+                    print(f"    Layer {layer_idx}: {len(layer_attachments)} attachments from {layer_source} (occupancy {layer['occupancy']})")
+                else:
+                    print(f"    Layer {layer_idx}: attachments from {layer_source} (DUPLICATE - SKIPPED)")
+        else:
+            # REPLACEMENT (occupancy 3) or single layer: Include only winner
+            source_key = winner['source']
+            if source_key not in seen_attachment_sources:
+                final_attachments.extend(winner['attachments'])
+                seen_attachment_sources.add(source_key)
+                if winner['occupancy'] >= 3:
+                    print(f"  FINAL: Slot {slot_idx} REPLACEMENT -> {len(winner['attachments'])} attachments from {winner['source']} (base discarded)")
+                else:
+                    print(f"  FINAL: Slot {slot_idx} SINGLE -> {len(winner['attachments'])} attachments from {winner['source']}")
+            else:
+                if winner['occupancy'] >= 3:
+                    print(f"  FINAL: Slot {slot_idx} REPLACEMENT -> attachments from {winner['source']} (DUPLICATE - SKIPPED)")
+                else:
+                    print(f"  FINAL: Slot {slot_idx} SINGLE -> attachments from {winner['source']} (DUPLICATE - SKIPPED)")
+        
+        # Handle dynamic mesh (always from top layer)
         if winner['dynamic_mesh']:
             # Use source as key to deduplicate DynamicVisual meshes from same source
             source_key = winner['source']
@@ -123,11 +201,9 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                 dynamic_mesh_with_source['source_info'] = {'source': winner['source']}
                 final_dynamic_meshes.append(dynamic_mesh_with_source)
                 seen_dynamic_meshes.add(source_key)
-                print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments + DynamicVisual from {winner['source']} (ADDED)")
+                print(f"    DynamicVisual from {winner['source']} (ADDED)")
             else:
-                print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments + DynamicVisual from {winner['source']} (DUPLICATE - SKIPPED)")
-        else:
-            print(f"  FINAL: Slot {slot_idx} -> {len(winner['attachments'])} attachments from {winner['source']}")
+                print(f"    DynamicVisual from {winner['source']} (DUPLICATE - SKIPPED)")
     
     print(f"OCCUPANCY FILTER: Final result: {len(final_attachments)} attachments, {len(final_dynamic_meshes)} dynamic meshes (deduplicated)")
     

@@ -106,47 +106,9 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         connector_obj = bpy.data.objects.new(connector_name, blender_mesh)
         bpy.context.collection.objects.link(connector_obj)
         
-        # Create material using actual VF3 material data
-        material = bpy.data.materials.new(name=f"{connector_name}_material")
-        material.use_nodes = True
-        bsdf = material.node_tree.nodes.get("Principled BSDF")
-        if bsdf:
-            # Use actual material color from DynamicVisual Material section
-            skin_color = (1.000, 0.759, 0.586)  # Standard skin tone from regular meshes
-            applied_color = skin_color  # Default to skin tone for all connectors
-            
-            if 'materials' in dyn_data and len(dyn_data['materials']) > 0:
-                # Parse the first material entry: (r,g,b,a)::
-                material_line = dyn_data['materials'][0]
-                try:
-                    # Extract color values from "(r,g,b,a)::" format
-                    if material_line.startswith('(') and ')' in material_line:
-                        color_part = material_line[material_line.find('(')+1:material_line.find(')')]
-                        color_values = [float(x.strip()) for x in color_part.split(',')]
-                        if len(color_values) >= 3:
-                            # Convert from 0-255 range to 0-1 range and apply gamma correction like regular meshes
-                            r = (color_values[0] / 255.0) ** 2.2
-                            g = (color_values[1] / 255.0) ** 2.2  
-                            b = (color_values[2] / 255.0) ** 2.2
-                            a = color_values[3] / 255.0 if len(color_values) > 3 else 1.0
-                            
-                            # Only use parsed color if it's not pure white (which often means "use default")
-                            if not (r > 0.95 and g > 0.95 and b > 0.95):
-                                applied_color = (r, g, b)
-                                print(f"      Applied VF3 material color: ({r:.3f}, {g:.3f}, {b:.3f})")
-                            else:
-                                print(f"      VF3 material is white, using skin tone instead: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
-                        else:
-                            print(f"      Invalid material values, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
-                    else:
-                        print(f"      Invalid material format, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
-                except:
-                    print(f"      Failed to parse material, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
-            else:
-                print(f"      No material data, using skin tone: ({applied_color[0]:.3f}, {applied_color[1]:.3f}, {applied_color[2]:.3f})")
-                
-            bsdf.inputs['Base Color'].default_value = (*applied_color, 1.0)
-        connector_obj.data.materials.append(material)
+        # Skip creating materials for connectors - they will inherit from target meshes during merge
+        # This prevents skin-tone materials from contaminating the final merged meshes
+        print(f"      Skipping material creation for connector {connector_name} - will inherit from target mesh")
         
         # Bind vertices to their respective bones (like VF3 does with bone flags)
         created_vertex_groups = set()
