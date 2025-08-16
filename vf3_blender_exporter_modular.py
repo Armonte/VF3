@@ -143,14 +143,20 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         
         # Clean up mesh to reduce z-fighting
         blender_mesh.validate()  # Fix invalid geometry
-        # Remove doubles/duplicates to prevent z-fighting
-        import bmesh
-        bm = bmesh.new()
-        bm.from_mesh(blender_mesh)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)  # Very small threshold
-        bm.to_mesh(blender_mesh)
-        bm.free()
-        blender_mesh.update()
+        
+        # CRITICAL: Don't remove doubles for head meshes - they may have duplicate vertices with different UVs
+        if "head" not in mesh_name.lower():
+            # Remove doubles/duplicates to prevent z-fighting (only for non-head meshes)
+            import bmesh
+            bm = bmesh.new()
+            bm.from_mesh(blender_mesh)
+            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)  # Very small threshold
+            bm.to_mesh(blender_mesh)
+            bm.free()
+            blender_mesh.update()
+            print(f"  Removed duplicate vertices for {mesh_name}")
+        else:
+            print(f"  Skipped vertex deduplication for head mesh {mesh_name} (preserves UV mapping)")
         
         # Enable smooth shading for Gouraud-like appearance (same as VF3)
         for poly in blender_mesh.polygons:
@@ -650,8 +656,9 @@ if __name__ == "__main__":
         attachments, _clothing_dynamic_meshes = _collect_attachments_with_occupancy_filtering(desc, include_skin, include_items)
         print(f"🎌 Total attachments collected: {len(attachments)} (after occupancy filtering)")
         
-        # For Satsuki, add both head variants to get both stkface.bmp and stkface2.bmp
-        if "satsuki" in descriptor_path.lower():
+        # DISABLED: Don't add both head variants - this was causing UV confusion and Z-fighting
+        # The main head should handle both textures properly
+        if False and "satsuki" in descriptor_path.lower():
             print("🎌 Adding both head variants for Satsuki (stkface + stkface2)...")
             try:
                 from vf3_loader import resolve_identifier_to_attachments

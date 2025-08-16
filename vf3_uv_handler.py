@@ -29,30 +29,62 @@ def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mes
     uv_layer = blender_mesh.uv_layers.active.data
     
     if existing_uv is not None:
-        # Check if we have face materials (VF3 uses per-face UV mapping)
-        face_materials = None
-        
-        # FIRST: Check mesh_info dictionary (this is where our .X parser stores face materials!)
-        if mesh_info and 'face_materials' in mesh_info:
-            face_materials = mesh_info['face_materials']
-            print(f"  Found face materials in mesh_info: {len(face_materials)}")
-        # Fallback: Check multiple possible locations on trimesh object
-        elif hasattr(trimesh_mesh.visual, 'face_materials'):
-            face_materials = trimesh_mesh.visual.face_materials
-            print(f"  Found face materials in visual.face_materials: {len(face_materials)}")
-        elif hasattr(trimesh_mesh, 'face_materials'):
-            face_materials = trimesh_mesh.face_materials
-            print(f"  Found face materials directly on mesh: {len(face_materials)}")
-            
-        if face_materials is not None and len(face_materials) > 0:
-            print(f"  Using VF3-style per-face UV mapping with {len(face_materials)} face materials")
-            apply_face_based_uv_coordinates(blender_mesh, uv_layer, existing_uv, face_materials, mesh_name)
-        else:
-            print(f"  Using per-vertex UV mapping (no face materials)")
-            apply_existing_uv_coordinates_exact(blender_mesh, uv_layer, existing_uv, mesh_name)
+        # SIMPLE: Just preserve UV coordinates from .X file exactly as they are
+        print(f"  Applying {len(existing_uv)} UV coordinates from .X file to {mesh_name}")
+        apply_simple_uv_coordinates(blender_mesh, uv_layer, existing_uv, mesh_name)
     else:
         # Generate simple planar UV mapping as fallback
         generate_simple_uv_mapping(blender_mesh, uv_layer, mesh_name)
+
+
+def apply_simple_uv_coordinates(blender_mesh, uv_layer, uv_coords, mesh_name):
+    """
+    Apply UV coordinates SIMPLY - just preserve them from the .X file.
+    No complex logic, no face materials, just basic UV mapping.
+    """
+    
+    print(f"  Simple UV mapping: {len(uv_coords)} UVs to {len(blender_mesh.vertices)} vertices")
+    
+    loop_index = 0
+    
+    # Method 1: Per-vertex UV mapping (most common case)
+    if len(uv_coords) == len(blender_mesh.vertices):
+        print(f"  Perfect match: {len(uv_coords)} UVs = {len(blender_mesh.vertices)} vertices")
+        
+        for poly in blender_mesh.polygons:
+            for loop_idx in poly.loop_indices:
+                vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                if vertex_idx < len(uv_coords):
+                    u, v = uv_coords[vertex_idx]
+                    uv_layer[loop_index].uv = (float(u), float(v))
+                loop_index += 1
+                
+        print(f"  ✅ Applied simple UV coordinates to {mesh_name}")
+        
+    # Method 2: Per-loop UV mapping
+    elif len(uv_coords) == len(uv_layer):
+        print(f"  Loop mapping: {len(uv_coords)} UVs = {len(uv_layer)} loops")
+        
+        for i, uv_coord in enumerate(uv_coords):
+            u, v = uv_coord
+            uv_layer[i].uv = (float(u), float(v))
+            
+        print(f"  ✅ Applied simple UV coordinates to {mesh_name}")
+        
+    # Method 3: Handle mismatches with wrapping
+    else:
+        print(f"  Mismatch: {len(uv_coords)} UVs vs {len(blender_mesh.vertices)} vertices - using wrapping")
+        
+        for poly in blender_mesh.polygons:
+            for loop_idx in poly.loop_indices:
+                vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                # Use modulo to wrap around UV coordinates
+                uv_idx = vertex_idx % len(uv_coords)
+                u, v = uv_coords[uv_idx]
+                uv_layer[loop_index].uv = (float(u), float(v))
+                loop_index += 1
+                
+        print(f"  ⚠️ Applied UV coordinates with wrapping to {mesh_name}")
 
 
 def apply_face_based_uv_coordinates(blender_mesh, uv_layer, uv_coords, face_materials, mesh_name):
