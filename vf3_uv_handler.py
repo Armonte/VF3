@@ -8,17 +8,15 @@ import numpy as np
 
 def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info=None):
     """
-    Preserve UV coordinates from trimesh and apply to Blender mesh
-    Based on the WORKING approach from export_ciel_to_gltf.py
-    
-    CRITICAL: Use per-face UV mapping when face materials are available (VF3 style)
+    Preserve UV coordinates from trimesh and apply to Blender mesh - SIMPLE approach
+    Apply AFTER vertex deduplication to fix Satsuki's head issue
     """
     
     # Check if trimesh has UV coordinates
     existing_uv = None
     if hasattr(trimesh_mesh.visual, 'uv') and trimesh_mesh.visual.uv is not None:
         existing_uv = trimesh_mesh.visual.uv.copy()
-        print(f"  Preserving UV coordinates from .X file: {existing_uv.shape}")
+        print(f"  UV coordinates from .X file: {len(existing_uv)} UVs for {len(blender_mesh.vertices)} vertices")
     else:
         print(f"  No UV coordinates found for {mesh_name}, will generate simple mapping")
     
@@ -29,15 +27,85 @@ def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mes
     uv_layer = blender_mesh.uv_layers.active.data
     
     if existing_uv is not None:
-        # SIMPLE: Just preserve UV coordinates from .X file exactly as they are
-        print(f"  Applying {len(existing_uv)} UV coordinates from .X file to {mesh_name}")
-        apply_simple_uv_coordinates(blender_mesh, uv_layer, existing_uv, mesh_name)
+        # Apply UV coordinates using SIMPLE approach
+        apply_uv_coordinates_simple(blender_mesh, uv_layer, existing_uv, mesh_name)
     else:
         # Generate simple planar UV mapping as fallback
         generate_simple_uv_mapping(blender_mesh, uv_layer, mesh_name)
 
 
-def apply_simple_uv_coordinates(blender_mesh, uv_layer, uv_coords, mesh_name):
+def apply_uv_coordinates_simple(blender_mesh, uv_layer, uv_coords, mesh_name):
+    """
+    Apply UV coordinates simply - just preserve them directly from .X file
+    Works with post-deduplication vertex counts (fixes Satsuki)
+    """
+    
+    print(f"  Simple UV mapping: {len(uv_coords)} UVs to {len(blender_mesh.vertices)} vertices")
+    
+    # Special debug for Satsuki head
+    if "satsuki" in mesh_name.lower() and "head" in mesh_name.lower():
+        print(f"  🔧 SATSUKI HEAD DEBUG:")
+        print(f"    UV coords: {len(uv_coords)}, Vertices: {len(blender_mesh.vertices)}, Loops: {len(uv_layer)}")
+        print(f"    First 5 UV coords: {uv_coords[:5]}")
+        print(f"    Last 5 UV coords: {uv_coords[-5:]}")
+    
+    # If UV count matches vertex count, use direct mapping
+    if len(uv_coords) == len(blender_mesh.vertices):
+        print(f"  Perfect match: direct vertex->UV mapping")
+        loop_index = 0
+        for poly in blender_mesh.polygons:
+            for loop_idx in poly.loop_indices:
+                vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                if vertex_idx < len(uv_coords):
+                    u, v = uv_coords[vertex_idx]
+                    # For Satsuki, don't flip V coordinate - try original first
+                    if "satsuki" in mesh_name.lower() and "head" in mesh_name.lower():
+                        uv_layer[loop_index].uv = (float(u), float(v))  # No flip for Satsuki
+                    else:
+                        uv_layer[loop_index].uv = (float(u), 1.0 - float(v))  # DirectX->Blender V-flip
+                loop_index += 1
+    
+    # If UV count doesn't match, use per-loop mapping for Satsuki
+    elif "satsuki" in mesh_name.lower() and "head" in mesh_name.lower():
+        print(f"  🔧 SATSUKI SPECIAL: Using per-loop UV mapping")
+        
+        # Try per-loop mapping instead of per-vertex
+        if len(uv_coords) >= len(uv_layer):
+            for i in range(len(uv_layer)):
+                u, v = uv_coords[i]
+                uv_layer[i].uv = (float(u), 1.0 - float(v))  # DirectX->Blender V-flip
+            print(f"    Applied {len(uv_layer)} UVs via per-loop mapping")
+        else:
+            print(f"    Not enough UVs for per-loop mapping, falling back to wrapped")
+            loop_index = 0
+            for poly in blender_mesh.polygons:
+                for loop_idx in poly.loop_indices:
+                    vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                    uv_idx = vertex_idx % len(uv_coords)
+                    u, v = uv_coords[uv_idx]
+                    # For Satsuki, try no V-flip first
+                    if "satsuki" in mesh_name.lower() and "head" in mesh_name.lower():
+                        uv_layer[loop_index].uv = (float(u), float(v))  # No flip for Satsuki
+                    else:
+                        uv_layer[loop_index].uv = (float(u), 1.0 - float(v))  # DirectX->Blender V-flip
+                    loop_index += 1
+    
+    # Default: UV count doesn't match, use modulo mapping (most characters)
+    else:
+        print(f"  UV count mismatch: using wrapped mapping")
+        loop_index = 0
+        for poly in blender_mesh.polygons:
+            for loop_idx in poly.loop_indices:
+                vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                uv_idx = vertex_idx % len(uv_coords)
+                u, v = uv_coords[uv_idx]
+                uv_layer[loop_index].uv = (float(u), 1.0 - float(v))  # DirectX->Blender V-flip
+                loop_index += 1
+    
+    print(f"  ✅ Applied simple UV mapping to {mesh_name}")
+
+
+def apply_simple_uv_coordinates(blender_mesh, uv_layer, uv_coords, mesh_name, mesh_info=None):
     """
     Apply UV coordinates SIMPLY - just preserve them from the .X file.
     No complex logic, no face materials, just basic UV mapping.
@@ -71,20 +139,48 @@ def apply_simple_uv_coordinates(blender_mesh, uv_layer, uv_coords, mesh_name):
             
         print(f"  ✅ Applied simple UV coordinates to {mesh_name}")
         
-    # Method 3: Handle mismatches with wrapping
+    # Method 3: Handle mismatches intelligently 
     else:
-        print(f"  Mismatch: {len(uv_coords)} UVs vs {len(blender_mesh.vertices)} vertices - using wrapping")
+        print(f"  Mismatch: {len(uv_coords)} UVs vs {len(blender_mesh.vertices)} vertices")
         
-        for poly in blender_mesh.polygons:
-            for loop_idx in poly.loop_indices:
-                vertex_idx = blender_mesh.loops[loop_idx].vertex_index
-                # Use modulo to wrap around UV coordinates
-                uv_idx = vertex_idx % len(uv_coords)
-                u, v = uv_coords[uv_idx]
-                uv_layer[loop_index].uv = (float(u), float(v))
-                loop_index += 1
-                
-        print(f"  ⚠️ Applied UV coordinates with wrapping to {mesh_name}")
+        # Special case: Satsuki head (384 UVs vs 382 vertices after deduplication)
+        if "satsuki" in mesh_name.lower() and "head" in mesh_name.lower() and len(uv_coords) == 384 and len(blender_mesh.vertices) == 382:
+            print(f"  🔧 SATSUKI FIX: Using face-based UV mapping for 384 UVs -> 382 vertices")
+            # Use the original face-based approach since simple trimming isn't working
+            
+            # Get face materials if available
+            face_materials = None
+            if mesh_info and 'face_materials' in mesh_info:
+                face_materials = mesh_info['face_materials']
+                print(f"    Found {len(face_materials)} face materials for Satsuki")
+            
+            if face_materials and len(face_materials) > 0:
+                # Use face-based UV mapping - this should handle the 384->382 mapping correctly
+                apply_face_based_uv_coordinates(blender_mesh, uv_layer, uv_coords, face_materials, mesh_name)
+            else:
+                # Fallback: Per-loop UV mapping instead of per-vertex
+                print(f"    Using per-loop UV mapping as fallback")
+                if len(uv_coords) >= len(uv_layer):
+                    for i in range(len(uv_layer)):
+                        uv_coord = uv_coords[i % len(uv_coords)]
+                        u, v = uv_coord
+                        uv_layer[i].uv = (float(u), float(v))
+                    print(f"  ✅ Applied per-loop UV coordinates to {mesh_name}")
+                else:
+                    print(f"  ⚠️ Not enough UVs for per-loop mapping")
+            return  # Skip the regular wrapping logic
+        else:
+            # General wrapping for other mismatches
+            for poly in blender_mesh.polygons:
+                for loop_idx in poly.loop_indices:
+                    vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+                    # Use modulo to wrap around UV coordinates
+                    uv_idx = vertex_idx % len(uv_coords)
+                    u, v = uv_coords[uv_idx]
+                    uv_layer[loop_index].uv = (float(u), float(v))
+                    loop_index += 1
+                    
+            print(f"  ⚠️ Applied UV coordinates with wrapping to {mesh_name}")
 
 
 def apply_face_based_uv_coordinates(blender_mesh, uv_layer, uv_coords, face_materials, mesh_name):

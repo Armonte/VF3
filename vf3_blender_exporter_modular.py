@@ -137,16 +137,11 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         blender_mesh.from_pydata(vertices.tolist(), [], faces)
         blender_mesh.update()
 
-        # Assign UVs if available (now uses mesh_info as primary source)
-        from vf3_uv_handler import preserve_and_apply_uv_coordinates
-        preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info)
-        
-        # Clean up mesh to reduce z-fighting
+        # Clean up mesh to reduce z-fighting FIRST
         blender_mesh.validate()  # Fix invalid geometry
         
-        # CRITICAL: Don't remove doubles for head meshes - they may have duplicate vertices with different UVs
-        if "head" not in mesh_name.lower():
-            # Remove doubles/duplicates to prevent z-fighting (only for non-head meshes)
+        # Clean up mesh to reduce z-fighting (apply to all meshes EXCEPT Satsuki head)
+        if not ("satsuki" in mesh_name.lower() and "head" in mesh_name.lower()):
             import bmesh
             bm = bmesh.new()
             bm.from_mesh(blender_mesh)
@@ -154,9 +149,13 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
             bm.to_mesh(blender_mesh)
             bm.free()
             blender_mesh.update()
-            print(f"  Removed duplicate vertices for {mesh_name}")
         else:
-            print(f"  Skipped vertex deduplication for head mesh {mesh_name} (preserves UV mapping)")
+            print(f"  Skipping vertex deduplication for {mesh_name} to preserve UV mapping")
+        
+        # Assign UVs AFTER vertex deduplication (critical for Satsuki!)
+        from vf3_uv_handler import preserve_and_apply_uv_coordinates
+        preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info)
+        print(f"  Cleaned duplicate vertices for {mesh_name}: final {len(blender_mesh.vertices)} vertices")
         
         # Enable smooth shading for Gouraud-like appearance (same as VF3)
         for poly in blender_mesh.polygons:
