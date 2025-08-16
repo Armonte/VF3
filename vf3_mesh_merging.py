@@ -156,60 +156,69 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
     target_meshes = []
     max_count = 0
     
-    # SIMPLE AND CORRECT: Assign connector to the anatomical group with the HIGHEST weighted score
-    # This matches VF3 bone group assignment - if a connector has more body bones, it goes to body
-    # If it has more left arm bones, it goes to left arm, etc.
+    # SMART BILATERAL DISTRIBUTION: Count bones per region, handle bilateral ties intelligently
     
-    # Find the region with the highest weighted score
-    max_score = 0
-    tied_regions = []
+    # Simple bone counting (no weighted scores, just raw counts)
+    region_bone_counts = {
+        'body': sum(1 for vg in vg_names if vg in ['body', 'l_breast', 'r_breast', 'waist', 'skirt_f', 'skirt_r']),
+        'left_arm': sum(1 for vg in vg_names if vg in ['l_arm1', 'l_arm2', 'l_hand']),
+        'right_arm': sum(1 for vg in vg_names if vg in ['r_arm1', 'r_arm2', 'r_hand']),
+        'left_leg': sum(1 for vg in vg_names if vg in ['l_leg1', 'l_leg2', 'l_foot']),
+        'right_leg': sum(1 for vg in vg_names if vg in ['r_leg1', 'r_leg2', 'r_foot']),
+        'head': sum(1 for vg in vg_names if vg in ['head', 'neck'])
+    }
     
-    # First pass: find the maximum score
-    for region, score in region_weighted_scores.items():
-        if score > max_score:
-            max_score = score
+    print(f"    Simple bone counts: {region_bone_counts}")
     
-    # Second pass: find all regions with the maximum score
-    for region, score in region_weighted_scores.items():
-        if score == max_score and score > 0:
-            tied_regions.append(region)
+    # Find the maximum bone count
+    max_bones = max(region_bone_counts.values())
     
-    # Handle ties with simple alternating logic
+    # Find all regions with maximum bone count
+    tied_regions = [region for region, count in region_bone_counts.items() if count == max_bones and count > 0]
+    
+    # Handle assignment with smart bilateral distribution
     if len(tied_regions) == 1:
         target_group = tied_regions[0]
-    elif len(tied_regions) > 1:
-        # Use connector number for tie-breaking
-        import re
-        connector_match = re.search(r'dynamic_connector_(\d+)_', connector_name)
-        connector_num = int(connector_match.group(1)) if connector_match else 0
+        print(f"    Clear winner: {target_group} ({max_bones} bones)")
+    elif len(tied_regions) == 2 and set(tied_regions) in [{'left_arm', 'right_arm'}, {'left_leg', 'right_leg'}]:
+        # BILATERAL TIE: Use connector index to distribute evenly between left/right
+        # This ensures we don't assign all mixed connectors to the same side
         
-        # For legs: alternate between left and right
-        if 'left_leg' in tied_regions and 'right_leg' in tied_regions:
-            if connector_num % 2 == 0:
-                target_group = 'right_leg'
-            else:
-                target_group = 'left_leg'
-            print(f"    Tie-breaker: connector {connector_num} -> {target_group} (alternating assignment)")
-        # For arms: alternate between left and right
-        elif 'left_arm' in tied_regions and 'right_arm' in tied_regions:
-            if connector_num % 2 == 0:
-                target_group = 'right_arm'
-            else:
-                target_group = 'left_arm'
-            print(f"    Tie-breaker: connector {connector_num} -> {target_group} (alternating assignment)")
-        else:
-            # Other ties: just pick the first one
+        # Get a more unique identifier for deterministic bilateral distribution
+        # Use hash of connector name + vertex count + first bone name for better uniqueness
+        first_bone = vg_names[0] if vg_names else ""
+        connector_id = hash(connector_name + str(len(vg_names)) + first_bone) % 1000
+        
+        if set(tied_regions) == {'left_arm', 'right_arm'}:
+            # For arm ties, alternate assignment based on connector characteristics
+            target_group = 'left_arm' if connector_id % 2 == 0 else 'right_arm'
+            print(f"    Bilateral arm tie: assigned to {target_group} (connector_id={connector_id})")
+        elif set(tied_regions) == {'left_leg', 'right_leg'}:
+            # For leg ties, alternate assignment based on connector characteristics  
+            target_group = 'left_leg' if connector_id % 2 == 0 else 'right_leg'
+            print(f"    Bilateral leg tie: assigned to {target_group} (connector_id={connector_id})")
+    else:
+        # Multi-way tie or complex case: use original priority system
+        # Priority: body > left_arm > right_arm > left_leg > right_leg > head
+        priority_order = ['body', 'left_arm', 'right_arm', 'left_leg', 'right_leg', 'head']
+        
+        for priority_region in priority_order:
+            if priority_region in tied_regions:
+                target_group = priority_region
+                print(f"    Multi-way tie broken by priority: {target_group} ({max_bones} bones, tied with {tied_regions})")
+                break
+        
+        # If somehow no priority match (shouldn't happen)
+        if not target_group:
             target_group = tied_regions[0]
-            print(f"    Tie-breaker: connector {connector_num} -> {target_group} (first in list)")
-    else:
-        target_group = None
+            print(f"    Fallback: {target_group} ({max_bones} bones)")
     
-    if target_group and max_score > 0:
+    if target_group:
         target_meshes = anatomical_groups[target_group]
-        print(f"    Connector -> {target_group} group (highest score: {max_score}, scores: {region_weighted_scores})")
+        print(f"    ✅ Final assignment: {target_group} group")
         
     else:
-        # Fallback to bone type counts if all scores are 0
+        # Final fallback to bone type counts if all else fails
         for region, count in region_counts.items():
             if count > max_count:
                 max_count = count
