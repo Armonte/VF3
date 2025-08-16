@@ -113,7 +113,6 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                                 # ADDITIVE: Keep both base and costume (e.g., skirt + underwear)
                                 if 'layers' not in current_winner:
                                     base_dynamic_mesh = current_winner.get('dynamic_mesh')
-                                    print(f"    DEBUG: Creating base layer for {current_winner['source']}, dynamic_mesh: {base_dynamic_mesh is not None}")
                                     current_winner['layers'] = [{'source': current_winner['source'], 'attachments': current_winner['attachments'], 'occupancy': current_winner['occupancy'], 'dynamic_mesh': base_dynamic_mesh}]
                                 
                                 # Add new layer on top, keeping base layer
@@ -198,7 +197,6 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
             # ADDITIVE: Include DynamicVisual from ALL layers (both base and costume)
             for layer in winner['layers']:
                 layer_dynamic_mesh = layer.get('dynamic_mesh')
-                print(f"    DEBUG: Layer {layer['source']} has dynamic_mesh: {layer_dynamic_mesh is not None}")
                 if layer_dynamic_mesh:
                     source_key = layer['source']
                     if source_key not in seen_dynamic_meshes:
@@ -210,8 +208,6 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                         print(f"    DynamicVisual from {layer['source']} (ADDED)")
                     else:
                         print(f"    DynamicVisual from {layer['source']} (DUPLICATE - SKIPPED)")
-                else:
-                    print(f"    DEBUG: Layer {layer['source']} has no DynamicVisual data")
         else:
             # REPLACEMENT or SINGLE: Include only winner's DynamicVisual
             if winner['dynamic_mesh']:

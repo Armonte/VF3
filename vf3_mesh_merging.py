@@ -454,15 +454,23 @@ def _find_best_target_mesh_simple(connector_number, bone_counts, mesh_objects):
                     if 'body' in mesh_name and 'blazer' in mesh_name:
                         return mesh_obj
                         
-            # Connector 1 (elbow/wrist) - target arm meshes
+            # Connector 1 (elbow/wrist AND arm-to-body shoulder) - target separate arm meshes (not body!)
             elif connector_number == "1": 
                 if dominant_bone in ['l_arm1', 'r_arm1', 'l_arm2', 'r_arm2']:
-                    # Prefer arm1 blazer meshes for elbow connectors
-                    if 'arm1' in mesh_name and 'blazer' in mesh_name:
+                    # Target any arm mesh (blazer or female) for elbow connectors AND shoulder connectors
+                    if ('arm1' in mesh_name or 'arm2' in mesh_name) and ('blazer' in mesh_name or 'female' in mesh_name):
+                        print(f"        🎯 ARM CONNECTOR: Targeting arm mesh {mesh_obj.name} for connector 1 arm/shoulder geometry")
                         return mesh_obj
                 elif dominant_bone in ['l_hand', 'r_hand']:
                     # Target hand meshes for wrist connectors
-                    if 'hand' in mesh_name and 'blazer' in mesh_name:
+                    if 'hand' in mesh_name and ('blazer' in mesh_name or 'female' in mesh_name):
+                        print(f"        🎯 HAND CONNECTOR: Targeting hand mesh {mesh_obj.name} for connector 1 hand geometry")
+                        return mesh_obj
+                elif dominant_bone == 'body':
+                    # CRITICAL FIX: Body connectors from Connector 1 should go to ARM meshes for shoulder connections
+                    # This ensures when you select an arm, you get the complete arm including shoulder connection
+                    if ('arm1' in mesh_name or 'arm2' in mesh_name) and ('blazer' in mesh_name or 'female' in mesh_name):
+                        print(f"        🎯 SHOULDER CONNECTOR: Targeting arm mesh {mesh_obj.name} for connector 1 body-to-arm geometry")
                         return mesh_obj
                         
             # Connector 2 (skirt/waist) - target waist/skirt meshes  
@@ -486,9 +494,9 @@ def _find_best_target_mesh_simple(connector_number, bone_counts, mesh_objects):
         except (ReferenceError, AttributeError):
             continue
     
-    # Fallback: find any body mesh for body-related connectors
-    if connector_number in ["0", "1"] and dominant_bone in ['body', 'l_breast', 'r_breast', 'l_arm1', 'r_arm1']:
-        # First try blazer body meshes
+    # Fallback: find body mesh for body-only connectors (exclude arm connectors)
+    if connector_number == "0" and dominant_bone in ['body', 'l_breast', 'r_breast']:
+        # First try blazer body meshes  
         for mesh_obj in mesh_objects:
             try:
                 mesh_name = mesh_obj.name.lower()
@@ -504,6 +512,19 @@ def _find_best_target_mesh_simple(connector_number, bone_counts, mesh_objects):
                 mesh_name = mesh_obj.name.lower()
                 if 'body' in mesh_name and 'female' in mesh_name:
                     print(f"        Fallback: using female body mesh for connector {connector_number}")
+                    return mesh_obj
+            except (ReferenceError, AttributeError):
+                continue
+                
+    # Fallback for arm connectors: find separate arm/hand meshes (not body!) - including body bone connectors
+    elif connector_number == "1" and dominant_bone in ['l_arm1', 'r_arm1', 'l_arm2', 'r_arm2', 'l_hand', 'r_hand', 'body']:
+        # Try to find any arm or hand mesh - CRITICAL: Include body bone connectors for shoulder connections
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name.lower()
+                if (('arm' in mesh_name or 'hand' in mesh_name) and 
+                    ('blazer' in mesh_name or 'female' in mesh_name)):
+                    print(f"        Fallback: using arm/hand mesh {mesh_obj.name} for connector {connector_number} (including shoulder connections)")
                     return mesh_obj
             except (ReferenceError, AttributeError):
                 continue

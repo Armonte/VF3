@@ -106,9 +106,10 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         connector_obj = bpy.data.objects.new(connector_name, blender_mesh)
         bpy.context.collection.objects.link(connector_obj)
         
-        # Skip creating materials for connectors - they will inherit from target meshes during merge
-        # This prevents skin-tone materials from contaminating the final merged meshes
-        print(f"      Skipping material creation for connector {connector_name} - will inherit from target mesh")
+        # Create anatomically appropriate materials for connectors based on bone content
+        # This ensures connectors get proper skin/clothing materials based on their anatomical location
+        _assign_anatomical_material_to_connector(connector_obj, vertex_bone_names, mesh_objects)
+        print(f"      Created anatomically appropriate material for connector {connector_name}")
         
         # Bind vertices to their respective bones (like VF3 does with bone flags)
         created_vertex_groups = set()
@@ -215,6 +216,112 @@ def process_vf3_dynamic_visual_faces(vertices, vertex_bones, faces, dyn_idx, wor
 def _snap_connector_vertices_to_meshes(connector_vertices, mesh_objects, snap_threshold=1.5):
     """Legacy function for compatibility."""
     return connector_vertices
+
+def _assign_anatomical_material_to_connector(connector_obj, vertex_bone_names, mesh_objects):
+    """Assign anatomically appropriate material to connector based on bone content."""
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Analyze bone content to determine anatomical region
+    bone_counts = {}
+    for bone_name in vertex_bone_names:
+        bone_counts[bone_name] = bone_counts.get(bone_name, 0) + 1
+    
+    # Determine primary anatomical region based on dominant bones
+    if any('body' in bone or 'waist' in bone for bone in bone_counts):
+        material_type = 'skin'  # Body/waist connectors should be skin tone
+    elif any('leg' in bone or 'foot' in bone for bone in bone_counts):
+        material_type = 'skin'  # Leg connectors should be skin tone
+    elif any('arm' in bone or 'hand' in bone for bone in bone_counts):
+        material_type = 'skin'  # Arm connectors should be skin tone
+    elif any('blazer' in bone or 'coat' in bone for bone in bone_counts):
+        material_type = 'clothing'  # Clothing connectors inherit clothing materials
+    else:
+        material_type = 'skin'  # Default to skin tone for unknown regions
+    
+    # Find appropriate material from existing meshes
+    target_material = None
+    
+    if material_type == 'skin':
+        # Look for skin-tone materials in female body parts
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name.lower()
+                if ('female' in mesh_name or 'hand' in mesh_name or 'leg' in mesh_name) and mesh_obj.data.materials:
+                    for mat in mesh_obj.data.materials:
+                        if mat and _is_skin_material(mat):
+                            target_material = mat
+                            break
+                    if target_material:
+                        break
+            except (ReferenceError, AttributeError):
+                continue
+    else:
+        # Look for clothing materials in blazer/costume parts
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name.lower() 
+                if ('blazer' in mesh_name or 'coat' in mesh_name) and mesh_obj.data.materials:
+                    for mat in mesh_obj.data.materials:
+                        if mat and not _is_skin_material(mat):
+                            target_material = mat
+                            break
+                    if target_material:
+                        break
+            except (ReferenceError, AttributeError):
+                continue
+    
+    # Apply the material to the connector
+    if target_material:
+        connector_obj.data.materials.append(target_material)
+        print(f"        Assigned {material_type} material '{target_material.name}' to connector")
+    else:
+        # Create a default skin-tone material
+        default_mat = bpy.data.materials.new(name=f"Connector_Default_{material_type}")
+        default_mat.use_nodes = True
+        bsdf = default_mat.node_tree.nodes.get("Principled BSDF")
+        if bsdf:
+            if material_type == 'skin':
+                bsdf.inputs['Base Color'].default_value = (0.8, 0.7, 0.6, 1.0)  # Skin tone
+            else:
+                bsdf.inputs['Base Color'].default_value = (0.7, 0.7, 0.7, 1.0)  # Neutral
+        connector_obj.data.materials.append(default_mat)
+        print(f"        Created default {material_type} material for connector")
+
+
+def _is_skin_material(material):
+    """Check if a material appears to be skin-tone based on color."""
+    try:
+        if not material.use_nodes:
+            return False
+        
+        bsdf = material.node_tree.nodes.get("Principled BSDF")
+        if not bsdf:
+            return False
+            
+        color = bsdf.inputs['Base Color'].default_value
+        if len(color) < 3:
+            return False
+            
+        # Check if color is in skin tone range
+        r, g, b = color[0], color[1], color[2]
+        
+        # Skin tones are typically:
+        # - Higher red than blue
+        # - Moderate to high brightness
+        # - Not pure white, black, or highly saturated colors
+        if (r > 0.4 and g > 0.3 and b > 0.2 and  # Minimum skin tone values
+            r > b and g > b * 0.8 and  # More red than blue, similar green/blue ratio
+            max(r, g, b) > 0.5 and  # Not too dark
+            max(r, g, b) < 0.95):  # Not pure white
+            return True
+            
+        return False
+    except:
+        return False
+
 
 def _bind_connector_to_bone(connector_obj, armature_obj, bone_name, created_bones):
     """Legacy function for compatibility."""

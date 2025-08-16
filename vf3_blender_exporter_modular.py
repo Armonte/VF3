@@ -226,12 +226,14 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     mesh_objects = valid_mesh_objects
     print(f"  Filtered mesh objects after connector creation: {len(mesh_objects)} valid objects")
     
-    # Step 7: Merge body parts for seamless connections (order matters for proper merging)
+    # Step 7: Selective merging for better object hierarchy
+    # Only merge connectors and closely related parts, keep major limbs separate
+    
     print("🔧 Merging breast meshes with body...")
     from vf3_mesh_merging import _merge_breast_meshes_with_body
     _merge_breast_meshes_with_body(mesh_objects)
     
-    # Build complete leg chains: feet → leg2 → leg1, then merge with body
+    # Build leg chains but keep them as separate leg objects (don't merge to body)
     print("🔧 Merging feet with lower legs...")
     from vf3_mesh_merging import _merge_feet_meshes_with_legs
     _merge_feet_meshes_with_legs(mesh_objects)
@@ -240,22 +242,19 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     from vf3_mesh_merging import _merge_lower_legs_meshes_with_thighs
     _merge_lower_legs_meshes_with_thighs(mesh_objects)
     
-    print("🔧 Merging complete leg assemblies with body...")
-    from vf3_mesh_merging import _merge_legs_meshes_with_body
-    _merge_legs_meshes_with_body(mesh_objects)
+    # Skip: Don't merge complete legs with body - keep as separate l_leg1/r_leg1 objects
+    print("🔧 Keeping leg assemblies separate from body for better hierarchy")
     
-    # Build complete arm chains: forearms → arms, hands → arms, then merge with body
+    # Build arm chains but keep them as separate arm objects (don't merge to body)  
     print("🔧 Merging forearms with upper arms...")
     from vf3_mesh_merging import _merge_forearms_meshes_with_arms
     _merge_forearms_meshes_with_arms(mesh_objects)
     
-    print("🔧 Merging hands with arm assemblies...")
-    from vf3_mesh_merging import _merge_hands_meshes_with_arms
-    _merge_hands_meshes_with_arms(mesh_objects)
+    # Skip: Don't merge hands with arms - keep hands separate
+    print("🔧 Keeping hands separate from arms for better hierarchy")
     
-    print("🔧 Merging complete arm assemblies with body...")
-    from vf3_mesh_merging import _merge_arms_meshes_with_body
-    _merge_arms_meshes_with_body(mesh_objects)
+    # Skip: Don't merge arms with body - keep as separate l_arm1/r_arm1 objects
+    print("🔧 Keeping arm assemblies separate from body for better hierarchy")
     
     # Connectors were already created before merging (moved above)
     
