@@ -108,9 +108,17 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                             # VF3 Occupancy Rules:
                             # - Occupancy 2: ADDITIVE (costume + underwear both kept)
                             # - Occupancy 3: REPLACEMENT (only costume kept, underwear discarded)
+                            # - Occupancy 4+: ACCESSORY ADDITIVE (headgear on top of base head)
                             
-                            if occ_value == 2:
-                                # ADDITIVE: Keep both base and costume (e.g., skirt + underwear)
+                            # CRITICAL FIX: Detect accessories by pattern and treat as additive
+                            is_head_accessory = (
+                                slot_idx == 0 and  # head slot
+                                occ_value >= 4 and  # high occupancy value
+                                any(accessory in source.lower() for accessory in ['katjusha', 'sensor', 'hairband', 'headgear', 'hat', 'helmet'])
+                            )
+                            
+                            if occ_value == 2 or is_head_accessory:
+                                # ADDITIVE: Keep both base and costume/accessory
                                 if 'layers' not in current_winner:
                                     base_dynamic_mesh = current_winner.get('dynamic_mesh')
                                     current_winner['layers'] = [{'source': current_winner['source'], 'attachments': current_winner['attachments'], 'occupancy': current_winner['occupancy'], 'dynamic_mesh': base_dynamic_mesh}]
@@ -125,7 +133,11 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                                     'attachments': attachments,
                                     'dynamic_mesh': dynamic_mesh
                                 })
-                                print(f"  {group_name}: Slot {slot_idx} ADDITIVE by {source} with occupancy {occ_value} (keeping base layer)")
+                                
+                                if is_head_accessory:
+                                    print(f"  {group_name}: Slot {slot_idx} ACCESSORY ADDITIVE by {source} with occupancy {occ_value} (headgear on top of base head)")
+                                else:
+                                    print(f"  {group_name}: Slot {slot_idx} ADDITIVE by {source} with occupancy {occ_value} (keeping base layer)")
                                 
                             elif occ_value >= 3:
                                 # REPLACEMENT: Completely replace base with costume (e.g., blazer replaces skin)

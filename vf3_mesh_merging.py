@@ -454,24 +454,28 @@ def _find_best_target_mesh_simple(connector_number, bone_counts, mesh_objects):
                     if 'body' in mesh_name and 'blazer' in mesh_name:
                         return mesh_obj
                         
-            # Connector 1 (elbow/wrist AND arm-to-body shoulder) - target separate arm meshes (not body!)
+            # Connector 1 (elbow/wrist) - target arm-specific meshes ONLY, DO NOT merge with body!
             elif connector_number == "1": 
-                if dominant_bone in ['l_arm1', 'r_arm1', 'l_arm2', 'r_arm2']:
-                    # Target any arm mesh (blazer or female) for elbow connectors AND shoulder connectors
-                    if ('arm1' in mesh_name or 'arm2' in mesh_name) and ('blazer' in mesh_name or 'female' in mesh_name):
-                        print(f"        🎯 ARM CONNECTOR: Targeting arm mesh {mesh_obj.name} for connector 1 arm/shoulder geometry")
+                if dominant_bone in ['l_arm1', 'r_arm1']:
+                    # ELBOW CONNECTORS: Target upper arm (arm1) meshes specifically
+                    if 'arm1' in mesh_name and ('blazer' in mesh_name or 'female' in mesh_name):
+                        print(f"        🎯 ELBOW CONNECTOR: Targeting upper arm mesh {mesh_obj.name} for connector 1 arm1 geometry")
+                        return mesh_obj
+                elif dominant_bone in ['l_arm2', 'r_arm2']:
+                    # FOREARM CONNECTORS: Target forearm (arm2) meshes specifically  
+                    if 'arm2' in mesh_name and ('blazer' in mesh_name or 'female' in mesh_name):
+                        print(f"        🎯 FOREARM CONNECTOR: Targeting forearm mesh {mesh_obj.name} for connector 1 arm2 geometry")
                         return mesh_obj
                 elif dominant_bone in ['l_hand', 'r_hand']:
-                    # Target hand meshes for wrist connectors
+                    # WRIST CONNECTORS: Target hand meshes for wrist connectors
                     if 'hand' in mesh_name and ('blazer' in mesh_name or 'female' in mesh_name):
-                        print(f"        🎯 HAND CONNECTOR: Targeting hand mesh {mesh_obj.name} for connector 1 hand geometry")
+                        print(f"        🎯 WRIST CONNECTOR: Targeting hand mesh {mesh_obj.name} for connector 1 hand geometry")
                         return mesh_obj
                 elif dominant_bone == 'body':
-                    # CRITICAL FIX: Body connectors from Connector 1 should go to ARM meshes for shoulder connections
-                    # This ensures when you select an arm, you get the complete arm including shoulder connection
-                    if ('arm1' in mesh_name or 'arm2' in mesh_name) and ('blazer' in mesh_name or 'female' in mesh_name):
-                        print(f"        🎯 SHOULDER CONNECTOR: Targeting arm mesh {mesh_obj.name} for connector 1 body-to-arm geometry")
-                        return mesh_obj
+                    # CRITICAL FIX: Body connectors (shoulder connectors) should NOT merge with body
+                    # Instead, keep them as separate connectors for proper anatomical grouping
+                    print(f"        🎯 SHOULDER CONNECTOR: Keeping body connectors separate from body mesh for proper grouping")
+                    return None  # Don't merge, keep as standalone connector
                         
             # Connector 2 (skirt/waist) - target waist/skirt meshes  
             elif connector_number == "2":

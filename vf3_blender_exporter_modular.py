@@ -61,9 +61,53 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     # Step 3: Create bones using original VF3 bone system (like working commit c021d46)
     created_bones = {}
     
-    for bone_name in bone_order:
-        bone = bones[bone_name]
+    # CRITICAL FIX: Create bones for ALL nodes in world_transforms, not just frame bones
+    # This includes child nodes like skirt_f and skirt_r
+    all_bone_names = set(bone_order)  # Start with frame bones
+    
+    # Add any extra bones from world_transforms (like child attachment nodes)
+    for bone_name in world_transforms.keys():
+        if bone_name not in all_bone_names:
+            all_bone_names.add(bone_name)
+            print(f"  Found extra bone/node: {bone_name}")
+    
+    # Build parent relationships for all nodes (frame bones + child nodes)
+    all_parents = {}
+    for bone_name, bone in bones.items():
+        all_parents[bone_name] = bone.parent
+    
+    # Add parent relationships from attachments (e.g., skirt_f -> waist)
+    for attachment in attachments:
+        if attachment.child_name and attachment.parent_bone:
+            all_parents[attachment.child_name] = attachment.parent_bone
+            print(f"  Child bone relationship: {attachment.child_name} -> {attachment.parent_bone}")
+    
+    # Create bones in hierarchical order (parents before children)
+    def get_hierarchical_order(bone_names, parents):
+        """Get bones in correct order (parents before children)."""
+        roots = [name for name in bone_names if not parents.get(name) or parents.get(name) not in bone_names]
+        ordered = []
+        visited = set()
         
+        def visit_bone(bone_name):
+            if bone_name in visited or bone_name not in bone_names:
+                return
+            visited.add(bone_name)
+            ordered.append(bone_name)
+            
+            children = [name for name in bone_names if parents.get(name) == bone_name]
+            for child in sorted(children):
+                visit_bone(child)
+        
+        for root in sorted(roots):
+            visit_bone(root)
+        
+        return ordered
+    
+    hierarchical_order = get_hierarchical_order(all_bone_names, all_parents)
+    print(f"  Bone creation order: {hierarchical_order}")
+    
+    for bone_name in hierarchical_order:
         # Create bone
         edit_bone = armature.edit_bones.new(bone_name)
         
@@ -77,7 +121,7 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
         edit_bone.head = head_pos
         
         # Set bone tail to point toward first child for natural rotation
-        child_bones = [n for n, b in bones.items() if b.parent == bone_name]
+        child_bones = [name for name in all_bone_names if all_parents.get(name) == bone_name]
         if child_bones:
             # Point bone toward first child
             first_child_name = child_bones[0]
@@ -94,8 +138,9 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
             edit_bone.tail = head_pos + Vector((0, 0, 1))
         
         # Set parent relationship
-        if bone.parent and bone.parent in created_bones:
-            edit_bone.parent = created_bones[bone.parent]
+        parent_name = all_parents.get(bone_name)
+        if parent_name and parent_name in created_bones:
+            edit_bone.parent = created_bones[parent_name]
             edit_bone.use_connect = False  # Don't connect - allow independent rotation
         
         created_bones[bone_name] = edit_bone

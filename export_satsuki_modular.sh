@@ -10,7 +10,7 @@ OUTPUT_FILE="satsuki_modular_$(date +%Y%m%d_%H%M%S).glb"
 echo "📦 Output: $OUTPUT_FILE"
 
 # Run the modular exporter
-blender --background --python vf3_blender_exporter_modular.py -- data/satsuki.TXT "$OUTPUT_FILE"
+blender --background --python vf3_blender_exporter_modular.py -- data/ren.TXT "$OUTPUT_FILE"
 
 # Check result
 if [ -f "$OUTPUT_FILE" ]; then

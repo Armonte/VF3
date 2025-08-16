@@ -1,12 +1,13 @@
 <scene>
 Name:デフォルト
-Charactor:(-0.08,1.08,0.21):satsuki
+Charactor:(0.42,0.87,0.00):mana
 Costume:
-satsuki.blazer
-satsuki.shoesa
+mana.jacket
+mana.skirta
+mana.shoesa
 Pose:
 body:(0.0,0.0,0.0)
-head:(0.0,0.0,-31.0)
+head:(0.0,0.0,0.0)
 l_breast:(0.0,0.0,0.0)
 r_breast:(0.0,0.0,0.0)
 l_arm1:(0.0,0.0,0.0)
