@@ -31,21 +31,39 @@ def validate_connector_distribution():
     # Extract bilateral tie assignments
     bilateral_patterns = [
         r'Bilateral leg tie: assigned to (\w+) \(connector_id=(\d+)\)',
-        r'Bilateral arm tie: assigned to (\w+) \(connector_id=(\d+)\)'
+        r'Bilateral arm tie: assigned to (\w+) \(connector_id=(\d+)\)',
+        r'Body/arm connector assigned to (\w+)',
+        r'Body/arm connector alternated to (\w+)'
     ]
     
     assignments = []
-    for pattern in bilateral_patterns:
+    
+    # Extract bilateral leg/arm ties (with connector_id)
+    for pattern in bilateral_patterns[:2]:
         matches = re.findall(pattern, output)
         assignments.extend(matches)
+    
+    # Extract body/arm assignments (without connector_id)
+    body_arm_matches = re.findall(r'Body/arm connector (?:assigned to|alternated to) (\w+)', output)
+    for match in body_arm_matches:
+        assignments.append((match, 'body_arm'))
     
     print(f"🔍 Found {len(assignments)} bilateral connector assignments:")
     
     leg_assignments = []
     arm_assignments = []
     
-    for region, connector_id in assignments:
-        print(f"  - {region} (connector_id={connector_id})")
+    for assignment in assignments:
+        if len(assignment) == 2:
+            region, connector_id = assignment
+            if connector_id == 'body_arm':
+                print(f"  - {region} (body/arm connector)")
+            else:
+                print(f"  - {region} (connector_id={connector_id})")
+        else:
+            region = assignment[0]
+            print(f"  - {region}")
+        
         if 'leg' in region:
             leg_assignments.append(region)
         elif 'arm' in region:

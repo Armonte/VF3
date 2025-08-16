@@ -107,6 +107,10 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
     
     connector_name = connector_obj.name.lower()
     
+    # Initialize bilateral counter if not present
+    if not hasattr(_merge_connector_with_anatomical_groups, '_bilateral_counter'):
+        _merge_connector_with_anatomical_groups._bilateral_counter = 0
+    
     # Analyze connector's vertex groups to determine target
     vg_names = [vg.name for vg in connector_obj.vertex_groups]
     print(f"    Connector {connector_obj.name} vertex groups: {vg_names}")
@@ -176,8 +180,40 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
     # Find all regions with maximum bone count
     tied_regions = [region for region, count in region_bone_counts.items() if count == max_bones and count > 0]
     
+    # SPECIAL CASE: Mixed body/arm connectors - prefer bilateral arm distribution
+    # If connector has both body bones AND bilateral arm bones with close counts
+    if (region_bone_counts['body'] > 0 and 
+        region_bone_counts['left_arm'] > 0 and region_bone_counts['right_arm'] > 0):
+        
+        total_arm_bones = region_bone_counts['left_arm'] + region_bone_counts['right_arm']
+        body_bones = region_bone_counts['body']
+        
+        # If arms combined have significant representation (at least 60% of body count)
+        if total_arm_bones >= body_bones * 0.6:
+            print(f"    Mixed body/arm connector: body={body_bones}, arms={total_arm_bones}")
+            
+            # Use bilateral distribution for the arm portions
+            _merge_connector_with_anatomical_groups._bilateral_counter += 1
+            connector_id = _merge_connector_with_anatomical_groups._bilateral_counter
+            
+            # Prefer the arm side with more bones, or alternate if equal
+            if region_bone_counts['left_arm'] > region_bone_counts['right_arm']:
+                target_group = 'left_arm'
+                print(f"    Body/arm connector assigned to left_arm (left={region_bone_counts['left_arm']}, right={region_bone_counts['right_arm']})")
+            elif region_bone_counts['right_arm'] > region_bone_counts['left_arm']:
+                target_group = 'right_arm'
+                print(f"    Body/arm connector assigned to right_arm (left={region_bone_counts['left_arm']}, right={region_bone_counts['right_arm']})")
+            else:
+                # Equal arm bones - alternate assignment
+                target_group = 'left_arm' if connector_id % 2 == 0 else 'right_arm'
+                print(f"    Body/arm connector alternated to {target_group} (connector_id={connector_id})")
+        else:
+            # Body dominates too much - assign to body as normal
+            target_group = 'body'
+            print(f"    Mixed connector with body dominance: body={body_bones}, arms={total_arm_bones} -> body")
+    
     # Handle assignment with smart bilateral distribution
-    if len(tied_regions) == 1:
+    elif len(tied_regions) == 1:
         target_group = tied_regions[0]
         print(f"    Clear winner: {target_group} ({max_bones} bones)")
     elif len(tied_regions) == 2 and set(tied_regions) in [{'left_arm', 'right_arm'}, {'left_leg', 'right_leg'}]:

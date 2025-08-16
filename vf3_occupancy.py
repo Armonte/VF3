@@ -141,11 +141,20 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                                 
                             elif occ_value >= 3:
                                 # REPLACEMENT: Completely replace base with costume (e.g., blazer replaces skin)
+                                # BUT preserve the discarded base layer for dynamic mesh recovery
+                                discarded_base = {
+                                    'source': current_winner['source'],
+                                    'attachments': current_winner['attachments'],
+                                    'dynamic_mesh': current_winner['dynamic_mesh'],
+                                    'occupancy': current_winner['occupancy']
+                                }
+                                
                                 current_winner.update({
                                     'occupancy': occ_value,
                                     'source': source,
                                     'attachments': attachments,
-                                    'dynamic_mesh': dynamic_mesh
+                                    'dynamic_mesh': dynamic_mesh,
+                                    'discarded_layers': [discarded_base]  # Store discarded base for connector preservation
                                 })
                                 # Remove layers to indicate complete replacement
                                 if 'layers' in current_winner:
@@ -154,11 +163,20 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                             
                             else:
                                 # For occupancy 1 or unknown, default to replacement
+                                # BUT preserve the discarded base layer for dynamic mesh recovery
+                                discarded_base = {
+                                    'source': current_winner['source'],
+                                    'attachments': current_winner['attachments'],
+                                    'dynamic_mesh': current_winner['dynamic_mesh'],
+                                    'occupancy': current_winner['occupancy']
+                                }
+                                
                                 current_winner.update({
                                     'occupancy': occ_value,
                                     'source': source,
                                     'attachments': attachments,
-                                    'dynamic_mesh': dynamic_mesh
+                                    'dynamic_mesh': dynamic_mesh,
+                                    'discarded_layers': [discarded_base]  # Store discarded base for connector preservation
                                 })
                                 if 'layers' in current_winner:
                                     del current_winner['layers']
@@ -169,7 +187,7 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
     # Collect final results
     final_attachments = []
     final_dynamic_meshes = []
-    seen_dynamic_meshes = set()  # Track sources to avoid duplicates
+    seen_dynamic_meshes = set()  # Track unique mesh content to avoid duplicates
     seen_attachment_sources = set()  # Track attachment sources to avoid duplicates
     
     for slot_idx, winner in slot_winners.items():
@@ -210,30 +228,59 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
             for layer in winner['layers']:
                 layer_dynamic_mesh = layer.get('dynamic_mesh')
                 if layer_dynamic_mesh:
-                    source_key = layer['source']
-                    if source_key not in seen_dynamic_meshes:
+                    # Create unique identifier based on mesh content (bones + vertex count)
+                    vertex_bones = layer_dynamic_mesh.get('vertex_bones', [])
+                    vertex_count = len(layer_dynamic_mesh.get('vertices', []))
+                    mesh_content_key = f"{sorted(set(vertex_bones))}-{vertex_count}"
+                    
+                    if mesh_content_key not in seen_dynamic_meshes:
                         # Add source information to the DynamicVisual data for material assignment
                         dynamic_mesh_with_source = layer_dynamic_mesh.copy()
                         dynamic_mesh_with_source['source_info'] = {'source': layer['source']}
                         final_dynamic_meshes.append(dynamic_mesh_with_source)
-                        seen_dynamic_meshes.add(source_key)
-                        print(f"    DynamicVisual from {layer['source']} (ADDED)")
+                        seen_dynamic_meshes.add(mesh_content_key)
+                        print(f"    DynamicVisual from {layer['source']} (ADDED - unique content: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
                     else:
-                        print(f"    DynamicVisual from {layer['source']} (DUPLICATE - SKIPPED)")
+                        print(f"    DynamicVisual from {layer['source']} (DUPLICATE - identical content: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
         else:
-            # REPLACEMENT or SINGLE: Include only winner's DynamicVisual
+            # REPLACEMENT or SINGLE: Include winner's DynamicVisual + preserve discarded base layer connectors
             if winner['dynamic_mesh']:
-                # Use source as key to deduplicate DynamicVisual meshes from same source
-                source_key = winner['source']
-                if source_key not in seen_dynamic_meshes:
+                # Create unique identifier based on mesh content (bones + vertex count)
+                vertex_bones = winner['dynamic_mesh'].get('vertex_bones', [])
+                vertex_count = len(winner['dynamic_mesh'].get('vertices', []))
+                mesh_content_key = f"{sorted(set(vertex_bones))}-{vertex_count}"
+                
+                if mesh_content_key not in seen_dynamic_meshes:
                     # Add source information to the DynamicVisual data for material assignment
                     dynamic_mesh_with_source = winner['dynamic_mesh'].copy()
                     dynamic_mesh_with_source['source_info'] = {'source': winner['source']}
                     final_dynamic_meshes.append(dynamic_mesh_with_source)
-                    seen_dynamic_meshes.add(source_key)
-                    print(f"    DynamicVisual from {winner['source']} (ADDED)")
+                    seen_dynamic_meshes.add(mesh_content_key)
+                    print(f"    DynamicVisual from {winner['source']} (ADDED - unique content: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
                 else:
-                    print(f"    DynamicVisual from {winner['source']} (DUPLICATE - SKIPPED)")
+                    print(f"    DynamicVisual from {winner['source']} (DUPLICATE - identical content: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
+            
+            # CRITICAL FIX: For REPLACEMENT items, also preserve unique dynamic meshes from discarded base layers
+            # This ensures we don't lose important joint connectors when putting on costume items
+            if winner['occupancy'] >= 3 and 'discarded_layers' in winner:
+                print(f"    PRESERVATION: Checking discarded base layers for unique connectors...")
+                for discarded_layer in winner['discarded_layers']:
+                    discarded_dynamic_mesh = discarded_layer.get('dynamic_mesh')
+                    if discarded_dynamic_mesh:
+                        # Create unique identifier for discarded mesh
+                        vertex_bones = discarded_dynamic_mesh.get('vertex_bones', [])
+                        vertex_count = len(discarded_dynamic_mesh.get('vertices', []))
+                        mesh_content_key = f"{sorted(set(vertex_bones))}-{vertex_count}"
+                        
+                        if mesh_content_key not in seen_dynamic_meshes:
+                            # This connector provides unique connectivity - preserve it!
+                            dynamic_mesh_with_source = discarded_dynamic_mesh.copy()
+                            dynamic_mesh_with_source['source_info'] = {'source': discarded_layer['source']}
+                            final_dynamic_meshes.append(dynamic_mesh_with_source)
+                            seen_dynamic_meshes.add(mesh_content_key)
+                            print(f"    DynamicVisual from {discarded_layer['source']} (PRESERVED - unique connector: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
+                        else:
+                            print(f"    DynamicVisual from {discarded_layer['source']} (REDUNDANT - already covered by winner)")
     
     print(f"OCCUPANCY FILTER: Final result: {len(final_attachments)} attachments, {len(final_dynamic_meshes)} dynamic meshes (deduplicated)")
     
