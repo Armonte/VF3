@@ -60,7 +60,14 @@ def _merge_breast_meshes_with_body(mesh_objects):
     try:
         # Join breast meshes into body
         bpy.ops.object.join()
-        print("  ✅ Successfully merged breast meshes with body")
+        
+        # Enter Edit mode and merge overlapping vertices to eliminate seams
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print("  ✅ Successfully merged breast meshes with body and welded vertices")
     except Exception as e:
         print(f"  ❌ Failed to merge breast meshes: {e}")
 
@@ -95,7 +102,14 @@ def _merge_feet_meshes_with_legs(mesh_objects):
             
             try:
                 bpy.ops.object.join()
-                print(f"  ✅ Successfully merged {side} foot with leg2")
+                
+                # Enter Edit mode and merge overlapping vertices to eliminate seams
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+                bpy.ops.object.mode_set(mode='OBJECT')
+                
+                print(f"  ✅ Successfully merged {side} foot with leg2 and welded vertices")
             except Exception as e:
                 print(f"  ❌ Failed to merge {side} foot: {e}")
 
@@ -130,7 +144,14 @@ def _merge_lower_legs_meshes_with_thighs(mesh_objects):
             
             try:
                 bpy.ops.object.join()
-                print(f"  ✅ Successfully merged {side} leg2 with leg1")
+                
+                # Enter Edit mode and merge overlapping vertices to eliminate seams
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+                bpy.ops.object.mode_set(mode='OBJECT')
+                
+                print(f"  ✅ Successfully merged {side} leg2 with leg1 and welded vertices")
             except Exception as e:
                 print(f"  ❌ Failed to merge {side} leg2: {e}")
 
@@ -169,7 +190,14 @@ def _merge_legs_meshes_with_body(mesh_objects):
     
     try:
         bpy.ops.object.join()
-        print("  ✅ Successfully merged legs with body")
+        
+        # Enter Edit mode and merge overlapping vertices to eliminate seams
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print("  ✅ Successfully merged legs with body and welded vertices")
     except Exception as e:
         print(f"  ❌ Failed to merge legs: {e}")
 
@@ -204,7 +232,14 @@ def _merge_forearms_meshes_with_arms(mesh_objects):
             
             try:
                 bpy.ops.object.join()
-                print(f"  ✅ Successfully merged {side} forearm with arm")
+                
+                # Enter Edit mode and merge overlapping vertices to eliminate seams
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+                bpy.ops.object.mode_set(mode='OBJECT')
+                
+                print(f"  ✅ Successfully merged {side} forearm with arm and welded vertices")
             except Exception as e:
                 print(f"  ❌ Failed to merge {side} forearm: {e}")
 
@@ -239,7 +274,14 @@ def _merge_hands_meshes_with_arms(mesh_objects):
             
             try:
                 bpy.ops.object.join()
-                print(f"  ✅ Successfully merged {side} hand with arm")
+                
+                # Enter Edit mode and merge overlapping vertices to eliminate seams
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+                bpy.ops.object.mode_set(mode='OBJECT')
+                
+                print(f"  ✅ Successfully merged {side} hand with arm and welded vertices")
             except Exception as e:
                 print(f"  ❌ Failed to merge {side} hand: {e}")
 
@@ -278,14 +320,343 @@ def _merge_arms_meshes_with_body(mesh_objects):
     
     try:
         bpy.ops.object.join()
-        print("  ✅ Successfully merged arms with body")
+        
+        # Enter Edit mode and merge overlapping vertices to eliminate seams
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print("  ✅ Successfully merged arms with body and welded vertices")
     except Exception as e:
         print(f"  ❌ Failed to merge arms: {e}")
 
 
 def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names):
     """
-    Try to merge a DynamicVisual connector with an appropriate body mesh based on its bone assignments.
+    Try to merge a DynamicVisual connector with the most appropriate body mesh.
+    Simple approach: Find the best target mesh based on connector content and merge the whole thing.
+    Returns: (success, merged_mesh_names) - success bool and list of mesh names that were merged and removed
+    """
+    try:
+        import bpy
+        import bmesh
+        from mathutils import Vector
+    except ImportError:
+        return False, []
+    
+    if not connector_obj or not mesh_objects:
+        return False, []
+    
+    connector_name = connector_obj.name.lower()
+    
+    # Extract connector number from name (e.g., "dynamic_connector_0_vf3mesh" -> "0")
+    import re
+    match = re.search(r'dynamic_connector_(\d+)_', connector_name)
+    connector_number = None
+    if match:
+        connector_number = match.group(1)
+        print(f"      Connector {connector_number} -> using SIMPLE SMART TARGETING")
+    
+    # Analyze bone content to choose the best target
+    bone_counts = {}
+    for bone_name in vertex_bone_names:
+        bone_counts[bone_name] = bone_counts.get(bone_name, 0) + 1
+    
+    print(f"      Connector {connector_name} bone content: {bone_counts}")
+    
+    # Find the best target mesh based on connector content and type
+    target_mesh = _find_best_target_mesh_simple(connector_number, bone_counts, mesh_objects)
+    
+    if not target_mesh:
+        print(f"      ❌ No suitable target mesh found for connector {connector_name}")
+        return False, []
+    
+    print(f"      ✅ Selected target mesh: {target_mesh.name}")
+    
+    # Simple merge: just merge the entire connector with the chosen target
+    try:
+        # Select target mesh and connector
+        bpy.ops.object.select_all(action='DESELECT')
+        target_mesh.select_set(True)
+        connector_obj.select_set(True)
+        bpy.context.view_layer.objects.active = target_mesh
+        
+        # Join the meshes (connector into target)
+        bpy.ops.object.join()
+        
+        # Enter Edit mode and merge overlapping vertices to eliminate seams
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print(f"      ✅ Successfully merged connector {connector_name} with {target_mesh.name} and welded vertices")
+        return True, []
+        
+    except Exception as e:
+        print(f"      ❌ Failed to merge connector {connector_name}: {e}")
+        return False, []
+
+
+def _find_best_target_mesh_simple(connector_number, bone_counts, mesh_objects):
+    """Find the best target mesh using simple rules based on connector type and bone content."""
+    
+    # Get the dominant bone (most vertices)
+    if not bone_counts:
+        return None
+    
+    dominant_bone = max(bone_counts.keys(), key=lambda b: bone_counts[b])
+    print(f"        Dominant bone: {dominant_bone} ({bone_counts[dominant_bone]} vertices)")
+    
+    # CRITICAL FIX: For connector 0, prioritize waist meshes if waist vertices are present
+    # BUT only if we don't have a complete body blazer mesh (indicating costume mode)
+    if connector_number == "0" and 'waist' in bone_counts and bone_counts['waist'] > 0:
+        print(f"        ⚠️ Connector 0 contains {bone_counts['waist']} waist vertices - checking if waist priority needed")
+        
+        # Check if we have a blazer body mesh (indicates costume mode where waist priority is needed)
+        has_blazer_body = False
+        has_female_waist = False
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name.lower()
+                if 'body' in mesh_name and 'blazer' in mesh_name:
+                    has_blazer_body = True
+                if 'waist' in mesh_name and 'female' in mesh_name:
+                    has_female_waist = True
+            except (ReferenceError, AttributeError):
+                continue
+        
+        # Only use waist priority if we have blazer body (costume) but no complete female waist
+        # In naked mode (has female waist), connector 0 should go to body mesh for proper hierarchy
+        if has_blazer_body and not has_female_waist:
+            print(f"        🔄 COSTUME MODE: Blazer body detected, no female waist - applying waist priority")
+            for mesh_obj in mesh_objects:
+                try:
+                    mesh_name = mesh_obj.name.lower()
+                    if 'waist' in mesh_name and ('blazer' in mesh_name):
+                        print(f"        🎯 WAIST PRIORITY: Targeting waist mesh {mesh_obj.name} for connector 0 waist geometry")
+                        return mesh_obj
+                except (ReferenceError, AttributeError):
+                    continue
+            print(f"        ⚠️ No blazer waist mesh found for waist vertices, falling back to body mesh")
+        else:
+            print(f"        ✅ NAKED/COMPLETE MODE: Female waist exists ({has_female_waist}), using normal body targeting")
+    
+    # Standard targeting rules based on dominant bone and connector number
+    for mesh_obj in mesh_objects:
+        try:
+            mesh_name = mesh_obj.name.lower()
+            
+            # Connector 0 (body/chest) - target body blazer mesh
+            if connector_number == "0":
+                if dominant_bone in ['body', 'l_breast', 'r_breast']:
+                    if 'body' in mesh_name and 'blazer' in mesh_name:
+                        return mesh_obj
+                        
+            # Connector 1 (elbow/wrist) - target arm meshes
+            elif connector_number == "1": 
+                if dominant_bone in ['l_arm1', 'r_arm1', 'l_arm2', 'r_arm2']:
+                    # Prefer arm1 blazer meshes for elbow connectors
+                    if 'arm1' in mesh_name and 'blazer' in mesh_name:
+                        return mesh_obj
+                elif dominant_bone in ['l_hand', 'r_hand']:
+                    # Target hand meshes for wrist connectors
+                    if 'hand' in mesh_name and 'blazer' in mesh_name:
+                        return mesh_obj
+                        
+            # Connector 2 (skirt/waist) - target waist/skirt meshes  
+            elif connector_number == "2":
+                if dominant_bone == 'waist':
+                    if 'waist' in mesh_name or ('skirt' in mesh_name and 'waist' not in mesh_name):
+                        return mesh_obj
+                        
+            # Connector 3 (knee) - target leg meshes
+            elif connector_number == "3":
+                if dominant_bone in ['l_leg1', 'r_leg1']:
+                    if 'leg1' in mesh_name and 'female' in mesh_name:
+                        return mesh_obj
+                        
+            # Connector 4 (ankle) - target foot meshes
+            elif connector_number == "4":
+                if dominant_bone in ['l_foot', 'r_foot']:
+                    if 'foot' in mesh_name:
+                        return mesh_obj
+                        
+        except (ReferenceError, AttributeError):
+            continue
+    
+    # Fallback: find any body mesh for body-related connectors
+    if connector_number in ["0", "1"] and dominant_bone in ['body', 'l_breast', 'r_breast', 'l_arm1', 'r_arm1']:
+        # First try blazer body meshes
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name.lower()
+                if 'body' in mesh_name and 'blazer' in mesh_name:
+                    print(f"        Fallback: using blazer body mesh for connector {connector_number}")
+                    return mesh_obj
+            except (ReferenceError, AttributeError):
+                continue
+        
+        # If no blazer, try female body meshes (naked mode)
+        for mesh_obj in mesh_objects:
+            try:
+                mesh_name = mesh_obj.name.lower()
+                if 'body' in mesh_name and 'female' in mesh_name:
+                    print(f"        Fallback: using female body mesh for connector {connector_number}")
+                    return mesh_obj
+            except (ReferenceError, AttributeError):
+                continue
+    
+    return None
+
+
+def _find_target_mesh_for_bone_group(bone_name, mesh_objects, connector_number):
+    """Find the appropriate target mesh for a specific bone group using name patterns."""
+    for mesh_obj in mesh_objects:
+        try:
+            _ = mesh_obj.name
+            mesh_name = mesh_obj.name.lower()
+            
+            # Map bone names to target mesh patterns
+            if bone_name in ['body', 'neck']:
+                # Body/neck bones -> body blazer mesh
+                if 'body' in mesh_name and 'blazer' in mesh_name and 'arm' not in mesh_name and 'hand' not in mesh_name:
+                    print(f"        Found body target for {bone_name}: {mesh_obj.name}")
+                    return mesh_obj
+                    
+            elif bone_name in ['l_breast', 'r_breast']:
+                # Breast bones -> body blazer mesh (they merge with body)
+                if 'body' in mesh_name and 'blazer' in mesh_name and 'arm' not in mesh_name and 'hand' not in mesh_name:
+                    print(f"        Found body target for {bone_name}: {mesh_obj.name}")
+                    return mesh_obj
+                    
+            elif bone_name in ['l_arm1', 'r_arm1']:
+                # Arm bones -> arm blazer meshes
+                bone_side = bone_name.split('_')[0]  # 'l' or 'r'
+                if f'{bone_side}_arm1' in mesh_name and 'blazer' in mesh_name and 'hand' not in mesh_name and 'body' not in mesh_name:
+                    print(f"        Found arm target for {bone_name}: {mesh_obj.name}")
+                    return mesh_obj
+                    
+            elif bone_name in ['l_hand', 'r_hand']:
+                # Hand bones -> hand meshes
+                bone_side = bone_name.split('_')[0]  # 'l' or 'r'
+                if f'{bone_side}_hand' in mesh_name and 'arm' not in mesh_name:
+                    print(f"        Found hand target for {bone_name}: {mesh_obj.name}")
+                    return mesh_obj
+                    
+            elif bone_name in ['waist']:
+                # Waist bones -> skirt or waist meshes
+                if ('skirt' in mesh_name and 'waist' in mesh_name) or ('waist' in mesh_name):
+                    print(f"        Found waist target for {bone_name}: {mesh_obj.name}")
+                    return mesh_obj
+                    
+            elif bone_name in ['l_leg1', 'r_leg1']:
+                # Leg bones -> leg skin meshes
+                bone_side = bone_name.split('_')[0]  # 'l' or 'r'
+                if f'{bone_side}_leg1' in mesh_name and 'female' in mesh_name:
+                    print(f"        Found leg target for {bone_name}: {mesh_obj.name}")
+                    return mesh_obj
+                    
+        except (ReferenceError, AttributeError):
+            continue
+    
+    return None
+
+
+def _merge_bone_group_with_target(connector_obj, bone_name, vertex_indices, face_indices, target_mesh, connector_name):
+    """Create a sub-mesh from bone group vertices/faces and merge with target mesh."""
+    try:
+        import bpy
+        import bmesh
+    except ImportError:
+        return False, []
+    
+    # Create a new temporary mesh containing only this bone group's geometry
+    temp_mesh_name = f"{connector_name}_{bone_name}_part"
+    temp_mesh = bpy.data.meshes.new(temp_mesh_name)
+    
+    # Extract vertices and faces for this bone group
+    original_mesh = connector_obj.data
+    
+    # Get vertex coordinates for this bone group
+    bone_vertices = []
+    vertex_map = {}  # Map from original index to new index
+    for new_idx, orig_idx in enumerate(vertex_indices):
+        if orig_idx < len(original_mesh.vertices):
+            vertex = original_mesh.vertices[orig_idx]
+            bone_vertices.append([vertex.co.x, vertex.co.y, vertex.co.z])
+            vertex_map[orig_idx] = new_idx
+    
+    # Get faces that belong to this bone group and remap vertex indices
+    bone_faces = []
+    for face_idx in face_indices:
+        if face_idx < len(original_mesh.polygons):
+            face = original_mesh.polygons[face_idx]
+            # Check if ALL vertices of this face are in our bone group
+            remapped_face = []
+            valid_face = True
+            for vertex_id in face.vertices:
+                if vertex_id in vertex_map:
+                    remapped_face.append(vertex_map[vertex_id])
+                else:
+                    # This vertex is not in our bone group - skip this face
+                    valid_face = False
+                    break
+            
+            if valid_face and len(remapped_face) >= 3:
+                bone_faces.append(remapped_face)
+    
+    # DEBUG: Show what we found for this bone group
+    print(f"        DEBUG: Bone group {bone_name} has {len(bone_vertices)} vertices, {len(bone_faces)} valid faces from {len(face_indices)} assigned faces")
+    
+    if not bone_vertices or not bone_faces:
+        print(f"        ❌ No valid geometry for bone group {bone_name}")
+        return False, []
+    
+    # Create the temporary mesh
+    temp_mesh.from_pydata(bone_vertices, [], bone_faces)
+    temp_mesh.update()
+    
+    # Create temporary mesh object
+    temp_obj = bpy.data.objects.new(temp_mesh_name, temp_mesh)
+    bpy.context.collection.objects.link(temp_obj)
+    
+    # Copy vertex groups from original connector
+    for vg in connector_obj.vertex_groups:
+        if vg.name == bone_name:
+            new_vg = temp_obj.vertex_groups.new(name=vg.name)
+            # Assign all vertices in the temp mesh to this bone group
+            new_vg.add(list(range(len(bone_vertices))), 1.0, 'REPLACE')
+            break
+    
+    # Now merge this temporary mesh with the target mesh
+    try:
+        # Select target mesh and temporary mesh
+        bpy.ops.object.select_all(action='DESELECT')
+        target_mesh.select_set(True)
+        temp_obj.select_set(True)
+        bpy.context.view_layer.objects.active = target_mesh
+        
+        # Join the meshes
+        bpy.ops.object.join()
+        
+        print(f"        ✅ Merged {bone_name} bone group ({len(bone_vertices)} vertices, {len(bone_faces)} faces) with {target_mesh.name}")
+        return True, []
+        
+    except Exception as e:
+        print(f"        ❌ Failed to merge bone group {bone_name}: {e}")
+        # Clean up temporary object
+        try:
+            bpy.data.objects.remove(temp_obj, do_unlink=True)
+        except:
+            pass
+        return False, []
+
+
+def _legacy_try_merge_connector_with_body_mesh_OLD(connector_obj, mesh_objects, vertex_bone_names):
+    """
+    LEGACY FUNCTION - Try to merge a DynamicVisual connector with an appropriate body mesh based on its bone assignments.
     This eliminates separate mesh instances and creates seamless connections.
     Returns: (success, merged_mesh_names) - success bool and list of mesh names that were merged and removed
     """

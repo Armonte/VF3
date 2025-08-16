@@ -1569,6 +1569,169 @@ def _merge_legs_meshes_with_body(mesh_objects):
         print(f"  ❌ Failed to merge leg meshes: {e}")
 
 
+def _split_connector_by_bone_groups(connector_obj, vertex_bone_names, bone_groups, mesh_objects):
+    """
+    Split a contaminated connector mesh by bone groups and merge each group with appropriate targets.
+    This fixes the issue where body connector contains arm/hand/waist geometry.
+    """
+    print(f"        🚀 STARTING CONNECTOR SPLITTING for {connector_obj.name if connector_obj else 'None'}")
+    print(f"        📊 Input: {len(bone_groups)} bone groups, {len(mesh_objects)} mesh objects")
+    
+    try:
+        import bpy
+        import bmesh
+        from mathutils import Vector
+    except ImportError:
+        print("        ❌ Blender imports not available for connector splitting")
+        return False
+    
+    if not connector_obj:
+        print("        ❌ No connector object provided")
+        return False
+        
+    print(f"        🔧 Connector object: {connector_obj.name}, vertices: {len(connector_obj.data.vertices) if connector_obj.data else 'N/A'}")
+    
+    # Define bone group targeting patterns
+    bone_group_targets = {
+        'body': ['body_satsuki.blazer', 'body_female'],
+        'l_breast': ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb'],
+        'r_breast': ['body_satsuki.blazer', 'r_breast_satsuki.blazer_rb'], 
+        'l_arm1': ['l_arm1_satsuki.l_blazer1', 'l_arm1_female'],
+        'r_arm1': ['r_arm1_satsuki.r_blazer1', 'r_arm1_female'],
+        'l_arm2': ['l_arm2_satsuki.l_blazer2', 'l_arm2_female'],
+        'r_arm2': ['r_arm2_satsuki.r_blazer2', 'r_arm2_female'],
+        'l_hand': ['l_hand_satsuki.l_blazer3', 'l_hand_female.l_hand'],
+        'r_hand': ['r_hand_satsuki.r_blazer3', 'r_hand_female.r_hand'],
+        'waist': ['waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta']
+    }
+    
+    successful_merges = []
+    
+    # Process each bone group
+    for bone_name, vertex_indices in bone_groups.items():
+        target_patterns = bone_group_targets.get(bone_name, [])
+        if not target_patterns:
+            print(f"        ⚠️ No targeting pattern for bone group '{bone_name}' - will merge with body")
+            target_patterns = ['body_satsuki.blazer', 'body_female']
+        
+        # Find target meshes for this bone group
+        target_meshes = []
+        for mesh_obj in mesh_objects:
+            if not hasattr(mesh_obj, 'name'):
+                continue
+            mesh_name_lower = mesh_obj.name.lower()
+            for pattern in target_patterns:
+                if pattern.lower() in mesh_name_lower:
+                    target_meshes.append(mesh_obj)
+                    break
+        
+        if not target_meshes:
+            print(f"        ❌ No target meshes found for bone group '{bone_name}'")
+            continue
+        
+        # Create a filtered mesh containing only vertices from this bone group
+        try:
+            print(f"        🔧 Creating filtered mesh for {bone_name} with {len(vertex_indices)} vertices...")
+            filtered_mesh = _create_filtered_connector_mesh(
+                connector_obj, vertex_indices, f"{connector_obj.name}_{bone_name}"
+            )
+            
+            if filtered_mesh:
+                print(f"        🔧 Filtered mesh created, attempting merge with {target_meshes[0].name}...")
+                # Merge the filtered mesh with the target(s)
+                primary_target = target_meshes[0]
+                merge_success = _merge_filtered_mesh_with_target(filtered_mesh, primary_target)
+                
+                if merge_success:
+                    successful_merges.append(bone_name)
+                    print(f"        ✅ Merged {bone_name} group ({len(vertex_indices)} vertices) -> {primary_target.name}")
+                else:
+                    print(f"        ❌ Failed to merge {bone_name} group with {primary_target.name}")
+                    # Clean up failed filtered mesh
+                    try:
+                        bpy.data.objects.remove(filtered_mesh, do_unlink=True)
+                        bpy.data.meshes.remove(filtered_mesh.data)
+                    except:
+                        pass
+            else:
+                print(f"        ❌ Failed to create filtered mesh for {bone_name} group")
+                
+        except Exception as e:
+            print(f"        ❌ Exception processing {bone_name} group: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"        📊 Splitting result: {len(successful_merges)}/{len(bone_groups)} bone groups merged successfully")
+    return len(successful_merges) > 0
+
+
+def _create_filtered_connector_mesh(source_obj, vertex_indices, mesh_name):
+    """Create a new mesh containing only the specified vertices from the source connector."""
+    try:
+        import bpy
+        import bmesh
+    except ImportError:
+        return None
+    
+    if not source_obj or not source_obj.data:
+        return None
+    
+    # Create a new bmesh from the source mesh
+    bm = bmesh.new()
+    bm.from_mesh(source_obj.data)
+    
+    # Mark vertices for deletion (all except the ones we want to keep)
+    verts_to_delete = []
+    for i, vert in enumerate(bm.verts):
+        if i not in vertex_indices:
+            verts_to_delete.append(vert)
+    
+    # Delete unwanted vertices (this will also remove connected faces)
+    bmesh.ops.delete(bm, geom=verts_to_delete, context='VERTS')
+    
+    # Create new mesh and object
+    new_mesh = bpy.data.meshes.new(mesh_name)
+    bm.to_mesh(new_mesh)
+    bm.free()
+    
+    new_obj = bpy.data.objects.new(mesh_name, new_mesh)
+    new_obj.matrix_world = source_obj.matrix_world.copy()
+    
+    # Link to scene collection so it can be manipulated
+    bpy.context.collection.objects.link(new_obj)
+    
+    return new_obj
+
+
+def _merge_filtered_mesh_with_target(filtered_obj, target_obj):
+    """Merge a filtered connector mesh with a target mesh."""
+    try:
+        import bpy
+        import bmesh
+    except ImportError:
+        return False
+    
+    if not filtered_obj or not target_obj:
+        return False
+    
+    # Select target object and make it active
+    bpy.context.view_layer.objects.active = target_obj
+    bpy.ops.object.select_all(action='DESELECT')
+    target_obj.select_set(True)
+    filtered_obj.select_set(True)
+    
+    # Join the meshes
+    bpy.ops.object.join()
+    
+    # Remove duplicate vertices
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    return True
+
+
 def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone_names):
     """
     Try to merge a DynamicVisual connector mesh with an adjacent body mesh to create unified geometry.
@@ -1585,9 +1748,51 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
     if not connector_obj or not mesh_objects:
         return False, []
     
+    # CHECK FOR BODY CONNECTOR CONTAMINATION (connector 0 with mixed bone groups)
+    connector_name = connector_obj.name.lower()
+    
+    # Extract connector number for special handling
+    import re
+    match = re.search(r'dynamic_connector_(\d+)_', connector_name)
+    connector_number = match.group(1) if match else None
+    
+    # Special handling for connector 0: Split by bone groups if it contains mixed anatomy
+    if connector_number == '0' and vertex_bone_names:
+        bone_groups = {}
+        for i, bone_name in enumerate(vertex_bone_names):
+            if isinstance(bone_name, dict):
+                bone_name = bone_name.get('bone', 'unknown')
+            elif not isinstance(bone_name, str):
+                bone_name = str(bone_name)
+            
+            if bone_name not in bone_groups:
+                bone_groups[bone_name] = []
+            bone_groups[bone_name].append(i)
+        
+        # Check if this connector has mixed anatomy (body + arms + hands)
+        has_body = any('body' in bone or 'breast' in bone for bone in bone_groups.keys())
+        has_arms = any('arm' in bone for bone in bone_groups.keys())
+        has_hands = any('hand' in bone for bone in bone_groups.keys())
+        
+        if has_body and (has_arms or has_hands):
+            print(f"      🔧 SPLITTING CONTAMINATED CONNECTOR: {len(bone_groups)} bone groups detected")
+            for bone, vertices in bone_groups.items():
+                print(f"        {bone}: {len(vertices)} vertices")
+            
+            print(f"      🚀 CALLING SPLITTING FUNCTION...")
+            # Use bone group splitting instead of standard merge
+            success = _split_connector_by_bone_groups(connector_obj, vertex_bone_names, bone_groups, mesh_objects)
+            print(f"      📊 SPLITTING FUNCTION RETURNED: {success}")
+            
+            if success:
+                print(f"      ✅ Successfully split and merged contaminated connector {connector_name}")
+                return True, [connector_obj.name]  # Return success, connector will be removed
+            else:
+                print(f"      ⚠️ Splitting failed, falling back to standard merge")
+                # Fall through to standard merge logic
+    
     # Determine which body mesh this connector should merge with based on bone names
     target_mesh = None
-    connector_name = connector_obj.name.lower()
     
     # DYNAMIC connector targeting based on what meshes actually exist after occupancy filtering
     # This adapts to both naked (female) and clothed (blazer/skirt/shoes) configurations
@@ -1595,7 +1800,8 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
         """Get appropriate merge targets based on what meshes actually exist."""
         existing_names_lower = [name.lower() for name in existing_mesh_names]
         
-        if connector_number == '0':  # Body/torso connectors
+        # CORRECTED MAPPING based on actual VF3 DynamicVisual processing order
+        if connector_number == '0':  # Body/torso connectors (CORRECT)
             # Prefer blazer body, fallback to female body
             candidates = []
             for name in existing_names_lower:
@@ -1603,15 +1809,7 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
                     candidates.append(name)
             return candidates or ['body_female']
             
-        elif connector_number == '1':  # Arm connectors (elbows)
-            # Prefer blazer arms, fallback to female arms
-            candidates = []
-            for name in existing_names_lower:
-                if ('arm1' in name or 'arm2' in name) and ('blazer' in name or 'female' in name):
-                    candidates.append(name)
-            return candidates or ['l_arm1_female', 'r_arm1_female', 'l_arm2_female', 'r_arm2_female']
-            
-        elif connector_number == '2':  # Hand/wrist connectors
+        elif connector_number == '1':  # WRIST connectors (was incorrectly mapped to elbows)
             # Prefer blazer hands, fallback to female hands
             candidates = []
             for name in existing_names_lower:
@@ -1619,7 +1817,7 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
                     candidates.append(name)
             return candidates or ['l_hand_female', 'r_hand_female']
             
-        elif connector_number == '3':  # Waist connectors
+        elif connector_number == '2':  # SKIRT/WAIST connectors (was incorrectly mapped to hands)
             # This should target waist/skirt area - prefer skirt, fallback to female waist
             candidates = []
             for name in existing_names_lower:
@@ -1627,13 +1825,21 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
                     candidates.append(name)
             return candidates or ['waist_female', 'body_female']
             
-        elif connector_number == '4':  # Leg connectors (knees)
+        elif connector_number == '3':  # KNEE connectors (was incorrectly mapped to waist)
             # Should target skin legs (not shoes), prefer female legs
             candidates = []
             for name in existing_names_lower:
                 if ('leg1' in name or 'leg2' in name) and 'female' in name:
                     candidates.append(name)
             return candidates or ['l_leg1_female', 'r_leg1_female', 'l_leg2_female', 'r_leg2_female']
+            
+        elif connector_number == '4':  # ANKLE connectors (was incorrectly mapped to knees)
+            # Prefer shoes, fallback to female feet
+            candidates = []
+            for name in existing_names_lower:
+                if ('foot' in name or 'shoe' in name) and ('satsuki' in name or 'female' in name):
+                    candidates.append(name)
+            return candidates or ['l_foot_female', 'r_foot_female', 'l_leg2_female', 'r_leg2_female']
             
         elif connector_number == '5':  # Foot/ankle connectors
             # Prefer shoes, fallback to female feet
@@ -1656,8 +1862,14 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
     if match:
         connector_number = match.group(1)
         target_categories = get_dynamic_merge_candidates(connector_number, existing_mesh_names)
+        # ENHANCED DEBUG LOGGING FOR CONNECTOR MERGING
+        print(f"      🔍 ENHANCED DEBUG: Processing connector {connector_name}")
+        print(f"         Connector number extracted: {connector_number}")
+        print(f"         Target categories from targeting logic: {target_categories}")
+        print(f"         All available mesh objects: {[obj.name for obj in mesh_objects]}")
         print(f"      Connector {connector_number} -> DYNAMIC merge targets: {target_categories}")
         print(f"        Available meshes: {[name for name in existing_mesh_names if any(keyword in name.lower() for keyword in ['body', 'arm', 'hand', 'waist', 'leg', 'foot', 'skirt', 'blazer'])]}")
+        print(f"        🔍 DEBUG: Full available mesh list: {existing_mesh_names}")
     else:
         # Fallback to old logic for non-numbered connectors
         merge_candidates = {
@@ -1891,10 +2103,10 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
                             a = color_values[3] / 255.0 if len(color_values) > 3 else 1.0
                             
                             # Only use parsed color if it's not pure white (which often means "use default")
-                            # SPECIAL CASE: Override VF3 material for skin connectors (knees, shoulders) with skin tone
+                            # SPECIAL CASE: Override VF3 material for skin connectors with skin tone
                             connector_name = connector_obj.name.lower()
                             should_use_skin = False
-                            if 'dynamic_connector_4_' in connector_name:  # Knee connectors should use skin
+                            if 'dynamic_connector_3_' in connector_name:  # CORRECTED: Knee connectors are #3
                                 should_use_skin = True
                                 print(f"      Overriding VF3 material for knee connector to use skin tone")
                             elif 'dynamic_connector_0_' in connector_name and any('female' in name.lower() for name in [mesh_obj.name for mesh_obj in bpy.context.scene.objects if mesh_obj.type == 'MESH']):  # Body connectors in naked mode
@@ -2417,5 +2629,168 @@ if __name__ == "__main__":
             print("? Failed to create VF3 character")
     else:
         print("Usage: Run this script with Blender: blender --background --python vf3_blender_exporter.py -- input.TXT output.glb")
+
+
+def _split_connector_by_bone_groups(connector_obj, vertex_bone_names, bone_groups, mesh_objects):
+    """
+    Split a contaminated connector mesh by bone groups and merge each group with appropriate targets.
+    This fixes the issue where body connector contains arm/hand/waist geometry.
+    """
+    print(f"        🚀 STARTING CONNECTOR SPLITTING for {connector_obj.name if connector_obj else 'None'}")
+    print(f"        📊 Input: {len(bone_groups)} bone groups, {len(mesh_objects)} mesh objects")
+    
+    try:
+        import bpy
+        import bmesh
+        from mathutils import Vector
+    except ImportError:
+        print("        ❌ Blender imports not available for connector splitting")
+        return False
+    
+    if not connector_obj:
+        print("        ❌ No connector object provided")
+        return False
+        
+    print(f"        🔧 Connector object: {connector_obj.name}, vertices: {len(connector_obj.data.vertices) if connector_obj.data else 'N/A'}")
+    
+    # Define bone group targeting patterns
+    bone_group_targets = {
+        'body': ['body_satsuki.blazer', 'body_female'],
+        'l_breast': ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb'],
+        'r_breast': ['body_satsuki.blazer', 'r_breast_satsuki.blazer_rb'], 
+        'l_arm1': ['l_arm1_satsuki.l_blazer1', 'l_arm1_female'],
+        'r_arm1': ['r_arm1_satsuki.r_blazer1', 'r_arm1_female'],
+        'l_arm2': ['l_arm2_satsuki.l_blazer2', 'l_arm2_female'],
+        'r_arm2': ['r_arm2_satsuki.r_blazer2', 'r_arm2_female'],
+        'l_hand': ['l_hand_satsuki.l_blazer3', 'l_hand_female.l_hand'],
+        'r_hand': ['r_hand_satsuki.r_blazer3', 'r_hand_female.r_hand'],
+        'waist': ['waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta']
+    }
+    
+    successful_merges = []
+    
+    # Process each bone group
+    for bone_name, vertex_indices in bone_groups.items():
+        target_patterns = bone_group_targets.get(bone_name, [])
+        if not target_patterns:
+            print(f"        ⚠️ No targeting pattern for bone group '{bone_name}' - will merge with body")
+            target_patterns = ['body_satsuki.blazer', 'body_female']
+        
+        # Find target meshes for this bone group
+        target_meshes = []
+        for mesh_obj in mesh_objects:
+            if not hasattr(mesh_obj, 'name'):
+                continue
+            mesh_name_lower = mesh_obj.name.lower()
+            for pattern in target_patterns:
+                if pattern.lower() in mesh_name_lower:
+                    target_meshes.append(mesh_obj)
+                    break
+        
+        if not target_meshes:
+            print(f"        ❌ No target meshes found for bone group '{bone_name}'")
+            continue
+        
+        # Create a filtered mesh containing only vertices from this bone group
+        try:
+            print(f"        🔧 Creating filtered mesh for {bone_name} with {len(vertex_indices)} vertices...")
+            filtered_mesh = _create_filtered_connector_mesh(
+                connector_obj, vertex_indices, f"{connector_obj.name}_{bone_name}"
+            )
+            
+            if filtered_mesh:
+                print(f"        🔧 Filtered mesh created, attempting merge with {target_meshes[0].name}...")
+                # Merge the filtered mesh with the target(s)
+                primary_target = target_meshes[0]
+                merge_success = _merge_filtered_mesh_with_target(filtered_mesh, primary_target)
+                
+                if merge_success:
+                    successful_merges.append(bone_name)
+                    print(f"        ✅ Merged {bone_name} group ({len(vertex_indices)} vertices) -> {primary_target.name}")
+                else:
+                    print(f"        ❌ Failed to merge {bone_name} group with {primary_target.name}")
+                    # Clean up failed filtered mesh
+                    try:
+                        bpy.data.objects.remove(filtered_mesh, do_unlink=True)
+                        bpy.data.meshes.remove(filtered_mesh.data)
+                    except:
+                        pass
+            else:
+                print(f"        ❌ Failed to create filtered mesh for {bone_name} group")
+                
+        except Exception as e:
+            print(f"        ❌ Exception processing {bone_name} group: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"        📊 Splitting result: {len(successful_merges)}/{len(bone_groups)} bone groups merged successfully")
+    return len(successful_merges) > 0
+
+
+def _create_filtered_connector_mesh(source_obj, vertex_indices, mesh_name):
+    """Create a new mesh containing only the specified vertices from the source connector."""
+    try:
+        import bpy
+        import bmesh
+    except ImportError:
+        return None
+    
+    if not source_obj or not source_obj.data:
+        return None
+    
+    # Create a new bmesh from the source mesh
+    bm = bmesh.new()
+    bm.from_mesh(source_obj.data)
+    
+    # Mark vertices for deletion (all except the ones we want to keep)
+    verts_to_delete = []
+    for i, vert in enumerate(bm.verts):
+        if i not in vertex_indices:
+            verts_to_delete.append(vert)
+    
+    # Delete unwanted vertices (this will also remove connected faces)
+    bmesh.ops.delete(bm, geom=verts_to_delete, context='VERTS')
+    
+    # Create new mesh and object
+    new_mesh = bpy.data.meshes.new(mesh_name)
+    bm.to_mesh(new_mesh)
+    bm.free()
+    
+    new_obj = bpy.data.objects.new(mesh_name, new_mesh)
+    new_obj.matrix_world = source_obj.matrix_world.copy()
+    
+    # Link to scene collection so it can be manipulated
+    bpy.context.collection.objects.link(new_obj)
+    
+    return new_obj
+
+
+def _merge_filtered_mesh_with_target(filtered_obj, target_obj):
+    """Merge a filtered connector mesh with a target mesh."""
+    try:
+        import bpy
+        import bmesh
+    except ImportError:
+        return False
+    
+    if not filtered_obj or not target_obj:
+        return False
+    
+    # Select target object and make it active
+    bpy.context.view_layer.objects.active = target_obj
+    bpy.ops.object.select_all(action='DESELECT')
+    target_obj.select_set(True)
+    filtered_obj.select_set(True)
+    
+    # Join the meshes
+    bpy.ops.object.join()
+    
+    # Remove duplicate vertices
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    return True
 
 

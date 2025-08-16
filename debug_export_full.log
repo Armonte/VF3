@@ -1,0 +1,1285 @@
+/mnt/c/dev/loot/VF3/xfile/xfile_parser.py:167: UserWarning: Unknown data object in animation of .x file
+  warn("Unknown data object in animation of .x file")
+? Blender VF3 Export: data/satsuki.TXT -> satsuki_debug_connector_merging.glb
+OCCUPANCY: Collecting attachments with proper clothing replacement logic...
+DEBUG: Resolving identifier 'satsuki.head'
+DEBUG: Found 1 attachments in current descriptor for 'head'
+  SKIN: satsuki.head -> occupancy [1, 0, 0, 0, 0, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.body'
+DEBUG: Found grouped block 'body' with 3 attachments
+DEBUG: Found DynamicVisual mesh with 80 vertices, 82 faces
+DEBUG: Total attachments from grouped identifier 'body': 3
+  SKIN: female.body -> occupancy [0, 1, 0, 0, 0, 0, 0], 3 attachments
+DEBUG: Resolving identifier 'female.arms'
+DEBUG: Found grouped block 'arms' with 4 attachments
+DEBUG: Found DynamicVisual mesh with 24 vertices, 24 faces
+DEBUG: Total attachments from grouped identifier 'arms': 4
+  SKIN: female.arms -> occupancy [0, 0, 1, 0, 0, 0, 0], 4 attachments
+DEBUG: Resolving identifier 'female.l_hand'
+DEBUG: Found 1 attachments in other descriptor for 'l_hand'
+  SKIN: female.l_hand -> occupancy [0, 0, 0, 2, 0, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.r_hand'
+DEBUG: Found 1 attachments in other descriptor for 'r_hand'
+  SKIN: female.r_hand -> occupancy [0, 0, 0, 1, 0, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.waist'
+DEBUG: Found grouped block 'waist' with 1 attachments
+DEBUG: Found DynamicVisual mesh with 26 vertices, 26 faces
+DEBUG: Total attachments from grouped identifier 'waist': 1
+  SKIN: female.waist -> occupancy [0, 0, 0, 0, 1, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.legs'
+DEBUG: Found grouped block 'legs' with 4 attachments
+DEBUG: Found DynamicVisual mesh with 24 vertices, 24 faces
+DEBUG: Total attachments from grouped identifier 'legs': 4
+  SKIN: female.legs -> occupancy [0, 0, 0, 0, 0, 1, 0], 4 attachments
+DEBUG: Resolving identifier 'female.foots'
+DEBUG: Found grouped block 'foots' with 2 attachments
+DEBUG: Found DynamicVisual mesh with 28 vertices, 28 faces
+DEBUG: Total attachments from grouped identifier 'foots': 2
+  SKIN: female.foots -> occupancy [0, 0, 0, 0, 0, 0, 1], 2 attachments
+  DEBUG: COSTUME MODE - Loading 3 costume items from defaultcos
+    DEBUG: Found block 'blazer' for costume item 'satsuki.blazer'
+    DEBUG: Processing costume block 'blazer' for item 'satsuki.blazer'
+    DEBUG: Block has 2 lines: ['class:human.female', '0,3,3,0,0,0,0:satsuki.blazer_vp']
+      DEBUG: Found vp_block 'blazer_vp' for 'satsuki.blazer_vp'
+  CLOTHING: satsuki.blazer -> occupancy [0, 3, 3, 0, 0, 0, 0], 10 attachments
+    DEBUG: Found block 'skirtA' for costume item 'satsuki.skirtA'
+    DEBUG: Processing costume block 'skirtA' for item 'satsuki.skirtA'
+    DEBUG: Block has 2 lines: ['class:human.', '0,0,0,0,2,0,0:satsuki.skirta_vp']
+      DEBUG: Found vp_block 'skirta_vp' for 'satsuki.skirta_vp'
+  CLOTHING: satsuki.skirtA -> occupancy [0, 0, 0, 0, 2, 0, 0], 3 attachments
+    DEBUG: Found block 'shoesA' for costume item 'satsuki.shoesA'
+    DEBUG: Processing costume block 'shoesA' for item 'satsuki.shoesA'
+    DEBUG: Block has 2 lines: ['class:human.', '0,0,0,0,0,0,3:satsuki.shoesa_vp']
+      DEBUG: Found vp_block 'shoesa_vp' for 'satsuki.shoesa_vp'
+  CLOTHING: satsuki.shoesA -> occupancy [0, 0, 0, 0, 0, 0, 3], 4 attachments
+OCCUPANCY: Before filtering - 8 skin, 3 clothing
+OCCUPANCY FILTER: Processing 8 skin + 3 clothing attachments
+  SKIN: Slot 0 occupied by skin:satsuki.head with occupancy 1
+  SKIN: Slot 1 occupied by skin:female.body with occupancy 1
+  SKIN: Slot 2 occupied by skin:female.arms with occupancy 1
+  SKIN: Slot 3 occupied by skin:female.l_hand with occupancy 2
+  SKIN: Slot 3 - Merging bilateral part skin:female.r_hand with existing skin:female.l_hand
+    DynamicVisual: Merged 10 vertices from skin:female.r_hand with existing mesh
+  SKIN: Slot 4 occupied by skin:female.waist with occupancy 1
+  SKIN: Slot 5 occupied by skin:female.legs with occupancy 1
+  SKIN: Slot 6 occupied by skin:female.foots with occupancy 1
+  CLOTHING: Slot 1 REPLACED by clothing:satsuki.blazer with occupancy 3 (discarding base layer)
+  CLOTHING: Slot 2 REPLACED by clothing:satsuki.blazer with occupancy 3 (discarding base layer)
+  CLOTHING: Slot 4 ADDITIVE by clothing:satsuki.skirtA with occupancy 2 (keeping base layer)
+  CLOTHING: Slot 6 REPLACED by clothing:satsuki.shoesA with occupancy 3 (discarding base layer)
+  FINAL: Slot 0 ADDITIVE with 1 layers:
+    Layer 0: 1 attachments from skin:satsuki.head (occupancy 1)
+  FINAL: Slot 1 REPLACEMENT -> 10 attachments from clothing:satsuki.blazer (base discarded)
+    DynamicVisual from clothing:satsuki.blazer (ADDED)
+  FINAL: Slot 2 REPLACEMENT -> attachments from clothing:satsuki.blazer (DUPLICATE - SKIPPED)
+    DynamicVisual from clothing:satsuki.blazer (DUPLICATE - SKIPPED)
+  FINAL: Slot 3 ADDITIVE with 1 layers:
+    Layer 0: 2 attachments from skin:female.l_hand (occupancy 2)
+    DynamicVisual from skin:female.l_hand (ADDED)
+  FINAL: Slot 4 ADDITIVE with 2 layers:
+    Layer 0: 1 attachments from skin:female.waist (occupancy 1)
+    Layer 1: 3 attachments from clothing:satsuki.skirtA (occupancy 2)
+    DynamicVisual from clothing:satsuki.skirtA (ADDED)
+  FINAL: Slot 5 ADDITIVE with 1 layers:
+    Layer 0: 4 attachments from skin:female.legs (occupancy 1)
+    DynamicVisual from skin:female.legs (ADDED)
+  FINAL: Slot 6 REPLACEMENT -> 4 attachments from clothing:satsuki.shoesA (base discarded)
+    DynamicVisual from clothing:satsuki.shoesA (ADDED)
+OCCUPANCY FILTER: Final result: 25 attachments, 5 dynamic meshes (deduplicated)
+OCCUPANCY: After filtering - 25 final attachments, 5 dynamic meshes
+OCCUPANCY: Clothing replacement logic applied successfully!
+? Total attachments collected: 25 (after occupancy filtering)
+? Adding both head variants for Satsuki (stkface + stkface2)...
+DEBUG: Resolving identifier 'satsuki.head_k'
+DEBUG: Found 1 attachments in current descriptor for 'head_k'
+? Added head_k bone to hierarchy
+? Added 1 head_k attachments for stkface2 texture
+DEBUG: Scaled skirt_f offset from (0.0, -12.0, -3.0) to (0.0, -13.200000000000001, -3.3000000000000003) using waist scale (1.1, 1.1, 1.1)
+DEBUG: Scaled skirt_r offset from (0.0, -20.0, 10.0) to (0.0, -22.0, 11.0) using waist scale (1.1, 1.1, 1.1)
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/head.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/head.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 1 textures
+  Textures: ['stkface.bmp']
+  DEBUG: Raw diffuse from .X file: (0.6666666865348816, 0.3137255012989044, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.4098257653065932, 0.07805659603547627, 0.0022629534551296938, 1.0]
+Found material 1: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.8235294818878174) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.8235294818878174]
+Found material 2: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.49803924560546875) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.49803924560546875]
+Found material 3: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.7058823704719543) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.7058823704719543]
+Found material 4: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.3921568989753723) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.3921568989753723]
+Found material 5: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+Extracted 384 UV coordinates
+Parsed 384 vertices, 672 faces, 6 materials, 2 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 384 UV coordinates to mesh
+Mapped 540 original face materials to 672 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/head.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 0.7843137979507446, 0.3921568989753723, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+Found material 1: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 2: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.0784313753247261, 0.3137255012989044, 0.6274510025978088, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.003697239866761913, 0.07805659603547627, 0.3586539338504788, 1.0]
+Found material 3: material0 with 0 textures
+Extracted 383 UV coordinates
+Parsed 383 vertices, 529 faces, 4 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 383 UV coordinates to mesh
+Mapped 347 original face materials to 529 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/blazer.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer_lb.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer_lb.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.7843137979507446, 0.3921568989753723, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 27 UV coordinates
+Parsed 27 vertices, 34 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 27 UV coordinates to mesh
+Mapped 28 original face materials to 34 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/blazer_lb.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer_rb.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer_rb.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.7843137979507446, 0.3921568989753723, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 27 UV coordinates
+Parsed 27 vertices, 34 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 27 UV coordinates to mesh
+Mapped 28 original face materials to 34 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/blazer_rb.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_blazer1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_blazer1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 22 UV coordinates
+Parsed 22 vertices, 32 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 22 UV coordinates to mesh
+Mapped 26 original face materials to 32 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/l_blazer1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_blazer2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_blazer2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 18 UV coordinates
+Parsed 18 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 18 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/l_blazer2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_blazer3.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_blazer3.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 16 UV coordinates
+Parsed 16 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 16 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/l_blazer3.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_blazer1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_blazer1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 22 UV coordinates
+Parsed 22 vertices, 32 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 22 UV coordinates to mesh
+Mapped 26 original face materials to 32 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/r_blazer1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_blazer2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_blazer2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 18 UV coordinates
+Parsed 18 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 18 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/r_blazer2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_blazer3.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_blazer3.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 16 UV coordinates
+Parsed 16 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 16 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/r_blazer3.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/blazer2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.7843137979507446, 0.3921568989753723, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 24 UV coordinates
+Parsed 24 vertices, 32 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 24 UV coordinates to mesh
+Mapped 22 original face materials to 32 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/blazer2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 84 UV coordinates
+Parsed 84 vertices, 142 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 84 UV coordinates to mesh
+Mapped 78 original face materials to 142 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_hand.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 84 UV coordinates
+Parsed 84 vertices, 142 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 84 UV coordinates to mesh
+Mapped 78 original face materials to 142 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_hand.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/waist.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/waist.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 1: material0 with 0 textures
+Extracted 57 UV coordinates
+Parsed 57 vertices, 92 faces, 2 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 57 UV coordinates to mesh
+Mapped 89 original face materials to 92 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/waist.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/skirta.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/skirta.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.0, 0.250980406999588, 0.49803924560546875, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0, 0.04777575977207177, 0.21576442812541025, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 114 UV coordinates
+Parsed 114 vertices, 116 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 114 UV coordinates to mesh
+Mapped 87 original face materials to 116 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/skirta.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/skirta_f.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/skirta_f.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.0, 0.250980406999588, 0.49803924560546875, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0, 0.04777575977207177, 0.21576442812541025, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 66 UV coordinates
+Parsed 66 vertices, 70 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 66 UV coordinates to mesh
+Mapped 41 original face materials to 70 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/skirta_f.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/skirta_r.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/skirta_r.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.0, 0.250980406999588, 0.49803924560546875, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0, 0.04777575977207177, 0.21576442812541025, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 36 UV coordinates
+Parsed 36 vertices, 34 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 36 UV coordinates to mesh
+Mapped 21 original face materials to 34 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/skirta_r.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/l_leg1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/l_leg1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 24 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_leg1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/l_leg2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/l_leg2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 21 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_leg2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/r_leg1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/r_leg1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 24 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_leg1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/r_leg2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/r_leg2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 21 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_leg2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_shoea2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_shoea2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.9411765336990356, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.8751377114668153, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 36 UV coordinates
+Parsed 36 vertices, 48 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 36 UV coordinates to mesh
+Mapped 28 original face materials to 48 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/l_shoea2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_shoea.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/l_shoea.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.3921568989753723, 0.0, 0.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.12752980373408535, 0.0, 0.0, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.250980406999588, 0.0, 0.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.04777575977207177, 0.0, 0.0, 1.0]
+Found material 1: material0 with 0 textures
+Extracted 94 UV coordinates
+Parsed 94 vertices, 138 faces, 2 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 94 UV coordinates to mesh
+Mapped 82 original face materials to 138 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/l_shoea.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_shoea2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_shoea2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.9411765336990356, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.8751377114668153, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 36 UV coordinates
+Parsed 36 vertices, 48 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 36 UV coordinates to mesh
+Mapped 28 original face materials to 48 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/r_shoea2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_shoea.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/r_shoea.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.3921568989753723, 0.0, 0.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.12752980373408535, 0.0, 0.0, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.250980406999588, 0.0, 0.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.04777575977207177, 0.0, 0.0, 1.0]
+Found material 1: material0 with 0 textures
+Extracted 94 UV coordinates
+Parsed 94 vertices, 138 faces, 2 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 94 UV coordinates to mesh
+Mapped 82 original face materials to 138 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/r_shoea.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/satsuki/head_k.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/satsuki/head_k.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 1 textures
+  Textures: ['stkface2.bmp']
+  DEBUG: Raw diffuse from .X file: (0.6666666865348816, 0.3137255012989044, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.4098257653065932, 0.07805659603547627, 0.0022629534551296938, 1.0]
+Found material 1: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.8235294818878174) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.8235294818878174]
+Found material 2: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.49803924560546875) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.49803924560546875]
+Found material 3: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.7058823704719543) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.7058823704719543]
+Found material 4: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.3921568989753723) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.3921568989753723]
+Found material 5: material0 with 1 textures
+  Textures: ['stkhair_t.bmp']
+Extracted 384 UV coordinates
+Parsed 384 vertices, 672 faces, 6 materials, 2 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 384 UV coordinates to mesh
+Mapped 540 original face materials to 672 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/satsuki/head_k.X as DirectX .X file with materials
+? Creating VF3 character in Blender...
+? Creating armature...
+  Created bone 'body' at <Vector (0.0000, 0.0000, 0.0000)>
+  Created bone 'head' at <Vector (0.0000, 31.0000, 1.0000)>
+  Created bone 'head_k' at <Vector (0.0000, 0.0000, 0.0000)>
+  Created bone 'l_arm1' at <Vector (9.0000, 19.0000, 1.5000)>
+  Created bone 'l_arm2' at <Vector (9.5000, 0.0000, 1.7000)>
+  Created bone 'l_hand' at <Vector (9.5000, -18.0000, 1.9000)>
+  Created bone 'l_breast' at <Vector (4.5000, 13.0000, -5.5000)>
+  Created bone 'r_arm1' at <Vector (-9.0000, 19.0000, 1.5000)>
+  Created bone 'r_arm2' at <Vector (-9.5000, 0.0000, 1.7000)>
+  Created bone 'r_hand' at <Vector (-9.5000, -18.0000, 1.9000)>
+  Created bone 'r_breast' at <Vector (-4.5000, 13.0000, -5.5000)>
+  Created bone 'waist' at <Vector (0.0000, 0.0000, 0.0000)>
+  Created bone 'l_leg1' at <Vector (3.5000, -14.5000, 0.0000)>
+  Created bone 'l_leg2' at <Vector (5.0000, -50.0000, 1.5000)>
+  Created bone 'l_foot' at <Vector (4.5000, -88.0000, 2.0000)>
+  Created bone 'r_leg1' at <Vector (-3.5000, -14.5000, 0.0000)>
+  Created bone 'r_leg2' at <Vector (-5.0000, -50.0000, 1.5000)>
+  Created bone 'r_foot' at <Vector (-4.5000, -88.0000, 2.0000)>
+? Creating and binding meshes...
+      Applying trimesh texture: /mnt/c/dev/loot/VF3/data/stkface.bmp
+      Preserving UV coordinates: (384, 2)
+      Restored original UV coordinates
+      Applied trimesh texture material: stkface.bmp
+  Preserving UV coordinates from .X file: (384, 2)
+  Applying 384 UV coordinates to head_satsuki.head
+  ✅ Successfully applied UV coordinates to head_satsuki.head
+  Enabled smooth shading for head_satsuki.head (Gouraud rendering like VF3)
+  Creating Blender materials for head_satsuki.head: 6 materials
+    Creating 6 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkface.bmp
+      ? Failed to process texture with PIL: bpy_prop_array[slice] = value: re-sizing bpy_struct arrays isn't supported, falling back to direct loading
+      Debug: make_alpha=False for stkface.bmp on head_satsuki.head
+      Debug: texture image loaded: stkface.bmp.001, size: (128, 128)
+      Debug: tex_image.image assigned: stkface.bmp.001
+      Debug: Connected texture 'stkface.bmp.001' directly to Base Color
+      Debug: Set OPAQUE blend mode for face texture
+      Debug: Texture node outputs: ['Color', 'Alpha']
+      Debug: Connected Alpha to BSDF Alpha
+      ? Loaded texture (packed): stkface.bmp.001
+      ? Added material material0 to mesh
+    Material 1: material0
+      Diffuse: (0.4098257653065932, 0.07805659603547627, 0.0022629534551296938, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 2: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Processed texture with PIL: stkhair_t.bmp (RGBA)
+      Debug: make_alpha=True for stkhair_t.bmp on head_satsuki.head
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    Material 3: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_satsuki.head
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    Material 4: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_satsuki.head
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    Material 5: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_satsuki.head
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 672
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 672 face assignments to 672 polygons
+    ? Assigned materials to 672/672 faces
+    Debug: Material usage for head_satsuki.head: {0: 161, 1: 397, 2: 4, 3: 22, 4: 24, 5: 64}
+  Created mesh 'head_satsuki.head' with 382 vertices, bound to bone 'head'
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for body_satsuki.blazer
+  ✅ Generated simple UV mapping for body_satsuki.blazer
+  Enabled smooth shading for body_satsuki.blazer (Gouraud rendering like VF3)
+  Creating Blender materials for body_satsuki.blazer: 4 materials
+    Creating 4 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 1: material0
+      Diffuse: (1.0, 0.5859731030497544, 0.12752980373408535, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 2: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 3: material0
+      Diffuse: (0.003697239866761913, 0.07805659603547627, 0.3586539338504788, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 529
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 529 face assignments to 529 polygons
+    ? Assigned materials to 529/529 faces
+  Created mesh 'body_satsuki.blazer' with 381 vertices, bound to bone 'body'
+      Applied PBR color material: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+  Generating simple UV mapping for l_breast_satsuki.blazer_lb
+  ✅ Generated simple UV mapping for l_breast_satsuki.blazer_lb
+  Enabled smooth shading for l_breast_satsuki.blazer_lb (Gouraud rendering like VF3)
+  Creating Blender materials for l_breast_satsuki.blazer_lb: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.5859731030497544, 0.12752980373408535, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 34
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 34 face assignments to 34 polygons
+    ? Assigned materials to 34/34 faces
+  Created mesh 'l_breast_satsuki.blazer_lb' with 27 vertices, bound to bone 'l_breast'
+      Applied PBR color material: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+  Generating simple UV mapping for r_breast_satsuki.blazer_rb
+  ✅ Generated simple UV mapping for r_breast_satsuki.blazer_rb
+  Enabled smooth shading for r_breast_satsuki.blazer_rb (Gouraud rendering like VF3)
+  Creating Blender materials for r_breast_satsuki.blazer_rb: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.5859731030497544, 0.12752980373408535, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 34
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 34 face assignments to 34 polygons
+    ? Assigned materials to 34/34 faces
+  Created mesh 'r_breast_satsuki.blazer_rb' with 27 vertices, bound to bone 'r_breast'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for l_arm1_satsuki.l_blazer1
+  ✅ Generated simple UV mapping for l_arm1_satsuki.l_blazer1
+  Enabled smooth shading for l_arm1_satsuki.l_blazer1 (Gouraud rendering like VF3)
+  Creating Blender materials for l_arm1_satsuki.l_blazer1: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 32
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 32 face assignments to 32 polygons
+    ? Assigned materials to 32/32 faces
+  Created mesh 'l_arm1_satsuki.l_blazer1' with 22 vertices, bound to bone 'l_arm1'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for l_arm2_satsuki.l_blazer2
+  ✅ Generated simple UV mapping for l_arm2_satsuki.l_blazer2
+  Enabled smooth shading for l_arm2_satsuki.l_blazer2 (Gouraud rendering like VF3)
+  Creating Blender materials for l_arm2_satsuki.l_blazer2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 24
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 24 face assignments to 24 polygons
+    ? Assigned materials to 24/24 faces
+  Created mesh 'l_arm2_satsuki.l_blazer2' with 18 vertices, bound to bone 'l_arm2'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for l_hand_satsuki.l_blazer3
+  ✅ Generated simple UV mapping for l_hand_satsuki.l_blazer3
+  Enabled smooth shading for l_hand_satsuki.l_blazer3 (Gouraud rendering like VF3)
+  Creating Blender materials for l_hand_satsuki.l_blazer3: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 24
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 24 face assignments to 24 polygons
+    ? Assigned materials to 24/24 faces
+  Created mesh 'l_hand_satsuki.l_blazer3' with 16 vertices, bound to bone 'l_hand'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for r_arm1_satsuki.r_blazer1
+  ✅ Generated simple UV mapping for r_arm1_satsuki.r_blazer1
+  Enabled smooth shading for r_arm1_satsuki.r_blazer1 (Gouraud rendering like VF3)
+  Creating Blender materials for r_arm1_satsuki.r_blazer1: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 32
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 32 face assignments to 32 polygons
+    ? Assigned materials to 32/32 faces
+  Created mesh 'r_arm1_satsuki.r_blazer1' with 22 vertices, bound to bone 'r_arm1'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for r_arm2_satsuki.r_blazer2
+  ✅ Generated simple UV mapping for r_arm2_satsuki.r_blazer2
+  Enabled smooth shading for r_arm2_satsuki.r_blazer2 (Gouraud rendering like VF3)
+  Creating Blender materials for r_arm2_satsuki.r_blazer2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 24
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 24 face assignments to 24 polygons
+    ? Assigned materials to 24/24 faces
+  Created mesh 'r_arm2_satsuki.r_blazer2' with 18 vertices, bound to bone 'r_arm2'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for r_hand_satsuki.r_blazer3
+  ✅ Generated simple UV mapping for r_hand_satsuki.r_blazer3
+  Enabled smooth shading for r_hand_satsuki.r_blazer3 (Gouraud rendering like VF3)
+  Creating Blender materials for r_hand_satsuki.r_blazer3: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 24
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 24 face assignments to 24 polygons
+    ? Assigned materials to 24/24 faces
+  Created mesh 'r_hand_satsuki.r_blazer3' with 16 vertices, bound to bone 'r_hand'
+      Applied PBR color material: [1.0, 0.5859731030497544, 0.12752980373408535, 1.0]
+  Generating simple UV mapping for waist_satsuki.blazer2
+  ✅ Generated simple UV mapping for waist_satsuki.blazer2
+  Enabled smooth shading for waist_satsuki.blazer2 (Gouraud rendering like VF3)
+  Creating Blender materials for waist_satsuki.blazer2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.5859731030497544, 0.12752980373408535, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 32
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 32 face assignments to 32 polygons
+    ? Assigned materials to 32/32 faces
+  Created mesh 'waist_satsuki.blazer2' with 24 vertices, bound to bone 'waist'
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for l_hand_female.l_hand
+  ✅ Generated simple UV mapping for l_hand_female.l_hand
+  Enabled smooth shading for l_hand_female.l_hand (Gouraud rendering like VF3)
+  Creating Blender materials for l_hand_female.l_hand: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 142
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 142 face assignments to 142 polygons
+    ? Assigned materials to 142/142 faces
+  Created mesh 'l_hand_female.l_hand' with 84 vertices, bound to bone 'l_hand'
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for r_hand_female.r_hand
+  ✅ Generated simple UV mapping for r_hand_female.r_hand
+  Enabled smooth shading for r_hand_female.r_hand (Gouraud rendering like VF3)
+  Creating Blender materials for r_hand_female.r_hand: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 142
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 142 face assignments to 142 polygons
+    ? Assigned materials to 142/142 faces
+  Created mesh 'r_hand_female.r_hand' with 84 vertices, bound to bone 'r_hand'
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for waist_female.waist
+  ✅ Generated simple UV mapping for waist_female.waist
+  Enabled smooth shading for waist_female.waist (Gouraud rendering like VF3)
+  Creating Blender materials for waist_female.waist: 2 materials
+    Creating 2 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 1: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 92
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 92 face assignments to 92 polygons
+    ? Assigned materials to 92/92 faces
+  Created mesh 'waist_female.waist' with 57 vertices, bound to bone 'waist'
+      Applied PBR color material: [0.0, 0.04777575977207177, 0.21576442812541025, 1.0]
+  Generating simple UV mapping for waist_satsuki.skirta
+  ✅ Generated simple UV mapping for waist_satsuki.skirta
+  Enabled smooth shading for waist_satsuki.skirta (Gouraud rendering like VF3)
+  Creating Blender materials for waist_satsuki.skirta: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (0.0, 0.04777575977207177, 0.21576442812541025, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 116
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 116 face assignments to 116 polygons
+    ? Assigned materials to 116/116 faces
+  Created mesh 'waist_satsuki.skirta' with 114 vertices, bound to bone 'waist'
+      Applied PBR color material: [0.0, 0.04777575977207177, 0.21576442812541025, 1.0]
+  Generating simple UV mapping for skirt_f_satsuki.skirta_f
+  ✅ Generated simple UV mapping for skirt_f_satsuki.skirta_f
+  Enabled smooth shading for skirt_f_satsuki.skirta_f (Gouraud rendering like VF3)
+  Creating Blender materials for skirt_f_satsuki.skirta_f: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (0.0, 0.04777575977207177, 0.21576442812541025, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 70
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 70 face assignments to 70 polygons
+    ? Assigned materials to 70/70 faces
+  WARNING: No bone found for 'skirt_f', mesh 'skirt_f_satsuki.skirta_f' will not be rigged
+      Applied PBR color material: [0.0, 0.04777575977207177, 0.21576442812541025, 1.0]
+  Generating simple UV mapping for skirt_r_satsuki.skirta_r
+  ✅ Generated simple UV mapping for skirt_r_satsuki.skirta_r
+  Enabled smooth shading for skirt_r_satsuki.skirta_r (Gouraud rendering like VF3)
+  Creating Blender materials for skirt_r_satsuki.skirta_r: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (0.0, 0.04777575977207177, 0.21576442812541025, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 34
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 34 face assignments to 34 polygons
+    ? Assigned materials to 34/34 faces
+  WARNING: No bone found for 'skirt_r', mesh 'skirt_r_satsuki.skirta_r' will not be rigged
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for l_leg1_female.l_leg1
+  ✅ Generated simple UV mapping for l_leg1_female.l_leg1
+  Enabled smooth shading for l_leg1_female.l_leg1 (Gouraud rendering like VF3)
+  Creating Blender materials for l_leg1_female.l_leg1: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 28
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 28 face assignments to 28 polygons
+    ? Assigned materials to 28/28 faces
+  Created mesh 'l_leg1_female.l_leg1' with 20 vertices, bound to bone 'l_leg1'
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for l_leg2_female.l_leg2
+  ✅ Generated simple UV mapping for l_leg2_female.l_leg2
+  Enabled smooth shading for l_leg2_female.l_leg2 (Gouraud rendering like VF3)
+  Creating Blender materials for l_leg2_female.l_leg2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 28
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 28 face assignments to 28 polygons
+    ? Assigned materials to 28/28 faces
+  Created mesh 'l_leg2_female.l_leg2' with 20 vertices, bound to bone 'l_leg2'
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for r_leg1_female.r_leg1
+  ✅ Generated simple UV mapping for r_leg1_female.r_leg1
+  Enabled smooth shading for r_leg1_female.r_leg1 (Gouraud rendering like VF3)
+  Creating Blender materials for r_leg1_female.r_leg1: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 28
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 28 face assignments to 28 polygons
+    ? Assigned materials to 28/28 faces
+  Created mesh 'r_leg1_female.r_leg1' with 20 vertices, bound to bone 'r_leg1'
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Generating simple UV mapping for r_leg2_female.r_leg2
+  ✅ Generated simple UV mapping for r_leg2_female.r_leg2
+  Enabled smooth shading for r_leg2_female.r_leg2 (Gouraud rendering like VF3)
+  Creating Blender materials for r_leg2_female.r_leg2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 0.7592996768134438, 0.5859731030497544, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 28
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 28 face assignments to 28 polygons
+    ? Assigned materials to 28/28 faces
+  Created mesh 'r_leg2_female.r_leg2' with 20 vertices, bound to bone 'r_leg2'
+      Applied PBR color material: [0.8751377114668153, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for l_leg2_satsuki.l_shoea2
+  ✅ Generated simple UV mapping for l_leg2_satsuki.l_shoea2
+  Enabled smooth shading for l_leg2_satsuki.l_shoea2 (Gouraud rendering like VF3)
+  Creating Blender materials for l_leg2_satsuki.l_shoea2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (0.8751377114668153, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 48
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 48 face assignments to 48 polygons
+    ? Assigned materials to 48/48 faces
+  Created mesh 'l_leg2_satsuki.l_shoea2' with 36 vertices, bound to bone 'l_leg2'
+      Applied PBR color material: [0.12752980373408535, 0.0, 0.0, 1.0]
+  Generating simple UV mapping for l_foot_satsuki.l_shoea
+  ✅ Generated simple UV mapping for l_foot_satsuki.l_shoea
+  Enabled smooth shading for l_foot_satsuki.l_shoea (Gouraud rendering like VF3)
+  Creating Blender materials for l_foot_satsuki.l_shoea: 2 materials
+    Creating 2 materials for mesh
+    Material 0: material0
+      Diffuse: (0.12752980373408535, 0.0, 0.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 1: material0
+      Diffuse: (0.04777575977207177, 0.0, 0.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 138
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 138 face assignments to 138 polygons
+    ? Assigned materials to 138/138 faces
+  Created mesh 'l_foot_satsuki.l_shoea' with 94 vertices, bound to bone 'l_foot'
+      Applied PBR color material: [0.8751377114668153, 1.0, 1.0, 1.0]
+  Generating simple UV mapping for r_leg2_satsuki.r_shoea2
+  ✅ Generated simple UV mapping for r_leg2_satsuki.r_shoea2
+  Enabled smooth shading for r_leg2_satsuki.r_shoea2 (Gouraud rendering like VF3)
+  Creating Blender materials for r_leg2_satsuki.r_shoea2: 1 materials
+    Creating 1 materials for mesh
+    Material 0: material0
+      Diffuse: (0.8751377114668153, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 48
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 48 face assignments to 48 polygons
+    ? Assigned materials to 48/48 faces
+  Created mesh 'r_leg2_satsuki.r_shoea2' with 36 vertices, bound to bone 'r_leg2'
+      Applied PBR color material: [0.12752980373408535, 0.0, 0.0, 1.0]
+  Generating simple UV mapping for r_foot_satsuki.r_shoea
+  ✅ Generated simple UV mapping for r_foot_satsuki.r_shoea
+  Enabled smooth shading for r_foot_satsuki.r_shoea (Gouraud rendering like VF3)
+  Creating Blender materials for r_foot_satsuki.r_shoea: 2 materials
+    Creating 2 materials for mesh
+    Material 0: material0
+      Diffuse: (0.12752980373408535, 0.0, 0.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 1: material0
+      Diffuse: (0.04777575977207177, 0.0, 0.0, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 138
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 138 face assignments to 138 polygons
+    ? Assigned materials to 138/138 faces
+  Created mesh 'r_foot_satsuki.r_shoea' with 94 vertices, bound to bone 'r_foot'
+      Applying trimesh texture: /mnt/c/dev/loot/VF3/data/stkface2.bmp
+      Preserving UV coordinates: (384, 2)
+      Restored original UV coordinates
+      Applied trimesh texture material: stkface2.bmp
+  Preserving UV coordinates from .X file: (384, 2)
+  Applying 384 UV coordinates to head_k_satsuki.head_k
+  ✅ Successfully applied UV coordinates to head_k_satsuki.head_k
+  Enabled smooth shading for head_k_satsuki.head_k (Gouraud rendering like VF3)
+  Creating Blender materials for head_k_satsuki.head_k: 6 materials
+    Creating 6 materials for mesh
+    Material 0: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkface2.bmp
+      ? Failed to process texture with PIL: bpy_prop_array[slice] = value: re-sizing bpy_struct arrays isn't supported, falling back to direct loading
+      Debug: make_alpha=False for stkface2.bmp on head_k_satsuki.head_k
+      Debug: texture image loaded: stkface2.bmp.001, size: (128, 128)
+      Debug: tex_image.image assigned: stkface2.bmp.001
+      Debug: Connected texture 'stkface2.bmp.001' directly to Base Color
+      Debug: Set OPAQUE blend mode for face texture
+      Debug: Texture node outputs: ['Color', 'Alpha']
+      Debug: Connected Alpha to BSDF Alpha
+      ? Loaded texture (packed): stkface2.bmp.001
+      ? Added material material0 to mesh
+    Material 1: material0
+      Diffuse: (0.4098257653065932, 0.07805659603547627, 0.0022629534551296938, 1.0)
+      Metallic: 0.0
+      ? Added material material0 to mesh
+    Material 2: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_k_satsuki.head_k
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    Material 3: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_k_satsuki.head_k
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    Material 4: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_k_satsuki.head_k
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    Material 5: material0
+      Diffuse: (1.0, 1.0, 1.0, 1.0)
+      Metallic: 0.0
+      Texture: /mnt/c/dev/loot/VF3/data/stkhair_t.bmp
+      ? Reusing existing image: stkhair_t.bmp
+      Debug: make_alpha=True for stkhair_t.bmp on head_k_satsuki.head_k
+      Debug: texture image loaded: stkhair_t.bmp, size: (128, 128)
+      Debug: tex_image.image assigned: stkhair_t.bmp
+      Debug: Connected texture 'stkhair_t.bmp' directly to Base Color
+      Debug: Set CLIP blend mode for hair texture
+      ? Loaded texture (packed): stkhair_t.bmp
+      ? Added material material0 to mesh
+    ? Found face materials in mesh_info: 672
+    mesh_info keys: ['mesh', 'materials', 'textures', 'uv_coords', 'face_materials', 'source_path']
+    Visual type: <class 'trimesh.visual.texture.TextureVisuals'>
+    Visual attributes: ['concatenate', 'copy', 'defined', 'face_materials', 'face_subset', 'kind', 'material', 'mesh', 'to_color', 'update_faces', 'update_vertices', 'uv', 'vertex_attributes']
+    Assigning face materials: 672 face assignments to 672 polygons
+    ? Assigned materials to 672/672 faces
+    Debug: Material usage for head_k_satsuki.head_k: {0: 161, 1: 397, 2: 4, 3: 22, 4: 24, 5: 64}
+  Created mesh 'head_k_satsuki.head_k' with 382 vertices, bound to bone 'head_k'
+? Merging breast meshes with body...
+  Body mesh: Not found
+  Breast meshes: 0 found
+? Merging feet with lower legs...
+  No leg-foot pairs found for merging
+? Merging lower legs with thighs...
+  Found 2 thigh-lowerleg pairs to merge
+  Merging left lower leg (l_leg2_female.l_leg2) with thigh (l_leg1_female.l_leg1)
+Info: Removed 0 vertice(s)
+  Merging right lower leg (r_leg2_female.r_leg2) with thigh (r_leg1_female.r_leg1)
+Info: Removed 0 vertice(s)
+  ✅ Successfully merged 2 lower leg meshes with thigh meshes
+  Removed 2 merged lower leg meshes from export list
+? Merging complete legs with body...
+  Body mesh: Not found
+  Leg meshes: 2 found
+? Merging forearms with arms...
+  No arm-forearm pairs found for merging
+? Merging hands with arms...
+  No arm-hand pairs found for merging
+? Merging complete arms with body...
+  Body mesh: Not found
+  Arm meshes: 0 found
+? Creating DynamicVisual connectors...
+  Collected 2116 vertices from existing meshes for snapping
+  Processing DynamicVisual mesh 0: 124 vertices, 126 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 126 exact faces
+      Overriding VF3 material for body connector to use skin tone (naked mode)
+      VF3 material overridden/white, using skin tone instead: (1.000, 0.759, 0.586)
+      🔍 ENHANCED DEBUG: Processing connector dynamic_connector_0_vf3mesh
+         Connector number extracted: 0
+         Target categories from targeting logic: ['body_satsuki.blazer']
+         All available mesh objects: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'r_hand_satsuki.r_blazer3', 'waist_satsuki.blazer2', 'l_hand_female.l_hand', 'r_hand_female.r_hand', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Connector 0 -> DYNAMIC merge targets: ['body_satsuki.blazer']
+        Available meshes: ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'r_hand_satsuki.r_blazer3', 'waist_satsuki.blazer2', 'l_hand_female.l_hand', 'r_hand_female.r_hand', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+        🔍 DEBUG: Full available mesh list: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'r_hand_satsuki.r_blazer3', 'waist_satsuki.blazer2', 'l_hand_female.l_hand', 'r_hand_female.r_hand', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+Info: Removed 36 vertice(s)
+      ✅ Successfully merged connector dynamic_connector_0_vf3mesh with body_satsuki.blazer
+    ✅ Merged VF3 connector: dynamic_connector_0_vf3mesh with existing body mesh
+  Processing DynamicVisual mesh 1: 20 vertices, 20 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 20 exact faces
+      No material data, using skin tone: (1.000, 0.759, 0.586)
+      🔍 ENHANCED DEBUG: Processing connector dynamic_connector_1_vf3mesh
+         Connector number extracted: 1
+         Target categories from targeting logic: ['l_hand_satsuki.l_blazer3', 'r_hand_satsuki.r_blazer3', 'l_hand_female.l_hand', 'r_hand_female.r_hand']
+         All available mesh objects: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'r_hand_satsuki.r_blazer3', 'waist_satsuki.blazer2', 'l_hand_female.l_hand', 'r_hand_female.r_hand', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Connector 1 -> DYNAMIC merge targets: ['l_hand_satsuki.l_blazer3', 'r_hand_satsuki.r_blazer3', 'l_hand_female.l_hand', 'r_hand_female.r_hand']
+        Available meshes: ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'r_hand_satsuki.r_blazer3', 'waist_satsuki.blazer2', 'l_hand_female.l_hand', 'r_hand_female.r_hand', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+        🔍 DEBUG: Full available mesh list: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'r_hand_satsuki.r_blazer3', 'waist_satsuki.blazer2', 'l_hand_female.l_hand', 'r_hand_female.r_hand', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Found 4 target meshes: ['l_hand_satsuki.l_blazer3', 'r_hand_satsuki.r_blazer3', 'l_hand_female.l_hand', 'r_hand_female.r_hand']
+Info: Removed 8 vertice(s)
+      ✅ Successfully merged connector dynamic_connector_1_vf3mesh with 4 meshes into l_hand_satsuki.l_blazer3
+    ✅ Merged VF3 connector: dynamic_connector_1_vf3mesh with existing body mesh, removed 3 merged meshes from list
+  Processing DynamicVisual mesh 2: 112 vertices, 86 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 86 exact faces
+      Applied VF3 material color: (0.000, 0.048, 0.216)
+      🔍 ENHANCED DEBUG: Processing connector dynamic_connector_2_vf3mesh
+         Connector number extracted: 2
+         Target categories from targeting logic: ['waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r']
+         All available mesh objects: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Connector 2 -> DYNAMIC merge targets: ['waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r']
+        Available meshes: ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+        🔍 DEBUG: Full available mesh list: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Found 5 target meshes: ['waist_satsuki.blazer2', 'waist_female.waist', 'waist_satsuki.skirta', 'skirt_f_satsuki.skirta_f', 'skirt_r_satsuki.skirta_r']
+Info: Removed 112 vertice(s)
+      ✅ Successfully merged connector dynamic_connector_2_vf3mesh with 5 meshes into waist_satsuki.blazer2
+    ✅ Merged VF3 connector: dynamic_connector_2_vf3mesh with existing body mesh, removed 4 merged meshes from list
+  Processing DynamicVisual mesh 3: 24 vertices, 24 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 24 exact faces
+      Overriding VF3 material for knee connector to use skin tone
+      VF3 material overridden/white, using skin tone instead: (1.000, 0.759, 0.586)
+      🔍 ENHANCED DEBUG: Processing connector dynamic_connector_3_vf3mesh
+         Connector number extracted: 3
+         Target categories from targeting logic: ['l_leg1_female.l_leg1', 'r_leg1_female.r_leg1']
+         All available mesh objects: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Connector 3 -> DYNAMIC merge targets: ['l_leg1_female.l_leg1', 'r_leg1_female.r_leg1']
+        Available meshes: ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+        🔍 DEBUG: Full available mesh list: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'l_leg1_female.l_leg1', 'r_leg1_female.r_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Found 2 target meshes: ['l_leg1_female.l_leg1', 'r_leg1_female.r_leg1']
+Info: Removed 24 vertice(s)
+      ✅ Successfully merged connector dynamic_connector_3_vf3mesh with 2 meshes into l_leg1_female.l_leg1
+    ✅ Merged VF3 connector: dynamic_connector_3_vf3mesh with existing body mesh, removed 1 merged meshes from list
+  Processing DynamicVisual mesh 4: 28 vertices, 28 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 28 exact faces
+      Applied VF3 material color: (0.875, 1.000, 1.000)
+      🔍 ENHANCED DEBUG: Processing connector dynamic_connector_4_vf3mesh
+         Connector number extracted: 4
+         Target categories from targeting logic: ['l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+Blender 4.0.2
+Info: Total files 2 | Changed 2 | Failed 0
+/usr/share/blender/scripts/addons/io_scene_gltf2/io/exp/gltf2_io_image_data.py:25: SyntaxWarning: invalid escape sequence '\.'
+  regex_dot = re.compile("\.")
+/usr/share/blender/scripts/addons/io_scene_gltf2/io/exp/gltf2_io_image_data.py:27: SyntaxWarning: invalid escape sequence '\]'
+  new_name = "".join([char for char in adjusted_name if char not in "!#$&'()*+,/:;<>?@[\]^`{|}~"])
+         All available mesh objects: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'l_leg1_female.l_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Connector 4 -> DYNAMIC merge targets: ['l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+        Available meshes: ['body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'l_leg1_female.l_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+        🔍 DEBUG: Full available mesh list: ['head_satsuki.head', 'body_satsuki.blazer', 'l_breast_satsuki.blazer_lb', 'r_breast_satsuki.blazer_rb', 'l_arm1_satsuki.l_blazer1', 'l_arm2_satsuki.l_blazer2', 'l_hand_satsuki.l_blazer3', 'r_arm1_satsuki.r_blazer1', 'r_arm2_satsuki.r_blazer2', 'waist_satsuki.blazer2', 'l_leg1_female.l_leg1', 'l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea', 'head_k_satsuki.head_k']
+      Found 4 target meshes: ['l_leg2_satsuki.l_shoea2', 'l_foot_satsuki.l_shoea', 'r_leg2_satsuki.r_shoea2', 'r_foot_satsuki.r_shoea']
+Info: Removed 28 vertice(s)
+      ✅ Successfully merged connector dynamic_connector_4_vf3mesh with 4 meshes into l_leg2_satsuki.l_shoea2
+    ✅ Merged VF3 connector: dynamic_connector_4_vf3mesh with existing body mesh, removed 3 merged meshes from list
+? Created 5 DynamicVisual connector meshes
+? Could not set viewport mode (running headless)
+Info: Saved "satsuki_debug_connector_merging_debug.blend"
+? Saved debug .blend file: satsuki_debug_connector_merging_debug.blend
+? Exporting to satsuki_debug_connector_merging.glb...
+03:05:30 | ERROR: Draco mesh compression is not available because library could not be found at /usr/bin/4.0/python/lib/python3.12/site-packages/libextern_draco.so
+03:05:30 | INFO: Starting glTF 2.0 export
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+03:05:30 | INFO: Extracting primitive: head_satsuki.head
+03:05:30 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+03:05:30 | INFO: Primitives created: 6
+03:05:30 | INFO: Extracting primitive: body_satsuki.blazer
+03:05:30 | INFO: Primitives created: 5
+03:05:30 | INFO: Extracting primitive: l_breast_satsuki.blazer_lb
+03:05:30 | INFO: Primitives created: 1
+03:05:30 | INFO: Extracting primitive: r_breast_satsuki.blazer_rb
+03:05:30 | INFO: Primitives created: 1
+03:05:30 | INFO: Extracting primitive: l_arm1_satsuki.l_blazer1
+03:05:30 | INFO: Primitives created: 1
+03:05:30 | INFO: Extracting primitive: l_arm2_satsuki.l_blazer2
+03:05:30 | INFO: Primitives created: 1
+03:05:30 | INFO: Extracting primitive: l_hand_satsuki.l_blazer3
+03:05:30 | INFO: Primitives created: 5
+03:05:30 | INFO: Extracting primitive: r_arm1_satsuki.r_blazer1
+03:05:30 | INFO: Primitives created: 1
+03:05:30 | INFO: Extracting primitive: r_arm2_satsuki.r_blazer2
+03:05:30 | INFO: Primitives created: 1
+03:05:30 | INFO: Extracting primitive: waist_satsuki.blazer2
+03:05:30 | INFO: Primitives created: 7
+03:05:30 | INFO: Extracting primitive: l_leg1_female.l_leg1
+03:05:30 | INFO: Primitives created: 5
+03:05:30 | INFO: Extracting primitive: l_leg2_satsuki.l_shoea2
+03:05:30 | INFO: Primitives created: 7
+03:05:30 | INFO: Extracting primitive: head_k_satsuki.head_k
+03:05:30 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+03:05:30 | INFO: Primitives created: 6
+03:05:30 | INFO: Finished glTF 2.0 export in 0.1287698745727539 s
+
+? Export completed successfully: satsuki_debug_connector_merging.glb
+? VF3 character created successfully in Blender!
+
+Blender quit
+Error: Not freed memory blocks: 1, total unfreed memory 0.000023 MB

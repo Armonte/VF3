@@ -74,7 +74,7 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
             # Get bone's world position
             bone_pos = world_transforms.get(bone_name, (0.0, 0.0, 0.0))
             
-            # Use pos1 + bone transform (like regular meshes) - this is what VF3 does
+            # Use pos1 + bone transform (like regular meshes) - back to original simple logic
             candidate_pos = [
                 pos1[0] + bone_pos[0],
                 pos1[1] + bone_pos[1], 

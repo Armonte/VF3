@@ -101,7 +101,7 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                                 'source': source,
                                 'attachments': attachments,
                                 'dynamic_mesh': dynamic_mesh,
-                                'layers': [{'source': source, 'attachments': attachments, 'occupancy': occ_value}]
+                                'layers': [{'source': source, 'attachments': attachments, 'occupancy': occ_value, 'dynamic_mesh': dynamic_mesh}]
                             }
                             print(f"  {group_name}: Slot {slot_idx} occupied by {source} with occupancy {occ_value}")
                         elif occ_value > current_winner['occupancy']:
@@ -112,10 +112,12 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                             if occ_value == 2:
                                 # ADDITIVE: Keep both base and costume (e.g., skirt + underwear)
                                 if 'layers' not in current_winner:
-                                    current_winner['layers'] = [{'source': current_winner['source'], 'attachments': current_winner['attachments'], 'occupancy': current_winner['occupancy']}]
+                                    base_dynamic_mesh = current_winner.get('dynamic_mesh')
+                                    print(f"    DEBUG: Creating base layer for {current_winner['source']}, dynamic_mesh: {base_dynamic_mesh is not None}")
+                                    current_winner['layers'] = [{'source': current_winner['source'], 'attachments': current_winner['attachments'], 'occupancy': current_winner['occupancy'], 'dynamic_mesh': base_dynamic_mesh}]
                                 
                                 # Add new layer on top, keeping base layer
-                                current_winner['layers'].append({'source': source, 'attachments': attachments, 'occupancy': occ_value})
+                                current_winner['layers'].append({'source': source, 'attachments': attachments, 'occupancy': occ_value, 'dynamic_mesh': dynamic_mesh})
                                 
                                 # Update primary winner to highest occupancy
                                 current_winner.update({
@@ -191,19 +193,39 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                 else:
                     print(f"  FINAL: Slot {slot_idx} SINGLE -> attachments from {winner['source']} (DUPLICATE - SKIPPED)")
         
-        # Handle dynamic mesh (always from top layer)
-        if winner['dynamic_mesh']:
-            # Use source as key to deduplicate DynamicVisual meshes from same source
-            source_key = winner['source']
-            if source_key not in seen_dynamic_meshes:
-                # Add source information to the DynamicVisual data for material assignment
-                dynamic_mesh_with_source = winner['dynamic_mesh'].copy()
-                dynamic_mesh_with_source['source_info'] = {'source': winner['source']}
-                final_dynamic_meshes.append(dynamic_mesh_with_source)
-                seen_dynamic_meshes.add(source_key)
-                print(f"    DynamicVisual from {winner['source']} (ADDED)")
-            else:
-                print(f"    DynamicVisual from {winner['source']} (DUPLICATE - SKIPPED)")
+        # Handle dynamic mesh 
+        if 'layers' in winner:
+            # ADDITIVE: Include DynamicVisual from ALL layers (both base and costume)
+            for layer in winner['layers']:
+                layer_dynamic_mesh = layer.get('dynamic_mesh')
+                print(f"    DEBUG: Layer {layer['source']} has dynamic_mesh: {layer_dynamic_mesh is not None}")
+                if layer_dynamic_mesh:
+                    source_key = layer['source']
+                    if source_key not in seen_dynamic_meshes:
+                        # Add source information to the DynamicVisual data for material assignment
+                        dynamic_mesh_with_source = layer_dynamic_mesh.copy()
+                        dynamic_mesh_with_source['source_info'] = {'source': layer['source']}
+                        final_dynamic_meshes.append(dynamic_mesh_with_source)
+                        seen_dynamic_meshes.add(source_key)
+                        print(f"    DynamicVisual from {layer['source']} (ADDED)")
+                    else:
+                        print(f"    DynamicVisual from {layer['source']} (DUPLICATE - SKIPPED)")
+                else:
+                    print(f"    DEBUG: Layer {layer['source']} has no DynamicVisual data")
+        else:
+            # REPLACEMENT or SINGLE: Include only winner's DynamicVisual
+            if winner['dynamic_mesh']:
+                # Use source as key to deduplicate DynamicVisual meshes from same source
+                source_key = winner['source']
+                if source_key not in seen_dynamic_meshes:
+                    # Add source information to the DynamicVisual data for material assignment
+                    dynamic_mesh_with_source = winner['dynamic_mesh'].copy()
+                    dynamic_mesh_with_source['source_info'] = {'source': winner['source']}
+                    final_dynamic_meshes.append(dynamic_mesh_with_source)
+                    seen_dynamic_meshes.add(source_key)
+                    print(f"    DynamicVisual from {winner['source']} (ADDED)")
+                else:
+                    print(f"    DynamicVisual from {winner['source']} (DUPLICATE - SKIPPED)")
     
     print(f"OCCUPANCY FILTER: Final result: {len(final_attachments)} attachments, {len(final_dynamic_meshes)} dynamic meshes (deduplicated)")
     

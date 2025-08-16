@@ -1,0 +1,6 @@
+Blender 4.0.2
+  File "/mnt/c/dev/loot/VF3/vf3_blender_exporter.py", line 1666
+    print(f"      Connector {connector_number} -> DYNAMIC merge targets: {target_categories}")
+IndentationError: unexpected indent
+
+Blender quit

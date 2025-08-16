@@ -457,9 +457,14 @@ def _find_in_data_root(filename: str, mesh_info: dict) -> str:
     return None
 
 
-def _collect_attachments_with_occupancy_filtering(desc):
+def _collect_attachments_with_occupancy_filtering(desc, include_skin=True, include_items=True):
     """
     Collect attachments with proper occupancy-based filtering to prevent clothing/body conflicts.
+    
+    Args:
+        desc: Descriptor object
+        include_skin: Include base skin/female body parts (default True)
+        include_items: Include costume items from defaultcos (default True)
     
     This implements the VF3 replacement logic where higher occupancy values override lower ones:
     - Blazer (3,3) REPLACES female.body (1) and female.arms (1) 
@@ -478,84 +483,90 @@ def _collect_attachments_with_occupancy_filtering(desc):
         print(f"Failed to import VF3 modules: {e}")
         return [], []
     
-    print("OCCUPANCY: Collecting attachments with proper clothing replacement logic...")
+    print(f"OCCUPANCY: Collecting attachments with include_skin={include_skin}, include_items={include_items}")
     
     # Parse skin attachments with occupancy vectors
     skin_attachments_with_occupancy = []
     skin_dynamic_meshes = []
     
-    skin_lines = desc.blocks.get('skin', [])
-    for line in skin_lines:
-        if not line.strip() or ':' not in line:
-            continue
-        
-        # Parse line format: "occupancy_vector:resource_id"
-        parts = line.strip().split(':', 1)
-        if len(parts) != 2:
-            continue
+    if include_skin:
+        print("👤 SKIN MODE: Loading base female body parts")
+        skin_lines = desc.blocks.get('skin', [])
+        for line in skin_lines:
+            if not line.strip() or ':' not in line:
+                continue
             
-        occ_str, resource_id = parts
-        occupancy_vector = parse_occupancy_vector(occ_str)
-        
-        # Resolve the resource ID to attachments and DynamicVisual data
-        skin_attachments, skin_dyn_mesh = resolve_identifier_to_attachments(resource_id.strip(), desc)
-        
-        if skin_attachments:
-            skin_attachments_with_occupancy.append({
-                'occupancy': occupancy_vector,
-                'source': f'skin:{resource_id}',
-                'attachments': skin_attachments,
-                'dynamic_mesh': skin_dyn_mesh
-            })
-            print(f"  SKIN: {resource_id} -> occupancy {occupancy_vector}, {len(skin_attachments)} attachments")
+            # Parse line format: "occupancy_vector:resource_id"
+            parts = line.strip().split(':', 1)
+            if len(parts) != 2:
+                continue
+                
+            occ_str, resource_id = parts
+            occupancy_vector = parse_occupancy_vector(occ_str)
+            
+            # Resolve the resource ID to attachments and DynamicVisual data
+            skin_attachments, skin_dyn_mesh = resolve_identifier_to_attachments(resource_id.strip(), desc)
+            
+            if skin_attachments:
+                skin_attachments_with_occupancy.append({
+                    'occupancy': occupancy_vector,
+                    'source': f'skin:{resource_id}',
+                    'attachments': skin_attachments,
+                    'dynamic_mesh': skin_dyn_mesh
+                })
+                print(f"  SKIN: {resource_id} -> occupancy {occupancy_vector}, {len(skin_attachments)} attachments")
+    else:
+        print("👤 SKIN MODE: Skipping base female body parts")
     
     # Parse costume attachments with occupancy vectors
     costume_attachments_with_occupancy = []
     
-    # Parse costume attachments with occupancy vectors
-    print("👘 COSTUME MODE: Enabling costume loading")
-    for costume_resource in parse_defaultcos(desc):
-        if '.' not in costume_resource:
-            continue
-        
-        prefix, item = costume_resource.split('.', 1)
-        item_block = desc.blocks.get(item)
-        if not item_block:
-            continue
-            
-        # Find vp target on the first mapping line in the item block
-        for raw in item_block:
-            s = raw.strip()
-            if not s or ':' not in s or s.startswith('class:'):
+    if include_items:
+        print("👘 COSTUME MODE: Loading costume items")
+        for costume_resource in parse_defaultcos(desc):
+            if '.' not in costume_resource:
                 continue
-            parts = s.split(':', 1)
-            if len(parts) != 2:
+            
+            prefix, item = costume_resource.split('.', 1)
+            item_block = desc.blocks.get(item)
+            if not item_block:
                 continue
                 
-            occ_str, vp_ident = parts
-            occupancy_vector = parse_occupancy_vector(occ_str)
-            vp_ident = vp_ident.strip()
-            
-            # vp_ident like 'ciel.blazer_vp' 
-            if '.' in vp_ident:
-                _, vp_name = vp_ident.split('.', 1)
-            else:
-                vp_name = vp_ident
+            # Find vp target on the first mapping line in the item block
+            for raw in item_block:
+                s = raw.strip()
+                if not s or ':' not in s or s.startswith('class:'):
+                    continue
+                parts = s.split(':', 1)
+                if len(parts) != 2:
+                    continue
+                    
+                occ_str, vp_ident = parts
+                occupancy_vector = parse_occupancy_vector(occ_str)
+                vp_ident = vp_ident.strip()
                 
-            vp_block = desc.blocks.get(vp_name)
-            if vp_block:
-                vp_attachments = parse_attachment_block_lines(vp_block)
-                costume_dyn_mesh = parse_dynamic_visual_mesh(vp_block)
-                
-                if vp_attachments:
-                    costume_attachments_with_occupancy.append({
-                        'occupancy': occupancy_vector,
-                        'source': f'costume:{costume_resource}:{vp_name}',
-                        'attachments': vp_attachments,
-                        'dynamic_mesh': costume_dyn_mesh
-                    })
-                    print(f"  COSTUME: {costume_resource} -> {vp_name}, occupancy {occupancy_vector}, {len(vp_attachments)} attachments")
-            break
+                # vp_ident like 'ciel.blazer_vp' 
+                if '.' in vp_ident:
+                    _, vp_name = vp_ident.split('.', 1)
+                else:
+                    vp_name = vp_ident
+                    
+                vp_block = desc.blocks.get(vp_name)
+                if vp_block:
+                    vp_attachments = parse_attachment_block_lines(vp_block)
+                    costume_dyn_mesh = parse_dynamic_visual_mesh(vp_block)
+                    
+                    if vp_attachments:
+                        costume_attachments_with_occupancy.append({
+                            'occupancy': occupancy_vector,
+                            'source': f'costume:{costume_resource}:{vp_name}',
+                            'attachments': vp_attachments,
+                            'dynamic_mesh': costume_dyn_mesh
+                        })
+                        print(f"  COSTUME: {costume_resource} -> {vp_name}, occupancy {occupancy_vector}, {len(vp_attachments)} attachments")
+                break
+    else:
+        print("👘 COSTUME MODE: Skipping costume items")
     
     # Apply occupancy filtering using existing logic
     filter_result = filter_attachments_by_occupancy_with_dynamic(
@@ -598,8 +609,14 @@ def _get_bone_hierarchy_order(bones: Dict) -> List[str]:
 if __name__ == "__main__":
     # This script can be run directly by Blender
     if len(sys.argv) >= 3:
-        descriptor_path = sys.argv[-2]
-        output_path = sys.argv[-1]
+        # Parse command line arguments, excluding flags
+        args = [arg for arg in sys.argv if not arg.startswith('--')]
+        descriptor_path = args[-2] if len(args) >= 2 else None
+        output_path = args[-1] if len(args) >= 1 else None
+        
+        if not descriptor_path or not output_path:
+            print("❌ Invalid arguments. Usage: blender --background --python vf3_blender_exporter_modular.py -- input.TXT output.glb [--naked]")
+            sys.exit(1)
         
         print(f"🎌 Blender VF3 Export: {descriptor_path} -> {output_path}")
         
@@ -622,7 +639,16 @@ if __name__ == "__main__":
         bones = parse_frame_bones(desc)
         
         # Collect active attachments with occupancy filtering (base skin + default costume, expanded across referenced descriptors)
-        attachments, _clothing_dynamic_meshes = _collect_attachments_with_occupancy_filtering(desc)
+        # Check for --naked flag in command line arguments
+        include_skin = True
+        include_items = True
+        for arg in sys.argv:
+            if arg == '--naked':
+                include_skin, include_items = True, False
+                print("🔧 NAKED MODE: Loading only base female body parts (no costume items)")
+                break
+        
+        attachments, _clothing_dynamic_meshes = _collect_attachments_with_occupancy_filtering(desc, include_skin, include_items)
         print(f"🎌 Total attachments collected: {len(attachments)} (after occupancy filtering)")
         
         # For Satsuki, add both head variants to get both stkface.bmp and stkface2.bmp
