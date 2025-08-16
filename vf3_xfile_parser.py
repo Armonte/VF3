@@ -727,6 +727,16 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                 for uv in mesh.texCoords:
                     uv_coords.append([uv[0], uv[1]])
                 print(f"Extracted {len(uv_coords)} UV coordinates")
+                
+                # DEBUG: Check UV coordinates for head meshes
+                if "head" in file_path.lower():
+                    import numpy as np
+                    uv_array = np.array(uv_coords)
+                    min_u, min_v = uv_array.min(axis=0) if len(uv_coords) > 0 else (0, 0)
+                    max_u, max_v = uv_array.max(axis=0) if len(uv_coords) > 0 else (0, 0)
+                    print(f"  🔍 HEAD UV EXTRACTION: U({min_u:.4f}-{max_u:.4f}) V({min_v:.4f}-{max_v:.4f})")
+                    if len(uv_coords) > 0:
+                        print(f"  🔍 First 5 extracted UVs: {uv_coords[:5]}")
             
             # Extract faces and track original face indices for material mapping
             face_to_original = []  # Maps triangulated face index to original face index
@@ -866,6 +876,7 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
         
         # Add UV coordinates if available
         if uv_coords and len(uv_coords) == len(vertices):
+            import numpy as np
             mesh.visual.uv = np.array(uv_coords)
             print(f"Applied {len(uv_coords)} UV coordinates to mesh")
         
