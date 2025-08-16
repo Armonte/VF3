@@ -185,9 +185,13 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
         # This ensures we don't assign all mixed connectors to the same side
         
         # Get a more unique identifier for deterministic bilateral distribution
-        # Use hash of connector name + vertex count + first bone name for better uniqueness
-        first_bone = vg_names[0] if vg_names else ""
-        connector_id = hash(connector_name + str(len(vg_names)) + first_bone) % 1000
+        # Use a simple counter-based approach for perfect alternation
+        # Store state in a global counter for deterministic distribution
+        if not hasattr(_merge_connector_with_anatomical_groups, '_bilateral_counter'):
+            _merge_connector_with_anatomical_groups._bilateral_counter = 0
+        
+        _merge_connector_with_anatomical_groups._bilateral_counter += 1
+        connector_id = _merge_connector_with_anatomical_groups._bilateral_counter
         
         if set(tied_regions) == {'left_arm', 'right_arm'}:
             # For arm ties, alternate assignment based on connector characteristics
