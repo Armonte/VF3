@@ -235,19 +235,9 @@ def _create_unified_material(mesh_obj, materials: List, mesh_info: dict = None):
                 bsdf.inputs['Base Color'].default_value = list(color[:4]) if len(color) >= 4 else list(color[:3]) + [1.0]
                 print(f"      Material {i}: Set base color {color}")
         
-        # Apply texture if available, or use hair texture for hair materials
-        texture_name = None
+        # Apply texture if available (respect what .X file specifies)
         if material_data.get('textures'):
             texture_name = material_data['textures'][0]
-        elif i > 0 and mesh_info and 'textures' in mesh_info:
-            # For hair materials without explicit texture, use hair texture if available
-            for tex_name in mesh_info['textures']:
-                if 'hair' in tex_name.lower():
-                    texture_name = tex_name
-                    print(f"      Material {i}: Using hair texture {texture_name} (auto-assigned)")
-                    break
-        
-        if texture_name:
             texture_path = _find_texture_file(texture_name, mesh_info)
             
             if texture_path and os.path.exists(texture_path):
@@ -267,36 +257,9 @@ def _create_unified_material(mesh_obj, materials: List, mesh_info: dict = None):
                         texture_node.image = image
                         texture_node.interpolation = 'Closest'
                         
-                        # Connect UV Map -> Texture -> BSDF
+                        # Connect UV Map -> Texture -> BSDF (simple and working)
                         material.node_tree.links.new(uv_map_node.outputs['UV'], texture_node.inputs['Vector'])
                         material.node_tree.links.new(texture_node.outputs['Color'], bsdf.inputs['Base Color'])
-                        
-                        # Handle alpha from both texture and material diffuse
-                        # Set material alpha from diffuse color
-                        if 'diffuse' in material_data and len(material_data['diffuse']) > 3:
-                            material_alpha = material_data['diffuse'][3]
-                            bsdf.inputs['Alpha'].default_value = material_alpha
-                            print(f"      Material {i}: Set material alpha to {material_alpha}")
-                            
-                            # Enable alpha blending for transparent materials
-                            if material_alpha < 1.0:
-                                material.blend_method = 'ALPHA'
-                                material.use_backface_culling = False
-                        
-                        # Also handle texture alpha if available
-                        if image.depth == 32:
-                            # Mix texture alpha with material alpha
-                            if 'diffuse' in material_data and len(material_data['diffuse']) > 3:
-                                # Use mix node to combine texture and material alpha
-                                mix_node = material.node_tree.nodes.new(type='ShaderNodeMath')
-                                mix_node.operation = 'MULTIPLY'
-                                mix_node.inputs[1].default_value = material_data['diffuse'][3]
-                                material.node_tree.links.new(texture_node.outputs['Alpha'], mix_node.inputs[0])
-                                material.node_tree.links.new(mix_node.outputs['Value'], bsdf.inputs['Alpha'])
-                            else:
-                                material.node_tree.links.new(texture_node.outputs['Alpha'], bsdf.inputs['Alpha'])
-                            material.blend_method = 'ALPHA'
-                            material.use_backface_culling = False
                         
                         print(f"      ✅ Material {i}: Applied texture {texture_name}")
                     
@@ -321,28 +284,13 @@ def _assign_face_materials_to_unified_mesh(mesh_obj, materials, mesh_info):
     except ImportError:
         return
     
-    # DEBUG: Check what we're getting
-    print(f"    DEBUG: mesh_info type: {type(mesh_info)}")
-    if mesh_info:
-        print(f"    DEBUG: mesh_info keys: {list(mesh_info.keys())}")
-        if 'face_materials' in mesh_info:
-            print(f"    DEBUG: face_materials length: {len(mesh_info['face_materials'])}")
-    
     # Get face material assignments from mesh_info
     face_materials = None
     if mesh_info and 'face_materials' in mesh_info:
         face_materials = mesh_info['face_materials']
         print(f"    Assigning face materials to unified mesh: {len(face_materials)} assignments")
-        
-        # DEBUG: Check the distribution of material indices
-        if face_materials:
-            material_counts = {}
-            for mat_idx in face_materials:
-                material_counts[mat_idx] = material_counts.get(mat_idx, 0) + 1
-            print(f"    DEBUG: Material distribution: {material_counts}")
     
     if face_materials and len(face_materials) > 0 and len(mesh_obj.data.polygons) > 0:
-        print(f"    DEBUG: About to check face count: face_materials={len(face_materials)}, polygons={len(mesh_obj.data.polygons)}")
         # Ensure face count matches
         if len(face_materials) == len(mesh_obj.data.polygons):
             # Direct assignment (face order preserved)
@@ -354,7 +302,7 @@ def _assign_face_materials_to_unified_mesh(mesh_obj, materials, mesh_info):
         else:
             print(f"    ⚠️ Face count mismatch: {len(face_materials)} materials vs {len(mesh_obj.data.polygons)} faces")
     else:
-        print(f"    ⚠️ No face material data available for unified mesh - face_materials: {len(face_materials) if face_materials else 'None'}, polygons: {len(mesh_obj.data.polygons)}")
+        print(f"    ⚠️ No face material data available for unified mesh")
 
 
 def _find_texture_file(texture_name: str, mesh_info: dict = None) -> str:
