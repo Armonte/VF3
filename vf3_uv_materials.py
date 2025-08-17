@@ -349,11 +349,9 @@ def _load_image_with_black_as_alpha(image_path: str, make_alpha: bool) -> 'bpy.t
         image = bpy.data.images.load(image_path)
         image.name = image_name
         
-        # Set color space
-        if make_alpha or 'hair' in image_name.lower():
-            image.colorspace_settings.name = 'Non-Color'
-        else:
-            image.colorspace_settings.name = 'sRGB'
+        # Set color space - ALWAYS use sRGB for textures to be visible
+        # Non-Color makes textures invisible in viewport/renders
+        image.colorspace_settings.name = 'sRGB'
         
         return image
     

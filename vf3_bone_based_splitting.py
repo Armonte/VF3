@@ -300,6 +300,22 @@ def create_mesh_subset(mesh_obj, vertex_indices: List[int], group_name: str):
     # Copy materials and fix material assignments
     copy_materials_for_subset(mesh_obj, new_obj, face_material_indices)
     
+    # CRITICAL FIX: Apply smooth shading to subset (lost during mesh copying)
+    try:
+        import bpy
+        bpy.context.view_layer.objects.active = new_obj
+        bpy.ops.object.select_all(action='DESELECT')
+        new_obj.select_set(True)
+        
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.faces_shade_smooth()
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print(f"      🎨 Applied smooth shading to subset {group_name}")
+    except Exception as e:
+        print(f"      ⚠️ Failed to apply smooth shading to subset: {e}")
+    
     print(f"      ✅ Created {subset_name}: {len(new_vertices)} vertices, {len(new_faces)} faces")
     return new_obj
 

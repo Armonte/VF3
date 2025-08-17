@@ -4,9 +4,8 @@
 import json
 import os
 
-def debug_materials():
+def debug_materials(glb_file="satsuki_blender_test.glb"):
     """Debug what materials were actually exported."""
-    glb_file = "satsuki_blender_test.glb"
     
     if not os.path.exists(glb_file):
         print(f"File not found: {glb_file}")
@@ -101,4 +100,6 @@ def debug_materials():
         print(f"  Materials actually used: {len(materials_used)}")
 
 if __name__ == "__main__":
-    debug_materials()
+    import sys
+    filename = sys.argv[1] if len(sys.argv) > 1 else "satsuki_blender_test.glb"
+    debug_materials(filename)

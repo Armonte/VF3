@@ -119,7 +119,12 @@ def merge_same_group_meshes(mesh_parts: List, group_name: str):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge overlapping vertices
+        
+        # CRITICAL FIX: Apply smooth shading after merging (lost during join operation)
+        bpy.ops.mesh.faces_shade_smooth()
+        
         bpy.ops.object.mode_set(mode='OBJECT')
+        print(f"        🎨 Applied smooth shading to merged {group_name}")
         
         # Log the merge result
         final_bones = [vg.name for vg in merged_mesh.vertex_groups]
