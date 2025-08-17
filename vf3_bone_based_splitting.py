@@ -35,17 +35,15 @@ def get_bone_to_anatomical_group_mapping() -> Dict[str, str]:
         'r_leg2': 'right_leg', 
         'r_foot': 'right_leg',
         
-        # Body bones (including breasts and waist)
+        # Body bones (including breasts, waist, and skirt for smoothness)
         'body': 'body',
         'waist': 'body',
         'l_breast': 'body',  # Breasts stay with body for anatomical correctness
         'r_breast': 'body',
-        
-        # Skirt bones (separate anatomical group for proper material handling)
-        'skirt_f': 'skirt',   # Front skirt gets own group
-        'skirt_f2': 'skirt',  # Front skirt extension gets own group
-        'skirt_r': 'skirt',   # Rear skirt gets own group
-        'skirt_r2': 'skirt',  # Rear skirt extension gets own group
+        'skirt_f': 'body',   # Skirt merged with body for waist smoothness
+        'skirt_f2': 'body',  # Skirt extension merged with body for waist smoothness
+        'skirt_r': 'body',   # Skirt merged with body for waist smoothness
+        'skirt_r2': 'body',  # Skirt extension merged with body for waist smoothness
         
         # Head bones
         'head': 'head',
@@ -466,7 +464,6 @@ def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
         'left_leg': [],
         'right_leg': [],
         'head': [],
-        'skirt': [],  # Separate group for skirt meshes and their connectors
         'unassigned': [],
         'bridge_connectors': []  # Special group for connectors that bridge anatomical groups
     }

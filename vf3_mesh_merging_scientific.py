@@ -51,15 +51,10 @@ def create_anatomical_mesh_groups_scientific(mesh_objects):
             final_meshes.append(mesh_parts[0])
             print(f"    ✅ Renamed single mesh to VF3_{group_name.title()}")
         else:
-            # Multiple mesh parts - process them with material separation
-            result = merge_same_group_meshes(mesh_parts, group_name)
-            if result:
-                if isinstance(result, list):
-                    # Multiple separate meshes returned (material separation)
-                    final_meshes.extend(result)
-                else:
-                    # Single merged mesh returned
-                    final_meshes.append(result)
+            # Multiple mesh parts - merge them scientifically
+            merged_mesh = merge_same_group_meshes(mesh_parts, group_name)
+            if merged_mesh:
+                final_meshes.append(merged_mesh)
     
     # Step 3: Final validation
     print("\n🔬 FINAL VALIDATION:")
@@ -129,8 +124,8 @@ def apply_z_fighting_prevention(mesh_parts: List, group_name: str):
 
 def merge_same_group_meshes(mesh_parts: List, group_name: str):
     """
-    SIMPLE APPROACH: Keep meshes with different materials as separate objects.
-    This prevents face-to-material mapping corruption that occurs during mesh joining.
+    Merge mesh parts that belong to the same anatomical group.
+    This is safe because all parts contain only compatible bones.
     """
     try:
         import bpy
@@ -140,121 +135,66 @@ def merge_same_group_meshes(mesh_parts: List, group_name: str):
     if not mesh_parts:
         return None
     
-    print(f"    🔧 Processing {len(mesh_parts)} {group_name} parts with SEPARATE MATERIALS approach:")
+    print(f"    🔧 Merging {len(mesh_parts)} {group_name} parts:")
     
-    # Log what we're processing
+    # Log what we're merging
     for i, mesh_part in enumerate(mesh_parts):
         try:
             bones = [vg.name for vg in mesh_part.vertex_groups]
-            materials = [mat.name for mat in mesh_part.data.materials] if mesh_part.data.materials else ['NO_MATERIAL']
-            print(f"      Part {i+1}: {mesh_part.name} (bones: {bones}, materials: {materials})")
+            print(f"      Part {i+1}: {mesh_part.name} (bones: {bones})")
         except (ReferenceError, AttributeError):
             print(f"      Part {i+1}: Invalid mesh object")
             continue
     
-    # Group meshes by material signature to decide what can be safely merged
-    material_groups = {}
+    # Select all mesh parts for merging
+    bpy.ops.object.select_all(action='DESELECT')
     
+    valid_parts = []
     for mesh_part in mesh_parts:
         try:
-            # CRITICAL FIX: Create material signature based on actual material objects, not just names
-            # This prevents merging parts with same material names but different content
-            material_signature = tuple(sorted([
-                id(mat) if mat else 'NO_MATERIAL'  # Use material object ID for uniqueness
-                for mat in mesh_part.data.materials
-            ] if mesh_part.data.materials else ['NO_MATERIAL']))
-            
-            if material_signature not in material_groups:
-                material_groups[material_signature] = []
-            material_groups[material_signature].append(mesh_part)
-            
+            mesh_part.select_set(True)
+            valid_parts.append(mesh_part)
         except (ReferenceError, AttributeError):
             print(f"        ⚠️ Skipping invalid mesh part")
             continue
     
-    print(f"    📊 Found {len(material_groups)} different material groups:")
-    for mat_sig, parts in material_groups.items():
-        # Convert ID signature back to names for debugging
-        if parts and parts[0].data.materials:
-            material_names = [mat.name if mat else 'None' for mat in parts[0].data.materials]
-            print(f"      Materials {material_names}: {len(parts)} parts")
-        else:
-            print(f"      Materials NO_MATERIAL: {len(parts)} parts")
+    if not valid_parts:
+        print(f"        ❌ No valid mesh parts to merge")
+        return None
     
-    processed_meshes = []
+    # Set the first valid part as active
+    bpy.context.view_layer.objects.active = valid_parts[0]
     
-    # Process each material group separately
-    for material_signature, parts in material_groups.items():
-        if len(parts) == 1:
-            # Single mesh - just rename and add armature binding
-            mesh = parts[0]
-            mesh.name = f"VF3_{group_name.title()}_{len(processed_meshes)+1}"
-            add_armature_modifier_to_merged_group(mesh)
-            
-            # Apply smooth shading
-            bpy.context.view_layer.objects.active = mesh
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.mesh.faces_shade_smooth()
-            bpy.ops.object.mode_set(mode='OBJECT')
-            
-            processed_meshes.append(mesh)
-            material_names = [mat.name if mat else 'None' for mat in mesh.data.materials] if mesh.data.materials else ['NO_MATERIAL']
-            print(f"        ✅ Kept separate: {mesh.name} (materials: {material_names})")
-            
-        else:
-            # Multiple meshes with SAME materials - safe to merge
-            material_names = [mat.name if mat else 'None' for mat in parts[0].data.materials] if parts[0].data.materials else ['NO_MATERIAL']
-            print(f"        🔧 Merging {len(parts)} parts with identical materials {material_names}")
-            
-            # Select all parts with same materials for merging
-            bpy.ops.object.select_all(action='DESELECT')
-            
-            valid_parts = []
-            for mesh_part in parts:
-                try:
-                    mesh_part.select_set(True)
-                    valid_parts.append(mesh_part)
-                except (ReferenceError, AttributeError):
-                    continue
-            
-            if valid_parts:
-                # Set the first valid part as active
-                bpy.context.view_layer.objects.active = valid_parts[0]
-                
-                try:
-                    # Merge meshes with identical materials (safe operation)
-                    bpy.ops.object.join()
-                    
-                    # Get the merged result
-                    merged_mesh = bpy.context.active_object
-                    merged_mesh.name = f"VF3_{group_name.title()}_{len(processed_meshes)+1}"
-                    
-                    # Clean up the merged mesh
-                    bpy.ops.object.mode_set(mode='EDIT')
-                    bpy.ops.mesh.select_all(action='SELECT')
-                    bpy.ops.mesh.remove_doubles(threshold=0.001)
-                    bpy.ops.mesh.faces_shade_smooth()
-                    bpy.ops.object.mode_set(mode='OBJECT')
-                    
-                    # Add armature modifier
-                    add_armature_modifier_to_merged_group(merged_mesh)
-                    
-                    processed_meshes.append(merged_mesh)
-                    material_names = [mat.name if mat else 'None' for mat in merged_mesh.data.materials] if merged_mesh.data.materials else ['NO_MATERIAL']
-                    print(f"        ✅ Merged into: {merged_mesh.name} (materials: {material_names})")
-                    
-                except Exception as e:
-                    material_names = [mat.name if mat else 'None' for mat in parts[0].data.materials] if parts[0].data.materials else ['NO_MATERIAL']
-                    print(f"        ❌ Failed to merge parts with materials {material_names}: {e}")
-    
-    # Return all processed meshes as a collection instead of single merged mesh
-    if len(processed_meshes) == 1:
-        return processed_meshes[0]
-    else:
-        # Create a parent object to group multiple material-separated meshes
-        print(f"    📦 Created {len(processed_meshes)} separate mesh objects for {group_name} (material separation)")
-        return processed_meshes  # Return list of separate meshes
+    try:
+        # Merge all selected meshes
+        bpy.ops.object.join()
+        
+        # Get the merged result
+        merged_mesh = bpy.context.active_object
+        merged_mesh.name = f"VF3_{group_name.title()}"
+        
+        # Clean up the merged mesh
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge overlapping vertices
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        # Log the merge result
+        final_bones = [vg.name for vg in merged_mesh.vertex_groups]
+        print(f"        ✅ Merged into {merged_mesh.name}")
+        print(f"        📦 Final bones: {final_bones}")
+        
+        # CRITICAL FIX: Add armature modifier to merged anatomical groups
+        add_armature_modifier_to_merged_group(merged_mesh)
+        
+        # Validate the merged result
+        validate_merged_group(merged_mesh, group_name)
+        
+        return merged_mesh
+        
+    except Exception as e:
+        print(f"        ❌ Failed to merge {group_name} parts: {e}")
+        return None
 
 
 def add_armature_modifier_to_merged_group(merged_mesh):
