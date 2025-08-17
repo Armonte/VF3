@@ -15,39 +15,29 @@ def get_bone_to_anatomical_group_mapping() -> Dict[str, str]:
     This is the single source of truth for anatomical assignment.
     """
     return {
-        # Left arm bones
-        'l_arm1': 'left_arm',
-        'l_arm2': 'left_arm', 
-        'l_hand': 'left_arm',
-        
-        # Right arm bones
-        'r_arm1': 'right_arm',
-        'r_arm2': 'right_arm',
-        'r_hand': 'right_arm',
-        
-        # Left leg bones
-        'l_leg1': 'left_leg',
-        'l_leg2': 'left_leg',
-        'l_foot': 'left_leg',
-        
-        # Right leg bones
-        'r_leg1': 'right_leg',
-        'r_leg2': 'right_leg', 
-        'r_foot': 'right_leg',
-        
-        # Body bones (including breasts, waist, and skirt for smoothness)
+        # All bones merged into single body group for maximum smoothness
+        'l_arm1': 'body',
+        'l_arm2': 'body', 
+        'l_hand': 'body',
+        'r_arm1': 'body',
+        'r_arm2': 'body',
+        'r_hand': 'body',
+        'l_leg1': 'body',
+        'l_leg2': 'body',
+        'l_foot': 'body',
+        'r_leg1': 'body',
+        'r_leg2': 'body', 
+        'r_foot': 'body',
         'body': 'body',
         'waist': 'body',
-        'l_breast': 'body',  # Breasts stay with body for anatomical correctness
+        'l_breast': 'body',
         'r_breast': 'body',
-        'skirt_f': 'body',   # Skirt merged with body for waist smoothness
-        'skirt_f2': 'body',  # Skirt extension merged with body for waist smoothness
-        'skirt_r': 'body',   # Skirt merged with body for waist smoothness
-        'skirt_r2': 'body',  # Skirt extension merged with body for waist smoothness
-        
-        # Head bones
-        'head': 'head',
-        'neck': 'head',
+        'skirt_f': 'body',
+        'skirt_f2': 'body',
+        'skirt_r': 'body',
+        'skirt_r2': 'body',
+        'head': 'body',
+        'neck': 'body',
     }
 
 
@@ -525,18 +515,30 @@ def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
                             print(f"      No bone mapping found, assigned to 'unassigned'")
                         continue
             
-            # Split this mesh by bone assignments
-            group_vertices = split_mesh_by_bone_assignments(mesh_obj)
+            # CRITICAL FIX: Check if this is a head mesh that should be preserved unified
+            # Note: Materials haven't been assigned yet, so check by name
+            mesh_name = mesh_obj.name.lower()
+            is_head_mesh = 'head' in mesh_name
             
-            # Create subset meshes for each anatomical group
-            for group_name, vertex_list in group_vertices.items():
-                if vertex_list:  # Only create subsets for groups with vertices
-                    subset_obj = create_mesh_subset(mesh_obj, vertex_list, group_name)
-                    if subset_obj:
-                        anatomical_groups[group_name].append(subset_obj)
-            
-            # Remove the original mesh (it's been split into subsets)
-            bpy.data.objects.remove(mesh_obj, do_unlink=True)
+            # Always preserve head meshes unified to maintain UV coordinates
+            if is_head_mesh:
+                print(f"      🎯 PRESERVING UNIFIED HEAD MESH: {mesh_obj.name} ({len(mesh_obj.data.materials)} materials)")
+                print(f"      Skipping bone-based splitting to preserve UV coordinates")
+                # Keep the original mesh unified and assign to body group
+                anatomical_groups['body'].append(mesh_obj)
+            else:
+                # Split this mesh by bone assignments (normal case)
+                group_vertices = split_mesh_by_bone_assignments(mesh_obj)
+                
+                # Create subset meshes for each anatomical group
+                for group_name, vertex_list in group_vertices.items():
+                    if vertex_list:  # Only create subsets for groups with vertices
+                        subset_obj = create_mesh_subset(mesh_obj, vertex_list, group_name)
+                        if subset_obj:
+                            anatomical_groups[group_name].append(subset_obj)
+                
+                # Remove the original mesh (it's been split into subsets)
+                bpy.data.objects.remove(mesh_obj, do_unlink=True)
             
         except (ReferenceError, AttributeError) as e:
             print(f"    ❌ Error processing {mesh_obj}: {e}")

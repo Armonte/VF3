@@ -1,0 +1,1589 @@
+🎌 Testing VF3 Modular Exporter...
+📁 Input: data/arcueid.TXT
+📦 Output: arcueid_modular_20250817_054451.glb
+/mnt/c/dev/loot/VF3/xfile/xfile_parser.py:167: UserWarning: Unknown data object in animation of .x file
+  warn("Unknown data object in animation of .x file")
+🎌 Blender VF3 Export: data/arcueid.TXT -> arcueid_modular_20250817_054451.glb
+OCCUPANCY: Collecting attachments with include_skin=True, include_items=True
+👤 SKIN MODE: Loading base female body parts
+DEBUG: Resolving identifier 'arcueid.head'
+DEBUG: Found 1 attachments in current descriptor for 'head'
+  SKIN: arcueid.head -> occupancy [1, 0, 0, 0, 0, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.body'
+DEBUG: Found grouped block 'body' with 3 attachments
+DEBUG: Found DynamicVisual mesh with 80 vertices, 82 faces
+DEBUG: Total attachments from grouped identifier 'body': 3
+  SKIN: female.body -> occupancy [0, 1, 0, 0, 0, 0, 0], 3 attachments
+DEBUG: Resolving identifier 'female.arms'
+DEBUG: Found grouped block 'arms' with 4 attachments
+DEBUG: Found DynamicVisual mesh with 24 vertices, 24 faces
+DEBUG: Total attachments from grouped identifier 'arms': 4
+  SKIN: female.arms -> occupancy [0, 0, 1, 0, 0, 0, 0], 4 attachments
+DEBUG: Resolving identifier 'female.l_hand'
+DEBUG: Found 1 attachments in other descriptor for 'l_hand'
+  SKIN: female.l_hand -> occupancy [0, 0, 0, 2, 0, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.r_hand'
+DEBUG: Found 1 attachments in other descriptor for 'r_hand'
+  SKIN: female.r_hand -> occupancy [0, 0, 0, 1, 0, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.waist'
+DEBUG: Found grouped block 'waist' with 1 attachments
+DEBUG: Found DynamicVisual mesh with 26 vertices, 26 faces
+DEBUG: Total attachments from grouped identifier 'waist': 1
+  SKIN: female.waist -> occupancy [0, 0, 0, 0, 1, 0, 0], 1 attachments
+DEBUG: Resolving identifier 'female.legs'
+DEBUG: Found grouped block 'legs' with 4 attachments
+DEBUG: Found DynamicVisual mesh with 24 vertices, 24 faces
+DEBUG: Total attachments from grouped identifier 'legs': 4
+  SKIN: female.legs -> occupancy [0, 0, 0, 0, 0, 1, 0], 4 attachments
+DEBUG: Resolving identifier 'female.foots'
+DEBUG: Found grouped block 'foots' with 2 attachments
+DEBUG: Found DynamicVisual mesh with 28 vertices, 28 faces
+DEBUG: Total attachments from grouped identifier 'foots': 2
+  SKIN: female.foots -> occupancy [0, 0, 0, 0, 0, 0, 1], 2 attachments
+👘 COSTUME MODE: Loading costume items
+  COSTUME: arcueid.trainer -> trainer_vp, occupancy [0, 3, 3, 0, 0, 0, 0], 10 attachments
+  COSTUME: arcueid.skirt -> skirt_vp, occupancy [0, 0, 0, 0, 2, 0, 0], 4 attachments
+  COSTUME: arcueid.pumps -> pumps_vp, occupancy [0, 0, 0, 0, 1, 1, 3], 7 attachments
+OCCUPANCY FILTER: Processing 11 skin + 0 clothing attachments
+  SKIN: Slot 0 occupied by skin:arcueid.head with occupancy 1
+  SKIN: Slot 1 occupied by skin:female.body with occupancy 1
+  SKIN: Slot 2 occupied by skin:female.arms with occupancy 1
+  SKIN: Slot 3 occupied by skin:female.l_hand with occupancy 2
+  SKIN: Slot 3 - Merging bilateral part skin:female.r_hand with existing skin:female.l_hand
+    DynamicVisual: Merged 10 vertices from skin:female.r_hand with existing mesh
+  SKIN: Slot 4 occupied by skin:female.waist with occupancy 1
+  SKIN: Slot 5 occupied by skin:female.legs with occupancy 1
+  SKIN: Slot 6 occupied by skin:female.foots with occupancy 1
+  SKIN: Slot 1 REPLACED by costume:arcueid.trainer:trainer_vp with occupancy 3 (discarding base layer)
+  SKIN: Slot 2 REPLACED by costume:arcueid.trainer:trainer_vp with occupancy 3 (discarding base layer)
+  SKIN: Slot 4 ADDITIVE by costume:arcueid.skirt:skirt_vp with occupancy 2 (keeping base layer)
+  SKIN: Slot 4 - costume:arcueid.pumps:pumps_vp (occupancy 1) loses to existing winner (occupancy 2)
+  SKIN: Slot 5 DEFAULT REPLACED by costume:arcueid.pumps:pumps_vp with occupancy 1
+  SKIN: Slot 6 REPLACED by costume:arcueid.pumps:pumps_vp with occupancy 3 (discarding base layer)
+  FINAL: Slot 0 ADDITIVE with 1 layers:
+    Layer 0: 1 attachments from skin:arcueid.head (occupancy 1)
+  FINAL: Slot 1 REPLACEMENT -> 10 attachments from costume:arcueid.trainer:trainer_vp (base discarded)
+    DynamicVisual from costume:arcueid.trainer:trainer_vp (ADDED - unique content: 10 bone types, 124 vertices)
+  FINAL: Slot 2 REPLACEMENT -> attachments from costume:arcueid.trainer:trainer_vp (DUPLICATE - SKIPPED)
+    DynamicVisual from costume:arcueid.trainer:trainer_vp (DUPLICATE - identical content: 10 bone types, 124 vertices)
+  FINAL: Slot 3 ADDITIVE with 1 layers:
+    Layer 0: 2 attachments from skin:female.l_hand (occupancy 2)
+    DynamicVisual from skin:female.l_hand (ADDED - unique content: 2 bone types, 10 vertices)
+  FINAL: Slot 4 ADDITIVE with 2 layers:
+    Layer 0: 1 attachments from skin:female.waist (occupancy 1)
+    Layer 1: 4 attachments from costume:arcueid.skirt:skirt_vp (occupancy 2)
+    DynamicVisual from skin:female.waist (ADDED - unique content: 3 bone types, 26 vertices)
+    DynamicVisual from costume:arcueid.skirt:skirt_vp (ADDED - unique content: 4 bone types, 53 vertices)
+  FINAL: Slot 5 SINGLE -> 7 attachments from costume:arcueid.pumps:pumps_vp
+    DynamicVisual from costume:arcueid.pumps:pumps_vp (ADDED - unique content: 7 bone types, 78 vertices)
+  FINAL: Slot 6 REPLACEMENT -> attachments from costume:arcueid.pumps:pumps_vp (DUPLICATE - SKIPPED)
+    DynamicVisual from costume:arcueid.pumps:pumps_vp (DUPLICATE - identical content: 7 bone types, 78 vertices)
+OCCUPANCY FILTER: Final result: 25 attachments, 5 dynamic meshes (deduplicated)
+OCCUPANCY: Filtered to 25 attachments (5 dynamic meshes)
+🎌 Total attachments collected: 25 (after occupancy filtering)
+DEBUG: Scaled skirt_f offset from (0.0, -12.0, -3.0) to (0.0, -13.799999999999999, -3.5999999999999996) using waist scale (1.2, 1.15, 1.2)
+DEBUG: Scaled skirt_r offset from (0.0, -20.0, 10.0) to (0.0, -23.0, 12.0) using waist scale (1.2, 1.15, 1.2)
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/head.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/head.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.9803922176361084, 0.8627451658248901, 0.6666666865348816, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9573697067612168, 0.7226725785167015, 0.4098257653065932, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.3921568989753723) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.3921568989753723]
+Found material 1: material0 with 1 textures
+  Textures: ['archair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 2: material0 with 1 textures
+  Textures: ['arcface.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.3137255012989044) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.3137255012989044]
+Found material 3: material0 with 1 textures
+  Textures: ['archair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 0.49803924560546875) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 0.49803924560546875]
+Found material 4: material0 with 1 textures
+  Textures: ['archair_t.bmp']
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 5: material0 with 0 textures
+Extracted 264 UV coordinates
+  🔍 HEAD UV EXTRACTION: U(0.0000-1.0046) V(0.0000-0.9986)
+  🔍 First 5 extracted UVs: [[0.5525143146514893, 0.07516198605298996], [0.5022857189178467, 0.07516198605298996], [0.5022857189178467, 0.2649369239807129], [0.5022857189178467, 0.5745697617530823], [0.5525143146514893, 0.07516198605298996]]
+Parsed 264 vertices, 423 faces, 6 materials, 2 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 264 UV coordinates to mesh
+Mapped 349 original face materials to 423 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/head.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 1: material0 with 0 textures
+Extracted 110 UV coordinates
+Parsed 110 vertices, 168 faces, 2 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 110 UV coordinates to mesh
+Mapped 140 original face materials to 168 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/trainer.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer_lb.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer_lb.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 27 UV coordinates
+Parsed 27 vertices, 34 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 27 UV coordinates to mesh
+Mapped 28 original face materials to 34 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/trainer_lb.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer_rb.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer_rb.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 27 UV coordinates
+Parsed 27 vertices, 34 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 27 UV coordinates to mesh
+Mapped 28 original face materials to 34 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/trainer_rb.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_trainer1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_trainer1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 22 UV coordinates
+Parsed 22 vertices, 32 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 22 UV coordinates to mesh
+Mapped 26 original face materials to 32 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/l_trainer1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_trainer2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_trainer2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 18 UV coordinates
+Parsed 18 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 18 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/l_trainer2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_trainer3.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_trainer3.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 16 UV coordinates
+Parsed 16 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 16 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/l_trainer3.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_trainer1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_trainer1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 22 UV coordinates
+Parsed 22 vertices, 32 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 22 UV coordinates to mesh
+Mapped 26 original face materials to 32 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/r_trainer1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_trainer2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_trainer2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 18 UV coordinates
+Parsed 18 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 18 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/r_trainer2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_trainer3.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_trainer3.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 16 UV coordinates
+Parsed 16 vertices, 24 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 16 UV coordinates to mesh
+Mapped 12 original face materials to 24 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/r_trainer3.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/trainer2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.960784375667572, 0.960784375667572, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 36 UV coordinates
+Parsed 36 vertices, 56 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 36 UV coordinates to mesh
+Mapped 38 original face materials to 56 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/trainer2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/l_hand.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 84 UV coordinates
+Parsed 84 vertices, 142 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 84 UV coordinates to mesh
+Mapped 78 original face materials to 142 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/l_hand.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/r_hand.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 84 UV coordinates
+Parsed 84 vertices, 142 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 84 UV coordinates to mesh
+Mapped 78 original face materials to 142 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/r_hand.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/female/waist.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/female/waist.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (1.0, 1.0, 1.0, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 1.0, 1.0, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (1.0, 0.8823530077934265, 0.7843137979507446, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+Found material 1: material0 with 0 textures
+Extracted 57 UV coordinates
+Parsed 57 vertices, 92 faces, 2 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 57 UV coordinates to mesh
+Mapped 89 original face materials to 92 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/female/waist.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.5490196347236633, 0.2352941334247589, 0.43137258291244507, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 29 UV coordinates
+Parsed 29 vertices, 41 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 29 UV coordinates to mesh
+Mapped 31 original face materials to 41 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/skirt.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt_f.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt_f.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.5490196347236633, 0.2352941334247589, 0.43137258291244507, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 18 UV coordinates
+Parsed 18 vertices, 14 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 18 UV coordinates to mesh
+Mapped 13 original face materials to 14 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/skirt_f.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt_f2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt_f2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.5490196347236633, 0.2352941334247589, 0.43137258291244507, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 15 UV coordinates
+Parsed 15 vertices, 19 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 15 UV coordinates to mesh
+Mapped 15 original face materials to 19 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/skirt_f2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt_r.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/skirt_r.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.5490196347236633, 0.2352941334247589, 0.43137258291244507, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 16 UV coordinates
+Parsed 16 vertices, 17 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 16 UV coordinates to mesh
+Mapped 14 original face materials to 17 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/skirt_r.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/stocking.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/stocking.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.125490203499794, 0.125490203499794, 0.125490203499794, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.010397803645369345, 0.010397803645369345, 0.010397803645369345, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 1: material0 with 0 textures
+Extracted 57 UV coordinates
+Parsed 57 vertices, 92 faces, 2 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 57 UV coordinates to mesh
+Mapped 89 original face materials to 92 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/stocking.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_stocking1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_stocking1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 24 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/l_stocking1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_stocking2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_stocking2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 21 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/l_stocking2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_pump.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/l_pump.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.6274510025978088, 0.0, 0.4705882668495178, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.3586539338504788, 0.0, 0.19046290691977924, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.7843137979507446, 0.3137255012989044, 0.5490196347236633, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.5859731030497544, 0.07805659603547627, 0.26735808898200775, 1.0]
+Found material 1: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 2: material0 with 0 textures
+Extracted 88 UV coordinates
+Parsed 88 vertices, 146 faces, 3 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 88 UV coordinates to mesh
+Mapped 94 original face materials to 146 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/l_pump.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_stocking1.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_stocking1.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 24 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/r_stocking1.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_stocking2.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_stocking2.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 0: material0 with 0 textures
+Extracted 20 UV coordinates
+Parsed 20 vertices, 28 faces, 1 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 20 UV coordinates to mesh
+Mapped 21 original face materials to 28 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/r_stocking2.X as DirectX .X file with materials
+Attempting to load mesh with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_pump.X
+Attempting to parse DirectX .X file with materials: /mnt/c/dev/loot/VF3/data/arcueid/r_pump.X
+Loaded external XFileParser successfully
+Using parser class: xfile.xfile_parser.XFileParser
+  DEBUG: Raw diffuse from .X file: (0.062745101749897, 0.062745101749897, 0.062745101749897, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+Found material 0: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.6274510025978088, 0.0, 0.4705882668495178, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.3586539338504788, 0.0, 0.19046290691977924, 1.0]
+Found material 1: material0 with 0 textures
+  DEBUG: Raw diffuse from .X file: (0.7843137979507446, 0.3137255012989044, 0.5490196347236633, 1.0) (type: <class 'tuple'>)
+  DEBUG: Gamma-corrected diffuse: [0.5859731030497544, 0.07805659603547627, 0.26735808898200775, 1.0]
+Found material 2: material0 with 0 textures
+Extracted 88 UV coordinates
+Parsed 88 vertices, 146 faces, 3 materials, 0 textures from .X file
+Generated smooth vertex normals for Gouraud shading
+Applied 88 UV coordinates to mesh
+Mapped 94 original face materials to 146 triangulated faces
+Successfully parsed /mnt/c/dev/loot/VF3/data/arcueid/r_pump.X as DirectX .X file with materials
+🎌 Creating VF3 character in Blender...
+🦴 Creating armature...
+  Found extra bone/node: skirt_f
+  Found extra bone/node: skirt_f2
+  Found extra bone/node: skirt_r
+  Child bone relationship: skirt_f -> waist
+  Child bone relationship: skirt_f2 -> skirt_f
+  Child bone relationship: skirt_r -> waist
+  Bone creation order: ['body', 'head', 'l_arm1', 'l_arm2', 'l_hand', 'l_breast', 'r_arm1', 'r_arm2', 'r_hand', 'r_breast', 'waist', 'l_leg1', 'l_leg2', 'l_foot', 'r_leg1', 'r_leg2', 'r_foot', 'skirt_f', 'skirt_f2', 'skirt_r']
+  Created bone 'body' at <Vector (0.0000, 0.0000, 0.0000)>
+  Created bone 'head' at <Vector (0.0000, 31.0000, 1.0000)>
+  Created bone 'l_arm1' at <Vector (9.0000, 19.0000, 1.5000)>
+  Created bone 'l_arm2' at <Vector (9.5000, 0.0000, 1.7000)>
+  Created bone 'l_hand' at <Vector (9.5000, -18.0000, 1.9000)>
+  Created bone 'l_breast' at <Vector (4.5000, 13.0000, -5.5000)>
+  Created bone 'r_arm1' at <Vector (-9.0000, 19.0000, 1.5000)>
+  Created bone 'r_arm2' at <Vector (-9.5000, 0.0000, 1.7000)>
+  Created bone 'r_hand' at <Vector (-9.5000, -18.0000, 1.9000)>
+  Created bone 'r_breast' at <Vector (-4.5000, 13.0000, -5.5000)>
+  Created bone 'waist' at <Vector (0.0000, 0.0000, 0.0000)>
+  Created bone 'l_leg1' at <Vector (3.5000, -14.5000, 0.0000)>
+  Created bone 'l_leg2' at <Vector (5.0000, -50.0000, 1.5000)>
+  Created bone 'l_foot' at <Vector (4.5000, -88.0000, 2.0000)>
+  Created bone 'r_leg1' at <Vector (-3.5000, -14.5000, 0.0000)>
+  Created bone 'r_leg2' at <Vector (-5.0000, -50.0000, 1.5000)>
+  Created bone 'r_foot' at <Vector (-4.5000, -88.0000, 2.0000)>
+  Created bone 'skirt_f' at <Vector (0.0000, -13.8000, -3.6000)>
+  Created bone 'skirt_f2' at <Vector (0.0000, -48.8000, -11.6000)>
+  Created bone 'skirt_r' at <Vector (0.0000, -23.0000, 12.0000)>
+🔧 Creating and binding meshes...
+      Applying trimesh materials: 6 materials
+      Applying trimesh texture: /mnt/c/dev/loot/VF3/data/archair_t.bmp
+        Preserving existing UV coordinates from .X file ((264, 2))
+        Restored UV coordinates from .X file
+      ✅ Applied trimesh texture material: archair_t.bmp
+  Preserving exact vertex count for head_arcueid.head (no deduplication)
+  UV coordinates from .X file: 264 UVs for 264 vertices
+  Exact UV mapping: 264 UVs to 264 vertices
+  ✅ Applied exact UV mapping to head_arcueid.head
+  Enabled smooth shading for head_arcueid.head (Gouraud rendering like VF3)
+  Creating Blender materials for head_arcueid.head: 6 materials
+    Creating 6 materials for mesh
+      Set base color: [0.9573697067612168, 0.7226725785167015, 0.4098257653065932, 1.0]
+      Set base color: [1.0, 1.0, 1.0, 0.3921568989753723]
+      Loading texture: /mnt/c/dev/loot/VF3/data/archair_t.bmp
+      ✅ Texture applied: archair_t.bmp
+      Set base color: [1.0, 1.0, 1.0, 1.0]
+      Loading texture: /mnt/c/dev/loot/VF3/data/arcface.bmp
+      ✅ Texture applied: arcface.bmp
+      Set base color: [1.0, 1.0, 1.0, 0.3137255012989044]
+      Loading texture: /mnt/c/dev/loot/VF3/data/archair_t.bmp
+      ✅ Texture applied: archair_t.bmp
+      Set base color: [1.0, 1.0, 1.0, 0.49803924560546875]
+      Loading texture: /mnt/c/dev/loot/VF3/data/archair_t.bmp
+      ✅ Texture applied: archair_t.bmp
+      Set base color: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+    ✅ Found face materials in mesh_info: 423
+    Assigning face materials: 423 face assignments to 423 polygons
+    ✅ Assigned materials to 423/423 faces (with face mapping)
+    Debug: Material usage for head_arcueid.head: {0: 198, 1: 28, 2: 151, 3: 10, 4: 24, 5: 12}
+    ✅ Created 6 Blender materials
+  Created mesh 'head_arcueid.head' with 264 vertices, bound to bone 'head'
+      Applying trimesh materials: 2 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for body_arcueid.trainer (no deduplication)
+  No UV coordinates found for body_arcueid.trainer, will generate simple mapping
+  Generating simple UV mapping for body_arcueid.trainer
+  ✅ Generated planar UV mapping for body_arcueid.trainer
+  Enabled smooth shading for body_arcueid.trainer (Gouraud rendering like VF3)
+  Creating Blender materials for body_arcueid.trainer: 2 materials
+    Creating 2 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+      Set base color: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+    ✅ Found face materials in mesh_info: 168
+    Assigning face materials: 168 face assignments to 168 polygons
+    ✅ Assigned materials to 168/168 faces (with face mapping)
+    ✅ Created 2 Blender materials
+  Created mesh 'body_arcueid.trainer' with 110 vertices, bound to bone 'body'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for l_breast_arcueid.trainer_lb (no deduplication)
+  No UV coordinates found for l_breast_arcueid.trainer_lb, will generate simple mapping
+  Generating simple UV mapping for l_breast_arcueid.trainer_lb
+  ✅ Generated planar UV mapping for l_breast_arcueid.trainer_lb
+  Enabled smooth shading for l_breast_arcueid.trainer_lb (Gouraud rendering like VF3)
+  Creating Blender materials for l_breast_arcueid.trainer_lb: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh l_breast_arcueid.trainer_lb - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_breast_arcueid.trainer_lb' with 27 vertices, bound to bone 'l_breast'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for r_breast_arcueid.trainer_rb (no deduplication)
+  No UV coordinates found for r_breast_arcueid.trainer_rb, will generate simple mapping
+  Generating simple UV mapping for r_breast_arcueid.trainer_rb
+  ✅ Generated planar UV mapping for r_breast_arcueid.trainer_rb
+  Enabled smooth shading for r_breast_arcueid.trainer_rb (Gouraud rendering like VF3)
+  Creating Blender materials for r_breast_arcueid.trainer_rb: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh r_breast_arcueid.trainer_rb - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_breast_arcueid.trainer_rb' with 27 vertices, bound to bone 'r_breast'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for l_arm1_arcueid.l_trainer1 (no deduplication)
+  No UV coordinates found for l_arm1_arcueid.l_trainer1, will generate simple mapping
+  Generating simple UV mapping for l_arm1_arcueid.l_trainer1
+  ✅ Generated planar UV mapping for l_arm1_arcueid.l_trainer1
+  Enabled smooth shading for l_arm1_arcueid.l_trainer1 (Gouraud rendering like VF3)
+  Creating Blender materials for l_arm1_arcueid.l_trainer1: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh l_arm1_arcueid.l_trainer1 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_arm1_arcueid.l_trainer1' with 22 vertices, bound to bone 'l_arm1'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for l_arm2_arcueid.l_trainer2 (no deduplication)
+  No UV coordinates found for l_arm2_arcueid.l_trainer2, will generate simple mapping
+  Generating simple UV mapping for l_arm2_arcueid.l_trainer2
+  ✅ Generated planar UV mapping for l_arm2_arcueid.l_trainer2
+  Enabled smooth shading for l_arm2_arcueid.l_trainer2 (Gouraud rendering like VF3)
+  Creating Blender materials for l_arm2_arcueid.l_trainer2: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh l_arm2_arcueid.l_trainer2 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_arm2_arcueid.l_trainer2' with 18 vertices, bound to bone 'l_arm2'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for l_hand_arcueid.l_trainer3 (no deduplication)
+  No UV coordinates found for l_hand_arcueid.l_trainer3, will generate simple mapping
+  Generating simple UV mapping for l_hand_arcueid.l_trainer3
+  ✅ Generated planar UV mapping for l_hand_arcueid.l_trainer3
+  Enabled smooth shading for l_hand_arcueid.l_trainer3 (Gouraud rendering like VF3)
+  Creating Blender materials for l_hand_arcueid.l_trainer3: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh l_hand_arcueid.l_trainer3 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_hand_arcueid.l_trainer3' with 16 vertices, bound to bone 'l_hand'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for r_arm1_arcueid.r_trainer1 (no deduplication)
+  No UV coordinates found for r_arm1_arcueid.r_trainer1, will generate simple mapping
+  Generating simple UV mapping for r_arm1_arcueid.r_trainer1
+  ✅ Generated planar UV mapping for r_arm1_arcueid.r_trainer1
+  Enabled smooth shading for r_arm1_arcueid.r_trainer1 (Gouraud rendering like VF3)
+  Creating Blender materials for r_arm1_arcueid.r_trainer1: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh r_arm1_arcueid.r_trainer1 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_arm1_arcueid.r_trainer1' with 22 vertices, bound to bone 'r_arm1'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for r_arm2_arcueid.r_trainer2 (no deduplication)
+  No UV coordinates found for r_arm2_arcueid.r_trainer2, will generate simple mapping
+  Generating simple UV mapping for r_arm2_arcueid.r_trainer2
+  ✅ Generated planar UV mapping for r_arm2_arcueid.r_trainer2
+  Enabled smooth shading for r_arm2_arcueid.r_trainer2 (Gouraud rendering like VF3)
+  Creating Blender materials for r_arm2_arcueid.r_trainer2: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh r_arm2_arcueid.r_trainer2 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_arm2_arcueid.r_trainer2' with 18 vertices, bound to bone 'r_arm2'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for r_hand_arcueid.r_trainer3 (no deduplication)
+  No UV coordinates found for r_hand_arcueid.r_trainer3, will generate simple mapping
+  Generating simple UV mapping for r_hand_arcueid.r_trainer3
+  ✅ Generated planar UV mapping for r_hand_arcueid.r_trainer3
+  Enabled smooth shading for r_hand_arcueid.r_trainer3 (Gouraud rendering like VF3)
+  Creating Blender materials for r_hand_arcueid.r_trainer3: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh r_hand_arcueid.r_trainer3 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_hand_arcueid.r_trainer3' with 16 vertices, bound to bone 'r_hand'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+  Preserving exact vertex count for waist_arcueid.trainer2 (no deduplication)
+  No UV coordinates found for waist_arcueid.trainer2, will generate simple mapping
+  Generating simple UV mapping for waist_arcueid.trainer2
+  ✅ Generated planar UV mapping for waist_arcueid.trainer2
+  Enabled smooth shading for waist_arcueid.trainer2 (Gouraud rendering like VF3)
+  Creating Blender materials for waist_arcueid.trainer2: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.9157502591644265, 0.9157502591644265, 1.0, 1.0]
+    ⚠️ Single material mesh waist_arcueid.trainer2 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'waist_arcueid.trainer2' with 36 vertices, bound to bone 'waist'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Preserving exact vertex count for l_hand_female.l_hand (no deduplication)
+  No UV coordinates found for l_hand_female.l_hand, will generate simple mapping
+  Generating simple UV mapping for l_hand_female.l_hand
+  ✅ Generated planar UV mapping for l_hand_female.l_hand
+  Enabled smooth shading for l_hand_female.l_hand (Gouraud rendering like VF3)
+  Creating Blender materials for l_hand_female.l_hand: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+    ⚠️ Single material mesh l_hand_female.l_hand - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_hand_female.l_hand' with 84 vertices, bound to bone 'l_hand'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+  Preserving exact vertex count for r_hand_female.r_hand (no deduplication)
+  No UV coordinates found for r_hand_female.r_hand, will generate simple mapping
+  Generating simple UV mapping for r_hand_female.r_hand
+  ✅ Generated planar UV mapping for r_hand_female.r_hand
+  Enabled smooth shading for r_hand_female.r_hand (Gouraud rendering like VF3)
+  Creating Blender materials for r_hand_female.r_hand: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+    ⚠️ Single material mesh r_hand_female.r_hand - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_hand_female.r_hand' with 84 vertices, bound to bone 'r_hand'
+      Applying trimesh materials: 2 materials
+      Applied PBR color material: [1.0, 1.0, 1.0, 1.0]
+  Preserving exact vertex count for waist_female.waist (no deduplication)
+  No UV coordinates found for waist_female.waist, will generate simple mapping
+  Generating simple UV mapping for waist_female.waist
+  ✅ Generated planar UV mapping for waist_female.waist
+  Enabled smooth shading for waist_female.waist (Gouraud rendering like VF3)
+  Creating Blender materials for waist_female.waist: 2 materials
+    Creating 2 materials for mesh
+      Set base color: [1.0, 1.0, 1.0, 1.0]
+      Set base color: [1.0, 0.7592996768134438, 0.5859731030497544, 1.0]
+    ✅ Found face materials in mesh_info: 92
+    Assigning face materials: 92 face assignments to 92 polygons
+    ✅ Assigned materials to 92/92 faces (with face mapping)
+    ✅ Created 2 Blender materials
+  Created mesh 'waist_female.waist' with 57 vertices, bound to bone 'waist'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+  Preserving exact vertex count for waist_arcueid.skirt (no deduplication)
+  No UV coordinates found for waist_arcueid.skirt, will generate simple mapping
+  Generating simple UV mapping for waist_arcueid.skirt
+  ✅ Generated planar UV mapping for waist_arcueid.skirt
+  Enabled smooth shading for waist_arcueid.skirt (Gouraud rendering like VF3)
+  Creating Blender materials for waist_arcueid.skirt: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+    ⚠️ Single material mesh waist_arcueid.skirt - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'waist_arcueid.skirt' with 29 vertices, bound to bone 'waist'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+  Preserving exact vertex count for skirt_f_arcueid.skirt_f (no deduplication)
+  No UV coordinates found for skirt_f_arcueid.skirt_f, will generate simple mapping
+  Generating simple UV mapping for skirt_f_arcueid.skirt_f
+  ✅ Generated planar UV mapping for skirt_f_arcueid.skirt_f
+  Enabled smooth shading for skirt_f_arcueid.skirt_f (Gouraud rendering like VF3)
+  Creating Blender materials for skirt_f_arcueid.skirt_f: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+    ⚠️ Single material mesh skirt_f_arcueid.skirt_f - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'skirt_f_arcueid.skirt_f' with 18 vertices, bound to bone 'skirt_f'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+  Preserving exact vertex count for skirt_f2_arcueid.skirt_f2 (no deduplication)
+  No UV coordinates found for skirt_f2_arcueid.skirt_f2, will generate simple mapping
+  Generating simple UV mapping for skirt_f2_arcueid.skirt_f2
+  ✅ Generated planar UV mapping for skirt_f2_arcueid.skirt_f2
+  Enabled smooth shading for skirt_f2_arcueid.skirt_f2 (Gouraud rendering like VF3)
+  Creating Blender materials for skirt_f2_arcueid.skirt_f2: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+    ⚠️ Single material mesh skirt_f2_arcueid.skirt_f2 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'skirt_f2_arcueid.skirt_f2' with 15 vertices, bound to bone 'skirt_f2'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+  Preserving exact vertex count for skirt_r_arcueid.skirt_r (no deduplication)
+  No UV coordinates found for skirt_r_arcueid.skirt_r, will generate simple mapping
+  Generating simple UV mapping for skirt_r_arcueid.skirt_r
+  ✅ Generated planar UV mapping for skirt_r_arcueid.skirt_r
+  Enabled smooth shading for skirt_r_arcueid.skirt_r (Gouraud rendering like VF3)
+  Creating Blender materials for skirt_r_arcueid.skirt_r: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.26735808898200775, 0.041451897726507765, 0.15728075507659423, 1.0]
+    ⚠️ Single material mesh skirt_r_arcueid.skirt_r - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'skirt_r_arcueid.skirt_r' with 16 vertices, bound to bone 'skirt_r'
+      Applying trimesh materials: 2 materials
+      Applied PBR color material: [0.010397803645369345, 0.010397803645369345, 0.010397803645369345, 1.0]
+  Preserving exact vertex count for waist_arcueid.stocking (no deduplication)
+  No UV coordinates found for waist_arcueid.stocking, will generate simple mapping
+  Generating simple UV mapping for waist_arcueid.stocking
+  ✅ Generated planar UV mapping for waist_arcueid.stocking
+  Enabled smooth shading for waist_arcueid.stocking (Gouraud rendering like VF3)
+  Creating Blender materials for waist_arcueid.stocking: 2 materials
+    Creating 2 materials for mesh
+      Set base color: [0.010397803645369345, 0.010397803645369345, 0.010397803645369345, 1.0]
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+    ✅ Found face materials in mesh_info: 92
+    Assigning face materials: 92 face assignments to 92 polygons
+    ✅ Assigned materials to 92/92 faces (with face mapping)
+    ✅ Created 2 Blender materials
+  Created mesh 'waist_arcueid.stocking' with 57 vertices, bound to bone 'waist'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+  Preserving exact vertex count for l_leg1_arcueid.l_stocking1 (no deduplication)
+  No UV coordinates found for l_leg1_arcueid.l_stocking1, will generate simple mapping
+  Generating simple UV mapping for l_leg1_arcueid.l_stocking1
+  ✅ Generated planar UV mapping for l_leg1_arcueid.l_stocking1
+  Enabled smooth shading for l_leg1_arcueid.l_stocking1 (Gouraud rendering like VF3)
+  Creating Blender materials for l_leg1_arcueid.l_stocking1: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+    ⚠️ Single material mesh l_leg1_arcueid.l_stocking1 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_leg1_arcueid.l_stocking1' with 20 vertices, bound to bone 'l_leg1'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+  Preserving exact vertex count for l_leg2_arcueid.l_stocking2 (no deduplication)
+  No UV coordinates found for l_leg2_arcueid.l_stocking2, will generate simple mapping
+  Generating simple UV mapping for l_leg2_arcueid.l_stocking2
+  ✅ Generated planar UV mapping for l_leg2_arcueid.l_stocking2
+  Enabled smooth shading for l_leg2_arcueid.l_stocking2 (Gouraud rendering like VF3)
+  Creating Blender materials for l_leg2_arcueid.l_stocking2: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+    ⚠️ Single material mesh l_leg2_arcueid.l_stocking2 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'l_leg2_arcueid.l_stocking2' with 20 vertices, bound to bone 'l_leg2'
+      Applying trimesh materials: 3 materials
+      Applied PBR color material: [0.3586539338504788, 0.0, 0.19046290691977924, 1.0]
+  Preserving exact vertex count for l_foot_arcueid.l_pump (no deduplication)
+  No UV coordinates found for l_foot_arcueid.l_pump, will generate simple mapping
+  Generating simple UV mapping for l_foot_arcueid.l_pump
+  ✅ Generated planar UV mapping for l_foot_arcueid.l_pump
+  Enabled smooth shading for l_foot_arcueid.l_pump (Gouraud rendering like VF3)
+  Creating Blender materials for l_foot_arcueid.l_pump: 3 materials
+    Creating 3 materials for mesh
+      Set base color: [0.3586539338504788, 0.0, 0.19046290691977924, 1.0]
+      Set base color: [0.5859731030497544, 0.07805659603547627, 0.26735808898200775, 1.0]
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+    ✅ Found face materials in mesh_info: 146
+    Assigning face materials: 146 face assignments to 146 polygons
+    ✅ Assigned materials to 146/146 faces (with face mapping)
+    ✅ Created 3 Blender materials
+  Created mesh 'l_foot_arcueid.l_pump' with 88 vertices, bound to bone 'l_foot'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+  Preserving exact vertex count for r_leg1_arcueid.r_stocking1 (no deduplication)
+  No UV coordinates found for r_leg1_arcueid.r_stocking1, will generate simple mapping
+  Generating simple UV mapping for r_leg1_arcueid.r_stocking1
+  ✅ Generated planar UV mapping for r_leg1_arcueid.r_stocking1
+  Enabled smooth shading for r_leg1_arcueid.r_stocking1 (Gouraud rendering like VF3)
+  Creating Blender materials for r_leg1_arcueid.r_stocking1: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+    ⚠️ Single material mesh r_leg1_arcueid.r_stocking1 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_leg1_arcueid.r_stocking1' with 20 vertices, bound to bone 'r_leg1'
+      Applying trimesh materials: 1 materials
+      Applied PBR color material: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+  Preserving exact vertex count for r_leg2_arcueid.r_stocking2 (no deduplication)
+  No UV coordinates found for r_leg2_arcueid.r_stocking2, will generate simple mapping
+  Generating simple UV mapping for r_leg2_arcueid.r_stocking2
+  ✅ Generated planar UV mapping for r_leg2_arcueid.r_stocking2
+  Enabled smooth shading for r_leg2_arcueid.r_stocking2 (Gouraud rendering like VF3)
+  Creating Blender materials for r_leg2_arcueid.r_stocking2: 1 materials
+    Creating 1 materials for mesh
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+    ⚠️ Single material mesh r_leg2_arcueid.r_stocking2 - skipping face material assignment
+    ✅ Created 1 Blender materials
+  Created mesh 'r_leg2_arcueid.r_stocking2' with 20 vertices, bound to bone 'r_leg2'
+      Applying trimesh materials: 3 materials
+      Applied PBR color material: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+  Preserving exact vertex count for r_foot_arcueid.r_pump (no deduplication)
+  No UV coordinates found for r_foot_arcueid.r_pump, will generate simple mapping
+  Generating simple UV mapping for r_foot_arcueid.r_pump
+  ✅ Generated planar UV mapping for r_foot_arcueid.r_pump
+  Enabled smooth shading for r_foot_arcueid.r_pump (Gouraud rendering like VF3)
+  Creating Blender materials for r_foot_arcueid.r_pump: 3 materials
+    Creating 3 materials for mesh
+      Set base color: [0.0022629534551296938, 0.0022629534551296938, 0.0022629534551296938, 1.0]
+      Set base color: [0.3586539338504788, 0.0, 0.19046290691977924, 1.0]
+      Set base color: [0.5859731030497544, 0.07805659603547627, 0.26735808898200775, 1.0]
+    ✅ Found face materials in mesh_info: 146
+    Assigning face materials: 146 face assignments to 146 polygons
+    ✅ Assigned materials to 146/146 faces (with face mapping)
+    ✅ Created 3 Blender materials
+  Created mesh 'r_foot_arcueid.r_pump' with 88 vertices, bound to bone 'r_foot'
+🔧 Creating DynamicVisual connectors (before merging)...
+  Collected 1192 vertices from existing meshes for snapping
+  Processing DynamicVisual mesh 0: 124 vertices, 126 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 126 exact faces
+      🏷️ Tagged connector dynamic_connector_0_vf3mesh with source: {'source': 'costume:arcueid.trainer:trainer_vp'}
+        Creating 1 VF3 materials from DynamicVisual Material: section
+          Material 0: (245, 245, 255, 255) -> VF3_DynamicVisual_Material_0
+        ✅ Assigned per-face materials: 126 faces mapped to 1 materials
+      ✅ Applied 1 VF3-defined materials to connector dynamic_connector_0_vf3mesh
+      DEBUG: Attempting to merge connector dynamic_connector_0_vf3mesh with available meshes:
+        Available mesh: head_arcueid.head, materials: ['head_arcueid_head_material0_0', 'head_arcueid_head_material0_1', 'head_arcueid_head_material0_2', 'head_arcueid_head_material0_3', 'head_arcueid_head_material0_4', 'head_arcueid_head_material0_5'], bones: ['head']...
+        Available mesh: body_arcueid.trainer, materials: ['body_arcueid_trainer_material0_0', 'body_arcueid_trainer_material0_1'], bones: ['body']...
+        Available mesh: l_breast_arcueid.trainer_lb, materials: ['l_breast_arcueid_trainer_lb_material0_0'], bones: ['l_breast']...
+        Available mesh: r_breast_arcueid.trainer_rb, materials: ['r_breast_arcueid_trainer_rb_material0_0'], bones: ['r_breast']...
+        Available mesh: l_arm1_arcueid.l_trainer1, materials: ['l_arm1_arcueid_l_trainer1_material0_0'], bones: ['l_arm1']...
+        Available mesh: l_arm2_arcueid.l_trainer2, materials: ['l_arm2_arcueid_l_trainer2_material0_0'], bones: ['l_arm2']...
+        Available mesh: l_hand_arcueid.l_trainer3, materials: ['l_hand_arcueid_l_trainer3_material0_0'], bones: ['l_hand']...
+        Available mesh: r_arm1_arcueid.r_trainer1, materials: ['r_arm1_arcueid_r_trainer1_material0_0'], bones: ['r_arm1']...
+        Available mesh: r_arm2_arcueid.r_trainer2, materials: ['r_arm2_arcueid_r_trainer2_material0_0'], bones: ['r_arm2']...
+        Available mesh: r_hand_arcueid.r_trainer3, materials: ['r_hand_arcueid_r_trainer3_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_arcueid.trainer2, materials: ['waist_arcueid_trainer2_material0_0'], bones: ['waist']...
+        Available mesh: l_hand_female.l_hand, materials: ['l_hand_female_l_hand_material0_0'], bones: ['l_hand']...
+        Available mesh: r_hand_female.r_hand, materials: ['r_hand_female_r_hand_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_female.waist, materials: ['waist_female_waist_material0_0', 'waist_female_waist_material0_1'], bones: ['waist']...
+        Available mesh: waist_arcueid.skirt, materials: ['waist_arcueid_skirt_material0_0'], bones: ['waist']...
+        Available mesh: skirt_f_arcueid.skirt_f, materials: ['skirt_f_arcueid_skirt_f_material0_0'], bones: ['skirt_f']...
+        Available mesh: skirt_f2_arcueid.skirt_f2, materials: ['skirt_f2_arcueid_skirt_f2_material0_0'], bones: ['skirt_f2']...
+        Available mesh: skirt_r_arcueid.skirt_r, materials: ['skirt_r_arcueid_skirt_r_material0_0'], bones: ['skirt_r']...
+        Available mesh: waist_arcueid.stocking, materials: ['waist_arcueid_stocking_material0_0', 'waist_arcueid_stocking_material0_1'], bones: ['waist']...
+        Available mesh: l_leg1_arcueid.l_stocking1, materials: ['l_leg1_arcueid_l_stocking1_material0_0'], bones: ['l_leg1']...
+        Available mesh: l_leg2_arcueid.l_stocking2, materials: ['l_leg2_arcueid_l_stocking2_material0_0'], bones: ['l_leg2']...
+        Available mesh: l_foot_arcueid.l_pump, materials: ['l_foot_arcueid_l_pump_material0_0', 'l_foot_arcueid_l_pump_material0_1', 'l_foot_arcueid_l_pump_material0_2'], bones: ['l_foot']...
+        Available mesh: r_leg1_arcueid.r_stocking1, materials: ['r_leg1_arcueid_r_stocking1_material0_0'], bones: ['r_leg1']...
+        Available mesh: r_leg2_arcueid.r_stocking2, materials: ['r_leg2_arcueid_r_stocking2_material0_0'], bones: ['r_leg2']...
+        Available mesh: r_foot_arcueid.r_pump, materials: ['r_foot_arcueid_r_pump_material0_0', 'r_foot_arcueid_r_pump_material0_1', 'r_foot_arcueid_r_pump_material0_2'], bones: ['r_foot']...
+    ✅ Created standalone VF3 connector: dynamic_connector_0_vf3mesh with 124 vertices, 126 faces, materials: ['VF3_DynamicVisual_Material_0']
+  Processing DynamicVisual mesh 1: 10 vertices, 10 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 10 exact faces
+      🏷️ Tagged connector dynamic_connector_1_vf3mesh with source: {'source': 'skin:female.l_hand'}
+        Creating 1 VF3 materials from DynamicVisual Material: section
+          Material 0: (255, 225, 200, 255) -> VF3_DynamicVisual_Material_0
+        ✅ Assigned per-face materials: 10 faces mapped to 1 materials
+      ✅ Applied 1 VF3-defined materials to connector dynamic_connector_1_vf3mesh
+      DEBUG: Attempting to merge connector dynamic_connector_1_vf3mesh with available meshes:
+        Available mesh: head_arcueid.head, materials: ['head_arcueid_head_material0_0', 'head_arcueid_head_material0_1', 'head_arcueid_head_material0_2', 'head_arcueid_head_material0_3', 'head_arcueid_head_material0_4', 'head_arcueid_head_material0_5'], bones: ['head']...
+        Available mesh: body_arcueid.trainer, materials: ['body_arcueid_trainer_material0_0', 'body_arcueid_trainer_material0_1'], bones: ['body']...
+        Available mesh: l_breast_arcueid.trainer_lb, materials: ['l_breast_arcueid_trainer_lb_material0_0'], bones: ['l_breast']...
+        Available mesh: r_breast_arcueid.trainer_rb, materials: ['r_breast_arcueid_trainer_rb_material0_0'], bones: ['r_breast']...
+        Available mesh: l_arm1_arcueid.l_trainer1, materials: ['l_arm1_arcueid_l_trainer1_material0_0'], bones: ['l_arm1']...
+        Available mesh: l_arm2_arcueid.l_trainer2, materials: ['l_arm2_arcueid_l_trainer2_material0_0'], bones: ['l_arm2']...
+        Available mesh: l_hand_arcueid.l_trainer3, materials: ['l_hand_arcueid_l_trainer3_material0_0'], bones: ['l_hand']...
+        Available mesh: r_arm1_arcueid.r_trainer1, materials: ['r_arm1_arcueid_r_trainer1_material0_0'], bones: ['r_arm1']...
+        Available mesh: r_arm2_arcueid.r_trainer2, materials: ['r_arm2_arcueid_r_trainer2_material0_0'], bones: ['r_arm2']...
+        Available mesh: r_hand_arcueid.r_trainer3, materials: ['r_hand_arcueid_r_trainer3_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_arcueid.trainer2, materials: ['waist_arcueid_trainer2_material0_0'], bones: ['waist']...
+        Available mesh: l_hand_female.l_hand, materials: ['l_hand_female_l_hand_material0_0'], bones: ['l_hand']...
+        Available mesh: r_hand_female.r_hand, materials: ['r_hand_female_r_hand_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_female.waist, materials: ['waist_female_waist_material0_0', 'waist_female_waist_material0_1'], bones: ['waist']...
+        Available mesh: waist_arcueid.skirt, materials: ['waist_arcueid_skirt_material0_0'], bones: ['waist']...
+        Available mesh: skirt_f_arcueid.skirt_f, materials: ['skirt_f_arcueid_skirt_f_material0_0'], bones: ['skirt_f']...
+        Available mesh: skirt_f2_arcueid.skirt_f2, materials: ['skirt_f2_arcueid_skirt_f2_material0_0'], bones: ['skirt_f2']...
+        Available mesh: skirt_r_arcueid.skirt_r, materials: ['skirt_r_arcueid_skirt_r_material0_0'], bones: ['skirt_r']...
+        Available mesh: waist_arcueid.stocking, materials: ['waist_arcueid_stocking_material0_0', 'waist_arcueid_stocking_material0_1'], bones: ['waist']...
+        Available mesh: l_leg1_arcueid.l_stocking1, materials: ['l_leg1_arcueid_l_stocking1_material0_0'], bones: ['l_leg1']...
+        Available mesh: l_leg2_arcueid.l_stocking2, materials: ['l_leg2_arcueid_l_stocking2_material0_0'], bones: ['l_leg2']...
+        Available mesh: l_foot_arcueid.l_pump, materials: ['l_foot_arcueid_l_pump_material0_0', 'l_foot_arcueid_l_pump_material0_1', 'l_foot_arcueid_l_pump_material0_2'], bones: ['l_foot']...
+        Available mesh: r_leg1_arcueid.r_stocking1, materials: ['r_leg1_arcueid_r_stocking1_material0_0'], bones: ['r_leg1']...
+        Available mesh: r_leg2_arcueid.r_stocking2, materials: ['r_leg2_arcueid_r_stocking2_material0_0'], bones: ['r_leg2']...
+        Available mesh: r_foot_arcueid.r_pump, materials: ['r_foot_arcueid_r_pump_material0_0', 'r_foot_arcueid_r_pump_material0_1', 'r_foot_arcueid_r_pump_material0_2'], bones: ['r_foot']...
+        Available mesh: dynamic_connector_0_vf3mesh, materials: ['VF3_DynamicVisual_Material_0'], bones: ['body', 'waist', 'r_arm1', 'r_arm2', 'r_hand']...
+    ✅ Created standalone VF3 connector: dynamic_connector_1_vf3mesh with 10 vertices, 10 faces, materials: ['VF3_DynamicVisual_Material_0.001']
+  Processing DynamicVisual mesh 2: 26 vertices, 26 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 26 exact faces
+      🏷️ Tagged connector dynamic_connector_2_vf3mesh with source: {'source': 'skin:female.waist'}
+        Creating 2 VF3 materials from DynamicVisual Material: section
+          Material 0: (255, 255, 255, 255) -> VF3_DynamicVisual_Material_0
+          Material 1: (255, 225, 200, 255) -> VF3_DynamicVisual_Material_1
+        ✅ Assigned per-face materials: 26 faces mapped to 2 materials
+      ✅ Applied 2 VF3-defined materials to connector dynamic_connector_2_vf3mesh
+      DEBUG: Attempting to merge connector dynamic_connector_2_vf3mesh with available meshes:
+        Available mesh: head_arcueid.head, materials: ['head_arcueid_head_material0_0', 'head_arcueid_head_material0_1', 'head_arcueid_head_material0_2', 'head_arcueid_head_material0_3', 'head_arcueid_head_material0_4', 'head_arcueid_head_material0_5'], bones: ['head']...
+        Available mesh: body_arcueid.trainer, materials: ['body_arcueid_trainer_material0_0', 'body_arcueid_trainer_material0_1'], bones: ['body']...
+        Available mesh: l_breast_arcueid.trainer_lb, materials: ['l_breast_arcueid_trainer_lb_material0_0'], bones: ['l_breast']...
+        Available mesh: r_breast_arcueid.trainer_rb, materials: ['r_breast_arcueid_trainer_rb_material0_0'], bones: ['r_breast']...
+        Available mesh: l_arm1_arcueid.l_trainer1, materials: ['l_arm1_arcueid_l_trainer1_material0_0'], bones: ['l_arm1']...
+        Available mesh: l_arm2_arcueid.l_trainer2, materials: ['l_arm2_arcueid_l_trainer2_material0_0'], bones: ['l_arm2']...
+        Available mesh: l_hand_arcueid.l_trainer3, materials: ['l_hand_arcueid_l_trainer3_material0_0'], bones: ['l_hand']...
+        Available mesh: r_arm1_arcueid.r_trainer1, materials: ['r_arm1_arcueid_r_trainer1_material0_0'], bones: ['r_arm1']...
+        Available mesh: r_arm2_arcueid.r_trainer2, materials: ['r_arm2_arcueid_r_trainer2_material0_0'], bones: ['r_arm2']...
+        Available mesh: r_hand_arcueid.r_trainer3, materials: ['r_hand_arcueid_r_trainer3_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_arcueid.trainer2, materials: ['waist_arcueid_trainer2_material0_0'], bones: ['waist']...
+        Available mesh: l_hand_female.l_hand, materials: ['l_hand_female_l_hand_material0_0'], bones: ['l_hand']...
+        Available mesh: r_hand_female.r_hand, materials: ['r_hand_female_r_hand_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_female.waist, materials: ['waist_female_waist_material0_0', 'waist_female_waist_material0_1'], bones: ['waist']...
+        Available mesh: waist_arcueid.skirt, materials: ['waist_arcueid_skirt_material0_0'], bones: ['waist']...
+        Available mesh: skirt_f_arcueid.skirt_f, materials: ['skirt_f_arcueid_skirt_f_material0_0'], bones: ['skirt_f']...
+        Available mesh: skirt_f2_arcueid.skirt_f2, materials: ['skirt_f2_arcueid_skirt_f2_material0_0'], bones: ['skirt_f2']...
+        Available mesh: skirt_r_arcueid.skirt_r, materials: ['skirt_r_arcueid_skirt_r_material0_0'], bones: ['skirt_r']...
+        Available mesh: waist_arcueid.stocking, materials: ['waist_arcueid_stocking_material0_0', 'waist_arcueid_stocking_material0_1'], bones: ['waist']...
+        Available mesh: l_leg1_arcueid.l_stocking1, materials: ['l_leg1_arcueid_l_stocking1_material0_0'], bones: ['l_leg1']...
+        Available mesh: l_leg2_arcueid.l_stocking2, materials: ['l_leg2_arcueid_l_stocking2_material0_0'], bones: ['l_leg2']...
+        Available mesh: l_foot_arcueid.l_pump, materials: ['l_foot_arcueid_l_pump_material0_0', 'l_foot_arcueid_l_pump_material0_1', 'l_foot_arcueid_l_pump_material0_2'], bones: ['l_foot']...
+        Available mesh: r_leg1_arcueid.r_stocking1, materials: ['r_leg1_arcueid_r_stocking1_material0_0'], bones: ['r_leg1']...
+        Available mesh: r_leg2_arcueid.r_stocking2, materials: ['r_leg2_arcueid_r_stocking2_material0_0'], bones: ['r_leg2']...
+        Available mesh: r_foot_arcueid.r_pump, materials: ['r_foot_arcueid_r_pump_material0_0', 'r_foot_arcueid_r_pump_material0_1', 'r_foot_arcueid_r_pump_material0_2'], bones: ['r_foot']...
+        Available mesh: dynamic_connector_0_vf3mesh, materials: ['VF3_DynamicVisual_Material_0'], bones: ['body', 'waist', 'r_arm1', 'r_arm2', 'r_hand']...
+        Available mesh: dynamic_connector_1_vf3mesh, materials: ['VF3_DynamicVisual_Material_0.001'], bones: ['l_arm2', 'l_hand']...
+    ✅ Created standalone VF3 connector: dynamic_connector_2_vf3mesh with 26 vertices, 26 faces, materials: ['VF3_DynamicVisual_Material_0.002', 'VF3_DynamicVisual_Material_1']
+  Processing DynamicVisual mesh 3: 53 vertices, 61 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 61 exact faces
+      🏷️ Tagged connector dynamic_connector_3_vf3mesh with source: {'source': 'costume:arcueid.skirt:skirt_vp'}
+        Creating 1 VF3 materials from DynamicVisual Material: section
+          Material 0: (140, 60, 110, 255) -> VF3_DynamicVisual_Material_0
+        ✅ Assigned per-face materials: 61 faces mapped to 1 materials
+      ✅ Applied 1 VF3-defined materials to connector dynamic_connector_3_vf3mesh
+      DEBUG: Attempting to merge connector dynamic_connector_3_vf3mesh with available meshes:
+        Available mesh: head_arcueid.head, materials: ['head_arcueid_head_material0_0', 'head_arcueid_head_material0_1', 'head_arcueid_head_material0_2', 'head_arcueid_head_material0_3', 'head_arcueid_head_material0_4', 'head_arcueid_head_material0_5'], bones: ['head']...
+        Available mesh: body_arcueid.trainer, materials: ['body_arcueid_trainer_material0_0', 'body_arcueid_trainer_material0_1'], bones: ['body']...
+        Available mesh: l_breast_arcueid.trainer_lb, materials: ['l_breast_arcueid_trainer_lb_material0_0'], bones: ['l_breast']...
+        Available mesh: r_breast_arcueid.trainer_rb, materials: ['r_breast_arcueid_trainer_rb_material0_0'], bones: ['r_breast']...
+        Available mesh: l_arm1_arcueid.l_trainer1, materials: ['l_arm1_arcueid_l_trainer1_material0_0'], bones: ['l_arm1']...
+        Available mesh: l_arm2_arcueid.l_trainer2, materials: ['l_arm2_arcueid_l_trainer2_material0_0'], bones: ['l_arm2']...
+        Available mesh: l_hand_arcueid.l_trainer3, materials: ['l_hand_arcueid_l_trainer3_material0_0'], bones: ['l_hand']...
+        Available mesh: r_arm1_arcueid.r_trainer1, materials: ['r_arm1_arcueid_r_trainer1_material0_0'], bones: ['r_arm1']...
+        Available mesh: r_arm2_arcueid.r_trainer2, materials: ['r_arm2_arcueid_r_trainer2_material0_0'], bones: ['r_arm2']...
+        Available mesh: r_hand_arcueid.r_trainer3, materials: ['r_hand_arcueid_r_trainer3_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_arcueid.trainer2, materials: ['waist_arcueid_trainer2_material0_0'], bones: ['waist']...
+        Available mesh: l_hand_female.l_hand, materials: ['l_hand_female_l_hand_material0_0'], bones: ['l_hand']...
+        Available mesh: r_hand_female.r_hand, materials: ['r_hand_female_r_hand_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_female.waist, materials: ['waist_female_waist_material0_0', 'waist_female_waist_material0_1'], bones: ['waist']...
+        Available mesh: waist_arcueid.skirt, materials: ['waist_arcueid_skirt_material0_0'], bones: ['waist']...
+        Available mesh: skirt_f_arcueid.skirt_f, materials: ['skirt_f_arcueid_skirt_f_material0_0'], bones: ['skirt_f']...
+        Available mesh: skirt_f2_arcueid.skirt_f2, materials: ['skirt_f2_arcueid_skirt_f2_material0_0'], bones: ['skirt_f2']...
+        Available mesh: skirt_r_arcueid.skirt_r, materials: ['skirt_r_arcueid_skirt_r_material0_0'], bones: ['skirt_r']...
+        Available mesh: waist_arcueid.stocking, materials: ['waist_arcueid_stocking_material0_0', 'waist_arcueid_stocking_material0_1'], bones: ['waist']...
+        Available mesh: l_leg1_arcueid.l_stocking1, materials: ['l_leg1_arcueid_l_stocking1_material0_0'], bones: ['l_leg1']...
+        Available mesh: l_leg2_arcueid.l_stocking2, materials: ['l_leg2_arcueid_l_stocking2_material0_0'], bones: ['l_leg2']...
+        Available mesh: l_foot_arcueid.l_pump, materials: ['l_foot_arcueid_l_pump_material0_0', 'l_foot_arcueid_l_pump_material0_1', 'l_foot_arcueid_l_pump_material0_2'], bones: ['l_foot']...
+        Available mesh: r_leg1_arcueid.r_stocking1, materials: ['r_leg1_arcueid_r_stocking1_material0_0'], bones: ['r_leg1']...
+        Available mesh: r_leg2_arcueid.r_stocking2, materials: ['r_leg2_arcueid_r_stocking2_material0_0'], bones: ['r_leg2']...
+        Available mesh: r_foot_arcueid.r_pump, materials: ['r_foot_arcueid_r_pump_material0_0', 'r_foot_arcueid_r_pump_material0_1', 'r_foot_arcueid_r_pump_material0_2'], bones: ['r_foot']...
+        Available mesh: dynamic_connector_0_vf3mesh, materials: ['VF3_DynamicVisual_Material_0'], bones: ['body', 'waist', 'r_arm1', 'r_arm2', 'r_hand']...
+        Available mesh: dynamic_connector_1_vf3mesh, materials: ['VF3_DynamicVisual_Material_0.001'], bones: ['l_arm2', 'l_hand']...
+        Available mesh: dynamic_connector_2_vf3mesh, materials: ['VF3_DynamicVisual_Material_0.002', 'VF3_DynamicVisual_Material_1'], bones: ['waist', 'r_leg1', 'l_leg1']...
+    ✅ Created standalone VF3 connector: dynamic_connector_3_vf3mesh with 53 vertices, 61 faces, materials: ['VF3_DynamicVisual_Material_0.003']
+  Processing DynamicVisual mesh 4: 78 vertices, 78 faces
+    Using TRUE VF3-accurate approach: ONE mesh with 78 exact faces
+      🏷️ Tagged connector dynamic_connector_4_vf3mesh with source: {'source': 'costume:arcueid.pumps:pumps_vp'}
+        Creating 2 VF3 materials from DynamicVisual Material: section
+          Material 0: (16, 16, 16, 255) -> VF3_DynamicVisual_Material_0
+          Material 1: (255, 225, 200, 255) -> VF3_DynamicVisual_Material_1
+        ✅ Assigned per-face materials: 78 faces mapped to 2 materials
+      ✅ Applied 2 VF3-defined materials to connector dynamic_connector_4_vf3mesh
+      DEBUG: Attempting to merge connector dynamic_connector_4_vf3mesh with available meshes:
+        Available mesh: head_arcueid.head, materials: ['head_arcueid_head_material0_0', 'head_arcueid_head_material0_1', 'head_arcueid_head_material0_2', 'head_arcueid_head_material0_3', 'head_arcueid_head_material0_4', 'head_arcueid_head_material0_5'], bones: ['head']...
+        Available mesh: body_arcueid.trainer, materials: ['body_arcueid_trainer_material0_0', 'body_arcueid_trainer_material0_1'], bones: ['body']...
+        Available mesh: l_breast_arcueid.trainer_lb, materials: ['l_breast_arcueid_trainer_lb_material0_0'], bones: ['l_breast']...
+        Available mesh: r_breast_arcueid.trainer_rb, materials: ['r_breast_arcueid_trainer_rb_material0_0'], bones: ['r_breast']...
+        Available mesh: l_arm1_arcueid.l_trainer1, materials: ['l_arm1_arcueid_l_trainer1_material0_0'], bones: ['l_arm1']...
+        Available mesh: l_arm2_arcueid.l_trainer2, materials: ['l_arm2_arcueid_l_trainer2_material0_0'], bones: ['l_arm2']...
+        Available mesh: l_hand_arcueid.l_trainer3, materials: ['l_hand_arcueid_l_trainer3_material0_0'], bones: ['l_hand']...
+        Available mesh: r_arm1_arcueid.r_trainer1, materials: ['r_arm1_arcueid_r_trainer1_material0_0'], bones: ['r_arm1']...
+        Available mesh: r_arm2_arcueid.r_trainer2, materials: ['r_arm2_arcueid_r_trainer2_material0_0'], bones: ['r_arm2']...
+        Available mesh: r_hand_arcueid.r_trainer3, materials: ['r_hand_arcueid_r_trainer3_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_arcueid.trainer2, materials: ['waist_arcueid_trainer2_material0_0'], bones: ['waist']...
+        Available mesh: l_hand_female.l_hand, materials: ['l_hand_female_l_hand_material0_0'], bones: ['l_hand']...
+        Available mesh: r_hand_female.r_hand, materials: ['r_hand_female_r_hand_material0_0'], bones: ['r_hand']...
+        Available mesh: waist_female.waist, materials: ['waist_female_waist_material0_0', 'waist_female_waist_material0_1'], bones: ['waist']...
+        Available mesh: waist_arcueid.skirt, materials: ['waist_arcueid_skirt_material0_0'], bones: ['waist']...
+        Available mesh: skirt_f_arcueid.skirt_f, materials: ['skirt_f_arcueid_skirt_f_material0_0'], bones: ['skirt_f']...
+        Available mesh: skirt_f2_arcueid.skirt_f2, materials: ['skirt_f2_arcueid_skirt_f2_material0_0'], bones: ['skirt_f2']...
+        Available mesh: skirt_r_arcueid.skirt_r, materials: ['skirt_r_arcueid_skirt_r_material0_0'], bones: ['skirt_r']...
+        Available mesh: waist_arcueid.stocking, materials: ['waist_arcueid_stocking_material0_0', 'waist_arcueid_stocking_material0_1'], bones: ['waist']...
+        Available mesh: l_leg1_arcueid.l_stocking1, materials: ['l_leg1_arcueid_l_stocking1_material0_0'], bones: ['l_leg1']...
+        Available mesh: l_leg2_arcueid.l_stocking2, materials: ['l_leg2_arcueid_l_stocking2_material0_0'], bones: ['l_leg2']...
+        Available mesh: l_foot_arcueid.l_pump, materials: ['l_foot_arcueid_l_pump_material0_0', 'l_foot_arcueid_l_pump_material0_1', 'l_foot_arcueid_l_pump_material0_2'], bones: ['l_foot']...
+        Available mesh: r_leg1_arcueid.r_stocking1, materials: ['r_leg1_arcueid_r_stocking1_material0_0'], bones: ['r_leg1']...
+        Available mesh: r_leg2_arcueid.r_stocking2, materials: ['r_leg2_arcueid_r_stocking2_material0_0'], bones: ['r_leg2']...
+        Available mesh: r_foot_arcueid.r_pump, materials: ['r_foot_arcueid_r_pump_material0_0', 'r_foot_arcueid_r_pump_material0_1', 'r_foot_arcueid_r_pump_material0_2'], bones: ['r_foot']...
+        Available mesh: dynamic_connector_0_vf3mesh, materials: ['VF3_DynamicVisual_Material_0'], bones: ['body', 'waist', 'r_arm1', 'r_arm2', 'r_hand']...
+        Available mesh: dynamic_connector_1_vf3mesh, materials: ['VF3_DynamicVisual_Material_0.001'], bones: ['l_arm2', 'l_hand']...
+        Available mesh: dynamic_connector_2_vf3mesh, materials: ['VF3_DynamicVisual_Material_0.002', 'VF3_DynamicVisual_Material_1'], bones: ['waist', 'r_leg1', 'l_leg1']...
+        Available mesh: dynamic_connector_3_vf3mesh, materials: ['VF3_DynamicVisual_Material_0.003'], bones: ['waist', 'skirt_f', 'skirt_r', 'skirt_f2']...
+    ✅ Created standalone VF3 connector: dynamic_connector_4_vf3mesh with 78 vertices, 78 faces, materials: ['VF3_DynamicVisual_Material_0.004', 'VF3_DynamicVisual_Material_1.001']
+🔧 Created 5 DynamicVisual connector meshes
+  Filtered mesh objects after connector creation: 30 valid objects
+🔬 Creating SCIENTIFIC anatomical groups (zero contamination)...
+🔬 SCIENTIFIC ANATOMICAL GROUPING: Starting bone-based analysis
+🔬 SCIENTIFIC MESH SPLITTING: Analyzing all meshes by bone assignments
+
+  🔍 Analyzing: head_arcueid.head
+🔬 SCIENTIFIC ANALYSIS: Splitting head_arcueid.head by bone assignments
+    📊 SPLIT RESULTS:
+      body: 264 vertices
+    🔍 CONTAMINATION CHECK for head_arcueid.head:
+      🎉 ZERO CONTAMINATION detected in head_arcueid.head
+    🔨 Creating body subset with 264 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['head']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 6 materials
+           Copied ALL 6 materials (preserving indices)
+           ✅ Applied original material indices to 423 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created head_arcueid.head_body: 264 vertices, 423 faces
+
+  🔍 Analyzing: body_arcueid.trainer
+🔬 SCIENTIFIC ANALYSIS: Splitting body_arcueid.trainer by bone assignments
+    📊 SPLIT RESULTS:
+      body: 110 vertices
+    🔍 CONTAMINATION CHECK for body_arcueid.trainer:
+      🎉 ZERO CONTAMINATION detected in body_arcueid.trainer
+    🔨 Creating body subset with 110 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['body']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 2 materials
+           Copied ALL 2 materials (preserving indices)
+           ✅ Applied original material indices to 168 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created body_arcueid.trainer_body: 110 vertices, 168 faces
+
+  🔍 Analyzing: l_breast_arcueid.trainer_lb
+🔬 SCIENTIFIC ANALYSIS: Splitting l_breast_arcueid.trainer_lb by bone assignments
+    📊 SPLIT RESULTS:
+      body: 27 vertices
+    🔍 CONTAMINATION CHECK for l_breast_arcueid.trainer_lb:
+      🎉 ZERO CONTAMINATION detected in l_breast_arcueid.trainer_lb
+    🔨 Creating body subset with 27 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_breast']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 34 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_breast_arcueid.trainer_lb_body: 27 vertices, 34 faces
+
+  🔍 Analyzing: r_breast_arcueid.trainer_rb
+🔬 SCIENTIFIC ANALYSIS: Splitting r_breast_arcueid.trainer_rb by bone assignments
+    📊 SPLIT RESULTS:
+      body: 27 vertices
+    🔍 CONTAMINATION CHECK for r_breast_arcueid.trainer_rb:
+      🎉 ZERO CONTAMINATION detected in r_breast_arcueid.trainer_rb
+    🔨 Creating body subset with 27 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_breast']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 34 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_breast_arcueid.trainer_rb_body: 27 vertices, 34 faces
+
+  🔍 Analyzing: l_arm1_arcueid.l_trainer1
+🔬 SCIENTIFIC ANALYSIS: Splitting l_arm1_arcueid.l_trainer1 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 22 vertices
+    🔍 CONTAMINATION CHECK for l_arm1_arcueid.l_trainer1:
+      🎉 ZERO CONTAMINATION detected in l_arm1_arcueid.l_trainer1
+    🔨 Creating body subset with 22 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_arm1']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 32 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_arm1_arcueid.l_trainer1_body: 22 vertices, 32 faces
+
+  🔍 Analyzing: l_arm2_arcueid.l_trainer2
+🔬 SCIENTIFIC ANALYSIS: Splitting l_arm2_arcueid.l_trainer2 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 18 vertices
+    🔍 CONTAMINATION CHECK for l_arm2_arcueid.l_trainer2:
+      🎉 ZERO CONTAMINATION detected in l_arm2_arcueid.l_trainer2
+    🔨 Creating body subset with 18 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_arm2']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 24 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_arm2_arcueid.l_trainer2_body: 18 vertices, 24 faces
+
+  🔍 Analyzing: l_hand_arcueid.l_trainer3
+🔬 SCIENTIFIC ANALYSIS: Splitting l_hand_arcueid.l_trainer3 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 16 vertices
+    🔍 CONTAMINATION CHECK for l_hand_arcueid.l_trainer3:
+      🎉 ZERO CONTAMINATION detected in l_hand_arcueid.l_trainer3
+    🔨 Creating body subset with 16 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_hand']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 24 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_hand_arcueid.l_trainer3_body: 16 vertices, 24 faces
+
+  🔍 Analyzing: r_arm1_arcueid.r_trainer1
+🔬 SCIENTIFIC ANALYSIS: Splitting r_arm1_arcueid.r_trainer1 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 22 vertices
+    🔍 CONTAMINATION CHECK for r_arm1_arcueid.r_trainer1:
+      🎉 ZERO CONTAMINATION detected in r_arm1_arcueid.r_trainer1
+    🔨 Creating body subset with 22 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_arm1']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 32 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_arm1_arcueid.r_trainer1_body: 22 vertices, 32 faces
+
+  🔍 Analyzing: r_arm2_arcueid.r_trainer2
+🔬 SCIENTIFIC ANALYSIS: Splitting r_arm2_arcueid.r_trainer2 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 18 vertices
+    🔍 CONTAMINATION CHECK for r_arm2_arcueid.r_trainer2:
+      🎉 ZERO CONTAMINATION detected in r_arm2_arcueid.r_trainer2
+    🔨 Creating body subset with 18 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_arm2']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 24 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_arm2_arcueid.r_trainer2_body: 18 vertices, 24 faces
+
+  🔍 Analyzing: r_hand_arcueid.r_trainer3
+🔬 SCIENTIFIC ANALYSIS: Splitting r_hand_arcueid.r_trainer3 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 16 vertices
+    🔍 CONTAMINATION CHECK for r_hand_arcueid.r_trainer3:
+      🎉 ZERO CONTAMINATION detected in r_hand_arcueid.r_trainer3
+    🔨 Creating body subset with 16 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_hand']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 24 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_hand_arcueid.r_trainer3_body: 16 vertices, 24 faces
+
+  🔍 Analyzing: waist_arcueid.trainer2
+🔬 SCIENTIFIC ANALYSIS: Splitting waist_arcueid.trainer2 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 36 vertices
+    🔍 CONTAMINATION CHECK for waist_arcueid.trainer2:
+      🎉 ZERO CONTAMINATION detected in waist_arcueid.trainer2
+    🔨 Creating body subset with 36 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['waist']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 56 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created waist_arcueid.trainer2_body: 36 vertices, 56 faces
+
+  🔍 Analyzing: l_hand_female.l_hand
+🔬 SCIENTIFIC ANALYSIS: Splitting l_hand_female.l_hand by bone assignments
+    📊 SPLIT RESULTS:
+      body: 84 vertices
+    🔍 CONTAMINATION CHECK for l_hand_female.l_hand:
+      🎉 ZERO CONTAMINATION detected in l_hand_female.l_hand
+    🔨 Creating body subset with 84 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_hand']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 142 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_hand_female.l_hand_body: 84 vertices, 142 faces
+
+  🔍 Analyzing: r_hand_female.r_hand
+🔬 SCIENTIFIC ANALYSIS: Splitting r_hand_female.r_hand by bone assignments
+    📊 SPLIT RESULTS:
+      body: 84 vertices
+    🔍 CONTAMINATION CHECK for r_hand_female.r_hand:
+      🎉 ZERO CONTAMINATION detected in r_hand_female.r_hand
+    🔨 Creating body subset with 84 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_hand']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 142 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_hand_female.r_hand_body: 84 vertices, 142 faces
+
+  🔍 Analyzing: waist_female.waist
+🔬 SCIENTIFIC ANALYSIS: Splitting waist_female.waist by bone assignments
+    📊 SPLIT RESULTS:
+      body: 57 vertices
+    🔍 CONTAMINATION CHECK for waist_female.waist:
+      🎉 ZERO CONTAMINATION detected in waist_female.waist
+    🔨 Creating body subset with 57 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['waist']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 2 materials
+           Copied ALL 2 materials (preserving indices)
+           ✅ Applied original material indices to 92 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created waist_female.waist_body: 57 vertices, 92 faces
+
+  🔍 Analyzing: waist_arcueid.skirt
+🔬 SCIENTIFIC ANALYSIS: Splitting waist_arcueid.skirt by bone assignments
+    📊 SPLIT RESULTS:
+      body: 29 vertices
+    🔍 CONTAMINATION CHECK for waist_arcueid.skirt:
+      🎉 ZERO CONTAMINATION detected in waist_arcueid.skirt
+    🔨 Creating body subset with 29 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['waist']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 41 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created waist_arcueid.skirt_body: 29 vertices, 41 faces
+
+  🔍 Analyzing: skirt_f_arcueid.skirt_f
+🔬 SCIENTIFIC ANALYSIS: Splitting skirt_f_arcueid.skirt_f by bone assignments
+    📊 SPLIT RESULTS:
+      body: 18 vertices
+    🔍 CONTAMINATION CHECK for skirt_f_arcueid.skirt_f:
+      🎉 ZERO CONTAMINATION detected in skirt_f_arcueid.skirt_f
+    🔨 Creating body subset with 18 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['skirt_f']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 14 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created skirt_f_arcueid.skirt_f_body: 18 vertices, 14 faces
+
+  🔍 Analyzing: skirt_f2_arcueid.skirt_f2
+🔬 SCIENTIFIC ANALYSIS: Splitting skirt_f2_arcueid.skirt_f2 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 15 vertices
+    🔍 CONTAMINATION CHECK for skirt_f2_arcueid.skirt_f2:
+      🎉 ZERO CONTAMINATION detected in skirt_f2_arcueid.skirt_f2
+    🔨 Creating body subset with 15 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['skirt_f2']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 19 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created skirt_f2_arcueid.skirt_f2_body: 15 vertices, 19 faces
+
+  🔍 Analyzing: skirt_r_arcueid.skirt_r
+🔬 SCIENTIFIC ANALYSIS: Splitting skirt_r_arcueid.skirt_r by bone assignments
+    📊 SPLIT RESULTS:
+      body: 16 vertices
+    🔍 CONTAMINATION CHECK for skirt_r_arcueid.skirt_r:
+      🎉 ZERO CONTAMINATION detected in skirt_r_arcueid.skirt_r
+    🔨 Creating body subset with 16 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['skirt_r']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 17 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created skirt_r_arcueid.skirt_r_body: 16 vertices, 17 faces
+
+  🔍 Analyzing: waist_arcueid.stocking
+🔬 SCIENTIFIC ANALYSIS: Splitting waist_arcueid.stocking by bone assignments
+    📊 SPLIT RESULTS:
+      body: 57 vertices
+    🔍 CONTAMINATION CHECK for waist_arcueid.stocking:
+      🎉 ZERO CONTAMINATION detected in waist_arcueid.stocking
+    🔨 Creating body subset with 57 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['waist']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 2 materials
+           Copied ALL 2 materials (preserving indices)
+           ✅ Applied original material indices to 92 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created waist_arcueid.stocking_body: 57 vertices, 92 faces
+
+  🔍 Analyzing: l_leg1_arcueid.l_stocking1
+🔬 SCIENTIFIC ANALYSIS: Splitting l_leg1_arcueid.l_stocking1 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 20 vertices
+    🔍 CONTAMINATION CHECK for l_leg1_arcueid.l_stocking1:
+      🎉 ZERO CONTAMINATION detected in l_leg1_arcueid.l_stocking1
+    🔨 Creating body subset with 20 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_leg1']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 28 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_leg1_arcueid.l_stocking1_body: 20 vertices, 28 faces
+
+  🔍 Analyzing: l_leg2_arcueid.l_stocking2
+🔬 SCIENTIFIC ANALYSIS: Splitting l_leg2_arcueid.l_stocking2 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 20 vertices
+    🔍 CONTAMINATION CHECK for l_leg2_arcueid.l_stocking2:
+      🎉 ZERO CONTAMINATION detected in l_leg2_arcueid.l_stocking2
+    🔨 Creating body subset with 20 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_leg2']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 28 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_leg2_arcueid.l_stocking2_body: 20 vertices, 28 faces
+
+  🔍 Analyzing: l_foot_arcueid.l_pump
+🔬 SCIENTIFIC ANALYSIS: Splitting l_foot_arcueid.l_pump by bone assignments
+    📊 SPLIT RESULTS:
+      body: 88 vertices
+    🔍 CONTAMINATION CHECK for l_foot_arcueid.l_pump:
+      🎉 ZERO CONTAMINATION detected in l_foot_arcueid.l_pump
+    🔨 Creating body subset with 88 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['l_foot']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 3 materials
+           Copied ALL 3 materials (preserving indices)
+           ✅ Applied original material indices to 146 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created l_foot_arcueid.l_pump_body: 88 vertices, 146 faces
+
+  🔍 Analyzing: r_leg1_arcueid.r_stocking1
+🔬 SCIENTIFIC ANALYSIS: Splitting r_leg1_arcueid.r_stocking1 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 20 vertices
+    🔍 CONTAMINATION CHECK for r_leg1_arcueid.r_stocking1:
+      🎉 ZERO CONTAMINATION detected in r_leg1_arcueid.r_stocking1
+    🔨 Creating body subset with 20 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_leg1']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 28 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_leg1_arcueid.r_stocking1_body: 20 vertices, 28 faces
+
+  🔍 Analyzing: r_leg2_arcueid.r_stocking2
+🔬 SCIENTIFIC ANALYSIS: Splitting r_leg2_arcueid.r_stocking2 by bone assignments
+    📊 SPLIT RESULTS:
+      body: 20 vertices
+    🔍 CONTAMINATION CHECK for r_leg2_arcueid.r_stocking2:
+      🎉 ZERO CONTAMINATION detected in r_leg2_arcueid.r_stocking2
+    🔨 Creating body subset with 20 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_leg2']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 1 materials
+           Copied ALL 1 materials (preserving indices)
+           ✅ Applied original material indices to 28 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_leg2_arcueid.r_stocking2_body: 20 vertices, 28 faces
+
+  🔍 Analyzing: r_foot_arcueid.r_pump
+🔬 SCIENTIFIC ANALYSIS: Splitting r_foot_arcueid.r_pump by bone assignments
+    📊 SPLIT RESULTS:
+      body: 88 vertices
+    🔍 CONTAMINATION CHECK for r_foot_arcueid.r_pump:
+      🎉 ZERO CONTAMINATION detected in r_foot_arcueid.r_pump
+    🔨 Creating body subset with 88 vertices
+        🔬 SCIENTIFIC VERTEX GROUP FILTERING:
+           Original mesh has 1 vertex groups
+           Subset uses only 1 vertex groups
+           Created vertex groups: ['r_foot']
+        🎨 MATERIAL COPYING (PRESERVE INDICES):
+           Source has 3 materials
+           Copied ALL 3 materials (preserving indices)
+           ✅ Applied original material indices to 146 faces (no remapping corruption)
+      🎨 Applied smooth shading to subset body
+      ✅ Created r_foot_arcueid.r_pump_body: 88 vertices, 146 faces
+
+  🔍 Analyzing: dynamic_connector_0_vf3mesh
+    🎨 VF3 PRESERVED CONNECTOR: dynamic_connector_0_vf3mesh with 1 materials - assigning to primary group
+      Assigned to 'body' group (dominant with 124 vertices)
+
+  🔍 Analyzing: dynamic_connector_1_vf3mesh
+    🎨 VF3 PRESERVED CONNECTOR: dynamic_connector_1_vf3mesh with 1 materials - assigning to primary group
+      Assigned to 'body' group (dominant with 10 vertices)
+
+  🔍 Analyzing: dynamic_connector_2_vf3mesh
+    🎨 VF3 PRESERVED CONNECTOR: dynamic_connector_2_vf3mesh with 2 materials - assigning to primary group
+      Assigned to 'body' group (dominant with 26 vertices)
+
+  🔍 Analyzing: dynamic_connector_3_vf3mesh
+    🎨 VF3 PRESERVED CONNECTOR: dynamic_connector_3_vf3mesh with 1 materials - assigning to primary group
+      Assigned to 'body' group (dominant with 53 vertices)
+
+  🔍 Analyzing: dynamic_connector_4_vf3mesh
+    🎨 VF3 PRESERVED CONNECTOR: dynamic_connector_4_vf3mesh with 2 materials - assigning to primary group
+      Assigned to 'body' group (dominant with 78 vertices)
+
+  📊 FINAL ANATOMICAL GROUPS:
+    body: 30 mesh parts
+
+🔬 SCIENTIFIC MERGING: Merging same-group mesh parts
+
+  🔧 Merging body group: 30 parts
+    🔧 Merging 30 body parts:
+      Part 1: head_arcueid.head_body (bones: ['head'])
+      Part 2: body_arcueid.trainer_body (bones: ['body'])
+      Part 3: l_breast_arcueid.trainer_lb_body (bones: ['l_breast'])
+      Part 4: r_breast_arcueid.trainer_rb_body (bones: ['r_breast'])
+      Part 5: l_arm1_arcueid.l_trainer1_body (bones: ['l_arm1'])
+      Part 6: l_arm2_arcueid.l_trainer2_body (bones: ['l_arm2'])
+      Part 7: l_hand_arcueid.l_trainer3_body (bones: ['l_hand'])
+      Part 8: r_arm1_arcueid.r_trainer1_body (bones: ['r_arm1'])
+      Part 9: r_arm2_arcueid.r_trainer2_body (bones: ['r_arm2'])
+      Part 10: r_hand_arcueid.r_trainer3_body (bones: ['r_hand'])
+      Part 11: waist_arcueid.trainer2_body (bones: ['waist'])
+      Part 12: l_hand_female.l_hand_body (bones: ['l_hand'])
+      Part 13: r_hand_female.r_hand_body (bones: ['r_hand'])
+      Part 14: waist_female.waist_body (bones: ['waist'])
+      Part 15: waist_arcueid.skirt_body (bones: ['waist'])
+      Part 16: skirt_f_arcueid.skirt_f_body (bones: ['skirt_f'])
+      Part 17: skirt_f2_arcueid.skirt_f2_body (bones: ['skirt_f2'])
+      Part 18: skirt_r_arcueid.skirt_r_body (bones: ['skirt_r'])
+      Part 19: waist_arcueid.stocking_body (bones: ['waist'])
+      Part 20: l_leg1_arcueid.l_stocking1_body (bones: ['l_leg1'])
+      Part 21: l_leg2_arcueid.l_stocking2_body (bones: ['l_leg2'])
+      Part 22: l_foot_arcueid.l_pump_body (bones: ['l_foot'])
+      Part 23: r_leg1_arcueid.r_stocking1_body (bones: ['r_leg1'])
+      Part 24: r_leg2_arcueid.r_stocking2_body (bones: ['r_leg2'])
+      Part 25: r_foot_arcueid.r_pump_body (bones: ['r_foot'])
+      Part 26: dynamic_connector_0_vf3mesh (bones: ['body', 'waist', 'r_arm1', 'r_arm2', 'r_hand', 'r_breast', 'l_arm1', 'l_arm2', 'l_hand', 'l_breast'])
+      Part 27: dynamic_connector_1_vf3mesh (bones: ['l_arm2', 'l_hand'])
+      Part 28: dynamic_connector_2_vf3mesh (bones: ['waist', 'r_leg1', 'l_leg1'])
+      Part 29: dynamic_connector_3_vf3mesh (bones: ['waist', 'skirt_f', 'skirt_r', 'skirt_f2'])
+      Part 30: dynamic_connector_4_vf3mesh (bones: ['l_leg1', 'waist', 'l_leg2', 'l_foot', 'r_leg1', 'r_leg2', 'r_foot'])
+Info: Removed 342 vertice(s)
+        ✅ Merged into VF3_Body
+        📦 Final bones: ['head', 'body', 'waist', 'r_arm1', 'r_arm2', 'r_hand', 'r_breast', 'l_arm1', 'l_arm2', 'l_hand', 'l_breast', 'r_leg1', 'l_leg1', 'skirt_f', 'skirt_r', 'skirt_f2', 'l_leg2', 'l_foot', 'r_leg2', 'r_foot']
+        🔗 Added armature modifier to VF3_Body -> VF3_Armature
+    🔍 CONTAMINATION CHECK for body:
+        ✅ No contamination detected in body
+Blender 4.0.2
+Info: Total files 2 | Changed 2 | Failed 0
+/usr/share/blender/scripts/addons/io_scene_gltf2/io/exp/gltf2_io_image_data.py:25: SyntaxWarning: invalid escape sequence '\.'
+  regex_dot = re.compile("\.")
+/usr/share/blender/scripts/addons/io_scene_gltf2/io/exp/gltf2_io_image_data.py:27: SyntaxWarning: invalid escape sequence '\]'
+  new_name = "".join([char for char in adjusted_name if char not in "!#$&'()*+,/:;<>?@[\]^`{|}~"])
+
+🔬 FINAL VALIDATION:
+  🔍 FINAL CONTAMINATION ANALYSIS:
+    VF3_Body: 20 bones
+      ℹ️ body (neutral group - no contamination check)
+  🎉 PERFECT: ZERO contamination detected across all groups!
+🎉 SCIENTIFIC ANATOMICAL GROUPING COMPLETE!
+🔧 Could not set viewport mode (running headless)
+  Selected 1 mesh objects for export
+Info: Saved "arcueid_modular_20250817_054451_debug.blend"
+🔧 Saved debug .blend file: arcueid_modular_20250817_054451_debug.blend
+📦 Exporting to arcueid_modular_20250817_054451.glb...
+09:44:58 | ERROR: Draco mesh compression is not available because library could not be found at /usr/bin/4.0/python/lib/python3.12/site-packages/libextern_draco.so
+09:44:58 | INFO: Starting glTF 2.0 export
+WARNING: Armature must be the parent of skinned mesh
+Armature is selected by its name, but may be false in case of instances
+09:44:58 | INFO: Extracting primitive: head_arcueid.head_body
+09:44:58 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+09:44:58 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+09:44:58 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+09:44:58 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+09:44:58 | INFO: Primitives created: 42
+09:44:58 | INFO: Finished glTF 2.0 export in 0.10193824768066406 s
+
+🎉 Export completed successfully: arcueid_modular_20250817_054451.glb
+🎉 VF3 character created successfully in Blender!
+
+Blender quit
+Error: Not freed memory blocks: 1, total unfreed memory 0.000023 MB
+✅ Modular export successful: arcueid_modular_20250817_054451.glb
+📊 File size: 136K
+
+🔍 Next steps:
+   1. Compare file size with original export (~458K)
+   2. Open arcueid_modular_20250817_054451.glb in a GLB viewer
+   3. Verify textures and materials match original
+   4. Check for any differences in geometry

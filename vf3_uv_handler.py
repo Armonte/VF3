@@ -8,17 +8,17 @@ import numpy as np
 
 def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mesh_info=None):
     """
-    Preserve UV coordinates EXACTLY as they are from trimesh - like working export_ciel_to_gltf.py
-    NO MODIFICATIONS, NO FLIPS, NO COMPLEX LOGIC
+    Apply UV coordinates EXACTLY like the working export_ciel_to_gltf.py
+    Use the EXACT same logic that was working before
     """
     
-    # Check if trimesh has UV coordinates
+    # Get UV coordinates EXACTLY like export_ciel_to_gltf.py
     existing_uv = None
     if hasattr(trimesh_mesh.visual, 'uv') and trimesh_mesh.visual.uv is not None:
-        existing_uv = trimesh_mesh.visual.uv.copy()
-        print(f"  UV coordinates from .X file: {len(existing_uv)} UVs for {len(blender_mesh.vertices)} vertices")
+        existing_uv = trimesh_mesh.visual.uv
+        print(f"  UV coordinates from trimesh: {len(existing_uv)} UVs for {len(blender_mesh.vertices)} vertices")
     else:
-        print(f"  No UV coordinates found for {mesh_name}, will generate simple mapping")
+        print(f"  No UV coordinates found for {mesh_name}")
     
     # Create UV layer in Blender
     if not blender_mesh.uv_layers:
@@ -28,40 +28,108 @@ def preserve_and_apply_uv_coordinates(blender_mesh, trimesh_mesh, mesh_name, mes
     
     if existing_uv is not None:
         # Apply UV coordinates EXACTLY like working export_ciel_to_gltf.py
-        apply_uv_coordinates_exact(blender_mesh, uv_layer, existing_uv, mesh_name)
+        apply_uv_coordinates_exact_like_working_version(blender_mesh, uv_layer, existing_uv, mesh_name)
     else:
         # Generate simple planar UV mapping as fallback
         generate_simple_uv_mapping(blender_mesh, uv_layer, mesh_name)
 
 
-def apply_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_name):
+def apply_uv_coordinates_exact_like_working_version(blender_mesh, uv_layer, uv_coords, mesh_name):
     """
     Apply UV coordinates EXACTLY like the working export_ciel_to_gltf.py
-    No modifications, no flips, just preserve exactly
+    The working version PRESERVES UV coordinates directly from trimesh.visual.uv
     """
     
-    print(f"  Exact UV mapping: {len(uv_coords)} UVs to {len(blender_mesh.vertices)} vertices")
+    print(f"  Applying UV coordinates like working export_ciel_to_gltf.py: {len(uv_coords)} UVs")
     
     loop_index = 0
     
-    # Simple per-vertex mapping - exactly like working version
+    # EXACT logic from working export_ciel_to_gltf.py
+    # The key insight: UV coordinates are already correctly stored in trimesh.visual.uv
+    # We just need to map them to Blender loops without any transformations
+    
     for poly in blender_mesh.polygons:
         for loop_idx in poly.loop_indices:
             vertex_idx = blender_mesh.loops[loop_idx].vertex_index
             
-            # Use vertex index directly, wrap if needed
+            # Use vertex index to get UV coordinate
             if vertex_idx < len(uv_coords):
                 u, v = uv_coords[vertex_idx]
+                # Apply UV coordinates EXACTLY as they are - no transformations
+                uv_layer[loop_index].uv = (float(u), float(v))
             else:
-                # Wrap around if vertex index exceeds UV count
-                uv_idx = vertex_idx % len(uv_coords)
-                u, v = uv_coords[uv_idx]
+                # Fallback for out-of-range indices
+                uv_layer[loop_index].uv = (0.0, 0.0)
             
-            # Apply UV coordinates EXACTLY as they are - no modifications
-            uv_layer[loop_index].uv = (float(u), float(v))
             loop_index += 1
     
-    print(f"  ✅ Applied exact UV mapping to {mesh_name}")
+    print(f"  ✅ Applied working-version UV mapping to {mesh_name}")
+
+
+def apply_raw_uv_coordinates(blender_mesh, uv_layer, raw_uv_coords, mesh_name):
+    """
+    Apply UV coordinates using PROPER vertex-to-loop mapping.
+    Each loop corresponds to a vertex in a face - map via vertex index.
+    """
+    
+    print(f"  VERTEX-TO-LOOP UV: {len(raw_uv_coords)} UVs to {len(uv_layer)} loops")
+    
+    # Convert raw UVs to list format if needed
+    if hasattr(raw_uv_coords, 'tolist'):
+        uv_list = raw_uv_coords.tolist()
+    else:
+        uv_list = list(raw_uv_coords)
+    
+    # Map UVs using vertex indices - this is the correct approach for .X files
+    for i, loop_uv in enumerate(uv_layer):
+        # Get the vertex index for this loop
+        vertex_index = blender_mesh.loops[i].vertex_index
+        
+        if vertex_index < len(uv_list):
+            u, v = uv_list[vertex_index]
+            # Apply coordinates EXACTLY as they are - no transformations
+            loop_uv.uv = (float(u), float(v))
+        else:
+            # Fallback for invalid vertex indices
+            loop_uv.uv = (0.0, 0.0)
+    
+    print(f"  ✅ Applied vertex-to-loop UV mapping to {mesh_name} ({len(uv_list)} vertex UVs)")
+
+
+def apply_uv_coordinates_exact(blender_mesh, uv_layer, uv_coords, mesh_name):
+    """
+    Apply UV coordinates EXACTLY from .X file - BASIC vertex-based mapping.
+    .X files store one UV coordinate per vertex, so map vertex index -> UV coordinate.
+    """
+    
+    print(f"  Exact UV mapping: {len(uv_coords)} UVs to {len(blender_mesh.vertices)} vertices")
+    if len(uv_coords) > 0:
+        print(f"    UV range: U({min(uv[0] for uv in uv_coords):.4f}-{max(uv[0] for uv in uv_coords):.4f}) V({min(uv[1] for uv in uv_coords):.4f}-{max(uv[1] for uv in uv_coords):.4f})")
+        print(f"    First 3 UVs: {uv_coords[:3]}")
+    
+    # BASIC APPROACH: .X files have one UV per vertex
+    # Map each vertex to its UV coordinate directly - no complex logic
+    
+    loop_index = 0
+    
+    for poly in blender_mesh.polygons:
+        for loop_idx in poly.loop_indices:
+            vertex_idx = blender_mesh.loops[loop_idx].vertex_index
+            
+            # Use vertex index to get UV coordinate
+            if vertex_idx < len(uv_coords):
+                u, v = uv_coords[vertex_idx]
+                # Apply UV coordinates EXACTLY as they are from .X file - no flipping
+                uv_layer[loop_index].uv = (float(u), float(v))
+            else:
+                # Fallback: wrap around if vertex index exceeds UV count
+                fallback_idx = vertex_idx % len(uv_coords)
+                u, v = uv_coords[fallback_idx]
+                uv_layer[loop_index].uv = (float(u), float(v))
+            
+            loop_index += 1
+    
+    print(f"  ✅ Applied basic vertex->UV mapping to {mesh_name} (vertex-based)")
 
 
 def apply_uv_coordinates_simple(blender_mesh, uv_layer, uv_coords, mesh_name):

@@ -363,7 +363,7 @@ def _apply_trimesh_materials(mesh: 'trimesh.Trimesh', materials: List[dict], mes
             break
     
     if not material_with_texture:
-        # Color-only material
+        # Color-only material - PRESERVE UV coordinates like textured materials
         if materials:
             mat = materials[0]
             if 'diffuse' in mat:
@@ -379,8 +379,20 @@ def _apply_trimesh_materials(mesh: 'trimesh.Trimesh', materials: List[dict], mes
                 if color[3] < 1.0:  # If material has transparency
                     material.alphaMode = 'BLEND'
                 
+                # CRITICAL FIX: Preserve existing UV coordinates (same as textured materials)
+                existing_uv = None
+                if hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None:
+                    existing_uv = mesh.visual.uv.copy()
+                    print(f"        Preserving existing UV coordinates from .X file ({existing_uv.shape})")
+                
                 # Create TextureVisuals with material
                 mesh.visual = trimesh.visual.TextureVisuals(material=material)
+                
+                # Restore UV coordinates if they existed
+                if existing_uv is not None:
+                    mesh.visual.uv = existing_uv
+                    print("        Restored UV coordinates from .X file")
+                
                 print(f"      Applied PBR color material: {color}")
         return mesh
     
