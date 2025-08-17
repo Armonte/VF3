@@ -267,12 +267,15 @@ def create_vf3_character_in_blender(bones: Dict, attachments: List, world_transf
     mesh_objects = valid_mesh_objects
     print(f"  Filtered mesh objects after connector creation: {len(mesh_objects)} valid objects")
     
-    # Step 7: PROPER ANATOMICAL GROUPING for smooth mesh export
-    # Create proper anatomical groups: body, left arm, right arm, left leg, right leg, head
+    # Step 7: SCIENTIFIC ANATOMICAL GROUPING for accurate mesh export
+    # Use bone-based splitting to prevent contamination
     
-    print("🔧 Creating proper anatomical groups for smooth export...")
-    from vf3_mesh_merging import _create_anatomical_mesh_groups
-    _create_anatomical_mesh_groups(mesh_objects)
+    print("🔬 Creating SCIENTIFIC anatomical groups (zero contamination)...")
+    from vf3_mesh_merging_scientific import create_anatomical_mesh_groups_scientific
+    final_meshes = create_anatomical_mesh_groups_scientific(mesh_objects)
+    
+    # Update mesh_objects to the final clean groups
+    mesh_objects = final_meshes if final_meshes else []
     
     # Connectors were already created before merging (moved above)
     

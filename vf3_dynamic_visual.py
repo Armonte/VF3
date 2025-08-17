@@ -108,6 +108,11 @@ def _create_dynamic_visual_meshes(clothing_dynamic_meshes, world_transforms, cre
         connector_obj = bpy.data.objects.new(connector_name, blender_mesh)
         bpy.context.collection.objects.link(connector_obj)
         
+        # Add source information for debugging
+        source_info = dyn_data.get('source_info', {})
+        connector_obj["connector_source_info"] = str(source_info)  # Use custom property syntax
+        print(f"      🏷️ Tagged connector {connector_name} with source: {source_info}")
+        
         # CRITICAL FIX: Use actual VF3-defined materials instead of guessing from bone content
         if materials and face_materials:
             _assign_vf3_materials_to_connector(connector_obj, materials, face_materials)

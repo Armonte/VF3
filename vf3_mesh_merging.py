@@ -96,7 +96,7 @@ def _create_anatomical_mesh_groups(mesh_objects):
 
 
 def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
-    """Merge a dynamic connector with the most appropriate anatomical group."""
+    """Merge a dynamic connector with the most appropriate anatomical group using source-based assignment."""
     try:
         import bpy
     except ImportError:
@@ -107,15 +107,81 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
     
     connector_name = connector_obj.name.lower()
     
-    # Initialize bilateral counter if not present
-    if not hasattr(_merge_connector_with_anatomical_groups, '_bilateral_counter'):
-        _merge_connector_with_anatomical_groups._bilateral_counter = 0
+    print(f"\n🔍 CONNECTOR ANALYSIS: {connector_obj.name}")
+    print(f"=" * 60)
+    
+    # Enhanced logging: Check source information
+    source_info = connector_obj.get("connector_source_info", "Unknown")
+    if source_info and source_info != "Unknown":
+        print(f"📍 Source Info: {source_info}")
+        
+        # CRITICAL FIX: Use source-based assignment instead of bone analysis
+        # This prevents bilateral connectors from contaminating single anatomical groups
+        target_group = _determine_target_group_from_source(source_info)
+        
+        # ADDITIONAL CHECK: Even if source suggests a target, verify it's not bilateral by bone content
+        connector_bones = [vg.name for vg in connector_obj.vertex_groups]
+        has_left_bones = any('l_' in bone for bone in connector_bones)
+        has_right_bones = any('r_' in bone for bone in connector_bones)
+        
+        if has_left_bones and has_right_bones:
+            print(f"🚨 BILATERAL BONE CONTENT DETECTED: Left={[b for b in connector_bones if 'l_' in b]}, Right={[b for b in connector_bones if 'r_' in b]}")
+            print(f"🌐 OVERRIDING source assignment - keeping {connector_obj.name} as standalone bilateral connector")
+            return False  # Don't merge any bilateral connectors regardless of source
+        elif target_group:
+            print(f"✅ SOURCE-BASED ASSIGNMENT: {target_group} (from source: {source_info})")
+            return _assign_connector_to_group(connector_obj, target_group, anatomical_groups)
+        elif target_group is None:
+            print(f"🌐 BILATERAL SOURCE: Keeping {connector_obj.name} as standalone connector")
+            return False  # Don't merge bilateral connectors
+        else:
+            print(f"⚠️  Could not determine target group from source, falling back to bone analysis")
+    else:
+        print(f"⚠️  No source info available for {connector_obj.name}, using bone analysis")
     
     # Analyze connector's vertex groups to determine target
     vg_names = [vg.name for vg in connector_obj.vertex_groups]
-    print(f"    Connector {connector_obj.name} vertex groups: {vg_names}")
+    print(f"🦴 Vertex Groups ({len(vg_names)}): {vg_names}")
     
-    # IMPROVED: Analyze bone patterns more intelligently
+    # Enhanced debugging: Analyze vertex distribution per bone
+    bone_vertex_counts = {}
+    for vg in connector_obj.vertex_groups:
+        vertex_count = 0
+        for vertex in connector_obj.data.vertices:
+            for group in vertex.groups:
+                if group.group == vg.index and group.weight > 0:
+                    vertex_count += 1
+                    break
+        bone_vertex_counts[vg.name] = vertex_count
+    
+    print(f"📊 Bone Vertex Distribution: {bone_vertex_counts}")
+    
+    # Check available anatomical groups
+    available_groups = {name: len(meshes) for name, meshes in anatomical_groups.items() if meshes}
+    print(f"🎯 Available Target Groups: {available_groups}")
+    
+    # CRITICAL DEBUGGING: Check for bilateral contamination
+    has_left = any(bone for bone in bone_vertex_counts.keys() if 'l_' in bone or 'left' in bone.lower())
+    has_right = any(bone for bone in bone_vertex_counts.keys() if 'r_' in bone or 'right' in bone.lower())
+    
+    if has_left and has_right:
+        print(f"🚨 BILATERAL CONTAMINATION DETECTED in {connector_obj.name}!")
+        left_bones = [bone for bone in bone_vertex_counts.keys() if 'l_' in bone or 'left' in bone.lower()]
+        right_bones = [bone for bone in bone_vertex_counts.keys() if 'r_' in bone or 'right' in bone.lower()]
+        print(f"   Left bones: {left_bones}")
+        print(f"   Right bones: {right_bones}")
+        print(f"   This connector should be split or handled specially!")
+        
+        # For now, log this and continue with original logic
+        # TODO: Implement proper bilateral splitting
+    elif has_left:
+        print(f"🔵 LEFT-SIDE connector detected: {[bone for bone in bone_vertex_counts.keys() if 'l_' in bone]}")
+    elif has_right:
+        print(f"🔴 RIGHT-SIDE connector detected: {[bone for bone in bone_vertex_counts.keys() if 'r_' in bone]}")
+    else:
+        print(f"⚪ NEUTRAL connector (no left/right bones): {list(bone_vertex_counts.keys())}")
+    
+    # FALLBACK: Analyze bone patterns only when source info unavailable
     # Use bone-specific weights and pattern analysis
     
     # Define bone weights (more important bones get higher weights)
@@ -152,8 +218,8 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
         'head': sum(1 for vg in vg_names if vg in ['head', 'neck'])
     }
     
-    print(f"    Region weighted scores: {region_weighted_scores}")
-    print(f"    Region bone counts: {region_counts}")
+    print(f"📈 Region Weighted Scores: {region_weighted_scores}")
+    print(f"📊 Region Bone Counts: {region_counts}")
     
     # Find the dominant region (most bone types present)
     target_group = None
@@ -172,70 +238,123 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
         'head': sum(1 for vg in vg_names if vg in ['head', 'neck'])
     }
     
-    print(f"    Simple bone counts: {region_bone_counts}")
+    print(f"🧮 Simple Bone Counts: {region_bone_counts}")
     
     # Find the maximum bone count
     max_bones = max(region_bone_counts.values())
+    print(f"🎯 Max Bone Count: {max_bones}")
     
     # Find all regions with maximum bone count
     tied_regions = [region for region, count in region_bone_counts.items() if count == max_bones and count > 0]
     
-    # SPECIAL CASE: Mixed body/arm connectors - prefer bilateral arm distribution
-    # If connector has both body bones AND bilateral arm bones with close counts
+    print(f"🏆 Tied regions with {max_bones} bones: {tied_regions}")
+    
+    # SPECIAL CASE: Mixed body/arm connectors - prefer arm assignment
     if (region_bone_counts['body'] > 0 and 
-        region_bone_counts['left_arm'] > 0 and region_bone_counts['right_arm'] > 0):
+        (region_bone_counts['left_arm'] > 0 or region_bone_counts['right_arm'] > 0)):
         
         total_arm_bones = region_bone_counts['left_arm'] + region_bone_counts['right_arm']
         body_bones = region_bone_counts['body']
         
-        # If arms combined have significant representation (at least 60% of body count)
-        if total_arm_bones >= body_bones * 0.6:
-            print(f"    Mixed body/arm connector: body={body_bones}, arms={total_arm_bones}")
+        print(f"🔀 BODY/ARM MIXED CONNECTOR DETECTED:")
+        print(f"   Body bones: {body_bones}, Left arm: {region_bone_counts['left_arm']}, Right arm: {region_bone_counts['right_arm']}")
+        
+        # Check if this is bilateral (has both left and right arm bones)
+        has_bilateral_arms = region_bone_counts['left_arm'] > 0 and region_bone_counts['right_arm'] > 0
+        
+        if has_bilateral_arms:
+            print(f"   🌐 BILATERAL ARM CONNECTOR - using alternating assignment")
+            # Bilateral connector - use alternating assignment to distribute evenly
+            if not hasattr(_merge_connector_with_anatomical_groups, '_body_arm_counter'):
+                _merge_connector_with_anatomical_groups._body_arm_counter = 0
             
-            # Use bilateral distribution for the arm portions
-            _merge_connector_with_anatomical_groups._bilateral_counter += 1
-            connector_id = _merge_connector_with_anatomical_groups._bilateral_counter
+            _merge_connector_with_anatomical_groups._body_arm_counter += 1
+            connector_id = _merge_connector_with_anatomical_groups._body_arm_counter
             
-            # Prefer the arm side with more bones, or alternate if equal
+            # Alternate between left and right arms for bilateral connectors
+            target_group = 'left_arm' if connector_id % 2 == 1 else 'right_arm'
+            print(f"   ✅ DECISION: {target_group} (connector_id={connector_id})")
+            
+        elif total_arm_bones >= body_bones * 0.6:
+            # Non-bilateral but arms have significant representation - prefer the arm side with bones
             if region_bone_counts['left_arm'] > region_bone_counts['right_arm']:
                 target_group = 'left_arm'
                 print(f"    Body/arm connector assigned to left_arm (left={region_bone_counts['left_arm']}, right={region_bone_counts['right_arm']})")
-            elif region_bone_counts['right_arm'] > region_bone_counts['left_arm']:
+            else:
                 target_group = 'right_arm'
                 print(f"    Body/arm connector assigned to right_arm (left={region_bone_counts['left_arm']}, right={region_bone_counts['right_arm']})")
-            else:
-                # Equal arm bones - alternate assignment
-                target_group = 'left_arm' if connector_id % 2 == 0 else 'right_arm'
-                print(f"    Body/arm connector alternated to {target_group} (connector_id={connector_id})")
         else:
-            # Body dominates too much - assign to body as normal
+            # Body dominates - assign to body
             target_group = 'body'
             print(f"    Mixed connector with body dominance: body={body_bones}, arms={total_arm_bones} -> body")
+    
+    # SPECIAL CASE: Mixed body/leg connectors - prefer leg assignment  
+    elif (region_bone_counts['body'] > 0 and 
+          (region_bone_counts['left_leg'] > 0 or region_bone_counts['right_leg'] > 0)):
+        
+        print(f"🔀 BODY/LEG MIXED CONNECTOR DETECTED:")
+        
+        total_leg_bones = region_bone_counts['left_leg'] + region_bone_counts['right_leg']
+        body_bones = region_bone_counts['body']
+        
+        # Check if this is bilateral (has both left and right leg bones)
+        has_bilateral_legs = region_bone_counts['left_leg'] > 0 and region_bone_counts['right_leg'] > 0
+        
+        if has_bilateral_legs:
+            # Bilateral connector - use alternating assignment to distribute evenly
+            if not hasattr(_merge_connector_with_anatomical_groups, '_body_leg_counter'):
+                _merge_connector_with_anatomical_groups._body_leg_counter = 0
+            
+            _merge_connector_with_anatomical_groups._body_leg_counter += 1
+            connector_id = _merge_connector_with_anatomical_groups._body_leg_counter
+            
+            # Alternate between left and right legs for bilateral connectors
+            target_group = 'left_leg' if connector_id % 2 == 1 else 'right_leg'
+            print(f"    Body/leg bilateral connector assigned to {target_group} (connector_id={connector_id})")
+            
+        elif total_leg_bones >= body_bones * 0.6:
+            # Non-bilateral but legs have significant representation - prefer the leg side with bones
+            if region_bone_counts['left_leg'] > region_bone_counts['right_leg']:
+                target_group = 'left_leg'
+                print(f"    Body/leg connector assigned to left_leg (left={region_bone_counts['left_leg']}, right={region_bone_counts['right_leg']})")
+            else:
+                target_group = 'right_leg'
+                print(f"    Body/leg connector assigned to right_leg (left={region_bone_counts['left_leg']}, right={region_bone_counts['right_leg']})")
+        else:
+            # Body dominates - assign to body
+            target_group = 'body'
+            print(f"    Mixed connector with body dominance: body={body_bones}, legs={total_leg_bones} -> body")
     
     # Handle assignment with smart bilateral distribution
     elif len(tied_regions) == 1:
         target_group = tied_regions[0]
         print(f"    Clear winner: {target_group} ({max_bones} bones)")
     elif len(tied_regions) == 2 and set(tied_regions) in [{'left_arm', 'right_arm'}, {'left_leg', 'right_leg'}]:
-        # BILATERAL TIE: Use connector index to distribute evenly between left/right
+        # BILATERAL TIE: Use separate counters for arms vs legs to distribute evenly
         # This ensures we don't assign all mixed connectors to the same side
         
-        # Get a more unique identifier for deterministic bilateral distribution
-        # Use a simple counter-based approach for perfect alternation
-        # Store state in a global counter for deterministic distribution
-        if not hasattr(_merge_connector_with_anatomical_groups, '_bilateral_counter'):
-            _merge_connector_with_anatomical_groups._bilateral_counter = 0
-        
-        _merge_connector_with_anatomical_groups._bilateral_counter += 1
-        connector_id = _merge_connector_with_anatomical_groups._bilateral_counter
-        
         if set(tied_regions) == {'left_arm', 'right_arm'}:
-            # For arm ties, alternate assignment based on connector characteristics
-            target_group = 'left_arm' if connector_id % 2 == 0 else 'right_arm'
+            # Use separate counter for arm bilateral ties
+            if not hasattr(_merge_connector_with_anatomical_groups, '_arm_bilateral_counter'):
+                _merge_connector_with_anatomical_groups._arm_bilateral_counter = 0
+            
+            _merge_connector_with_anatomical_groups._arm_bilateral_counter += 1
+            connector_id = _merge_connector_with_anatomical_groups._arm_bilateral_counter
+            
+            # For arm ties, alternate assignment based on connector counter
+            target_group = 'left_arm' if connector_id % 2 == 1 else 'right_arm'
             print(f"    Bilateral arm tie: assigned to {target_group} (connector_id={connector_id})")
+            
         elif set(tied_regions) == {'left_leg', 'right_leg'}:
-            # For leg ties, alternate assignment based on connector characteristics  
-            target_group = 'left_leg' if connector_id % 2 == 0 else 'right_leg'
+            # Use separate counter for leg bilateral ties
+            if not hasattr(_merge_connector_with_anatomical_groups, '_leg_bilateral_counter'):
+                _merge_connector_with_anatomical_groups._leg_bilateral_counter = 0
+            
+            _merge_connector_with_anatomical_groups._leg_bilateral_counter += 1
+            connector_id = _merge_connector_with_anatomical_groups._leg_bilateral_counter
+            
+            # For leg ties, alternate assignment based on connector counter
+            target_group = 'left_leg' if connector_id % 2 == 1 else 'right_leg'
             print(f"    Bilateral leg tie: assigned to {target_group} (connector_id={connector_id})")
     else:
         # Multi-way tie or complex case: use original priority system
@@ -255,10 +374,11 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
     
     if target_group:
         target_meshes = anatomical_groups[target_group]
-        print(f"    ✅ Final assignment: {target_group} group")
+        print(f"✅ FINAL ASSIGNMENT: {target_group} group")
         
     else:
         # Final fallback to bone type counts if all else fails
+        print(f"⚠️  FALLBACK ASSIGNMENT NEEDED")
         for region, count in region_counts.items():
             if count > max_count:
                 max_count = count
@@ -266,15 +386,18 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
                 target_meshes = anatomical_groups[region]
         
         if target_group:
-            print(f"    Fallback: connector -> {target_group} (bone count: {max_count})")
+            print(f"🔄 Fallback: connector -> {target_group} (bone count: {max_count})")
         else:
-            print(f"    ERROR: No valid assignment found for connector!")
+            print(f"❌ ERROR: No valid assignment found for connector!")
     
     if target_group and target_meshes:
-        print(f"    🎯 Merging connector {connector_obj.name} with {target_group} group ({len(target_meshes)} meshes)")
+        print(f"🎯 MERGING: {connector_obj.name} → {target_group} group ({len(target_meshes)} meshes)")
         
         # Choose the first target mesh to merge with
         target_mesh = target_meshes[0]
+        print(f"   Target mesh: {target_mesh.name}")
+        print(f"   Target mesh bones: {[vg.name for vg in target_mesh.vertex_groups][:5]}...")
+        print(f"   Target mesh materials: {[mat.name for mat in target_mesh.data.materials] if target_mesh.data.materials else ['NO_MATERIALS']}")
         
         # Select target mesh and connector
         bpy.ops.object.select_all(action='DESELECT')
@@ -300,6 +423,130 @@ def _merge_connector_with_anatomical_groups(connector_obj, anatomical_groups):
             return False
     else:
         print(f"    ❓ No target group found for connector {connector_obj.name}")
+        return False
+
+
+def _determine_target_group_from_source(source_info):
+    """Determine target anatomical group from source information."""
+    try:
+        # Parse source info string like "{'source': 'costume:satsuki.blazer:blazer_vp'}"
+        import ast
+        if isinstance(source_info, str):
+            source_dict = ast.literal_eval(source_info)
+        else:
+            source_dict = source_info
+        
+        source_string = source_dict.get('source', '').lower()
+        print(f"   🔍 Analyzing source string: {source_string}")
+        
+        # CRITICAL: For bilateral sources (containing both left and right elements),
+        # keep as standalone connectors rather than merging into single anatomical groups
+        if _is_bilateral_source(source_string):
+            print(f"   🌐 BILATERAL SOURCE DETECTED - keeping as standalone connector")
+            return None  # Don't merge bilateral connectors
+        
+        # Source-based assignment rules
+        if 'blazer' in source_string and 'vp' in source_string:
+            # Blazer connectors typically connect body/chest areas
+            return 'body'
+        elif 'female.arms' in source_string or 'female.l_hand' in source_string or 'female.r_hand' in source_string:
+            # Female body part sources - use alternating assignment for bilateral parts
+            if 'l_hand' in source_string or 'l_arm' in source_string:
+                return 'left_arm'
+            elif 'r_hand' in source_string or 'r_arm' in source_string:
+                return 'right_arm'
+            else:
+                # Generic arms source - keep as standalone
+                return None
+        elif 'female.body' in source_string or 'female.waist' in source_string:
+            return 'body'
+        elif 'female.legs' in source_string or 'female.foots' in source_string:
+            # Generic bilateral legs/feet - keep as standalone
+            return None
+        elif 'head' in source_string:
+            return 'head'
+        else:
+            # Unknown source - fallback to bone analysis
+            return None
+            
+    except Exception as e:
+        print(f"   ❌ Error parsing source info: {e}")
+        return None
+
+
+def _is_bilateral_source(source_string):
+    """Check if source represents bilateral (left+right) content."""
+    # Check for patterns that indicate bilateral content
+    bilateral_indicators = [
+        ('left' in source_string or 'l_' in source_string) and ('right' in source_string or 'r_' in source_string),
+        'arms' in source_string,  # female.arms contains both left and right
+        'legs' in source_string,  # female.legs contains both left and right
+        'foots' in source_string,  # female.foots contains both left and right
+        'hands' in source_string,  # female.hands contains both left and right
+    ]
+    
+    return any(bilateral_indicators)
+
+
+def _assign_connector_to_group(connector_obj, target_group, anatomical_groups):
+    """Assign connector to specific anatomical group."""
+    try:
+        import bpy
+    except ImportError:
+        return False
+    
+    if target_group not in anatomical_groups or not anatomical_groups[target_group]:
+        print(f"   ❌ Target group '{target_group}' not available or empty")
+        return False
+    
+    target_meshes = anatomical_groups[target_group]
+    target_mesh = target_meshes[0]  # Use first mesh in group
+    
+    print(f"🎯 ASSIGNING: {connector_obj.name} → {target_group} group")
+    print(f"   Target mesh: {target_mesh.name}")
+    
+    # DETAILED LOGGING: What bones are being merged into what group
+    connector_bones = [vg.name for vg in connector_obj.vertex_groups]
+    target_bones = [vg.name for vg in target_mesh.vertex_groups]
+    
+    print(f"   📦 MERGING BONES INTO {target_group.upper()}:")
+    print(f"      From connector: {connector_bones}")
+    print(f"      Existing target: {target_bones[:10]}..." if len(target_bones) > 10 else f"      Existing target: {target_bones}")
+    
+    # Check for problematic merges
+    connector_left = [bone for bone in connector_bones if 'l_' in bone or 'left' in bone.lower()]
+    connector_right = [bone for bone in connector_bones if 'r_' in bone or 'right' in bone.lower()]
+    
+    if connector_left and connector_right:
+        print(f"   🚨 WARNING: Merging bilateral connector into single group {target_group}!")
+        print(f"      Left bones: {connector_left}")
+        print(f"      Right bones: {connector_right}")
+    elif target_group in ['left_arm', 'left_leg'] and connector_right:
+        print(f"   🚨 ERROR: Merging RIGHT bones {connector_right} into LEFT group {target_group}!")
+    elif target_group in ['right_arm', 'right_leg'] and connector_left:
+        print(f"   🚨 ERROR: Merging LEFT bones {connector_left} into RIGHT group {target_group}!")
+    
+    # Select target mesh and connector
+    bpy.ops.object.select_all(action='DESELECT')
+    target_mesh.select_set(True)
+    connector_obj.select_set(True)
+    bpy.context.view_layer.objects.active = target_mesh
+    
+    try:
+        # Join the meshes (connector into target)
+        bpy.ops.object.join()
+        
+        # Enter Edit mode and merge overlapping vertices to eliminate seams
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.001)  # Merge vertices within 0.001 units
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        print(f"      ✅ Successfully merged connector {connector_obj.name} with {target_mesh.name}")
+        return True
+        
+    except Exception as e:
+        print(f"      ❌ Failed to merge connector {connector_obj.name}: {e}")
         return False
 
 
@@ -726,6 +973,10 @@ def _try_merge_connector_with_body_mesh(connector_obj, mesh_objects, vertex_bone
         
         # Join the meshes (connector into target)
         bpy.ops.object.join()
+        
+        # CRITICAL FIX: Filter vertex groups based on target mesh type
+        target_group = _determine_anatomical_group_from_mesh_name(target_mesh.name)
+        _filter_vertex_groups_by_anatomical_region(target_mesh, target_group)
         
         # Enter Edit mode and merge overlapping vertices to eliminate seams
         bpy.ops.object.mode_set(mode='EDIT')
@@ -1438,3 +1689,29 @@ def _choose_best_target_mesh_for_connector(target_meshes, connector_name):
             continue
     
     return None
+
+
+
+
+def _determine_anatomical_group_from_mesh_name(mesh_name):
+    """
+    Determine the anatomical group from a mesh name.
+    """
+    mesh_lower = mesh_name.lower()
+    
+    if any(keyword in mesh_lower for keyword in ['head', 'face', 'hair', 'eye']):
+        return 'head'
+    elif any(keyword in mesh_lower for keyword in ['l_arm', 'left_arm', 'l_hand', 'left_hand']):
+        return 'left_arm'
+    elif any(keyword in mesh_lower for keyword in ['r_arm', 'right_arm', 'r_hand', 'right_hand']):
+        return 'right_arm'
+    elif any(keyword in mesh_lower for keyword in ['l_leg', 'left_leg', 'l_foot', 'left_foot']):
+        return 'left_leg'
+    elif any(keyword in mesh_lower for keyword in ['r_leg', 'right_leg', 'r_foot', 'right_foot']):
+        return 'right_leg'
+    elif any(keyword in mesh_lower for keyword in ['body', 'waist', 'breast', 'chest', 'torso', 'blazer', 'skirt']):
+        return 'body'
+    else:
+        return 'body'  # Default fallback
+
+

@@ -6,7 +6,7 @@
 echo "🎌 Testing VF3 Modular Exporter..."
 echo "📁 Input: data/satsuki.TXT"
 
-OUTPUT_FILE="satsuki_modular_$(date +%Y%m%d_%H%M%S).glb"
+OUTPUT_FILE="sats_modular_$(date +%Y%m%d_%H%M%S).glb"
 echo "📦 Output: $OUTPUT_FILE"
 
 # Run the modular exporter
