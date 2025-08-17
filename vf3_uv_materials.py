@@ -300,16 +300,24 @@ def _assign_face_materials_to_unified_mesh(mesh_obj, materials, mesh_info):
         print(f"    Assigning face materials to unified mesh: {len(face_materials)} assignments")
     
     if face_materials and len(face_materials) > 0 and len(mesh_obj.data.polygons) > 0:
-        # Ensure face count matches
-        if len(face_materials) == len(mesh_obj.data.polygons):
-            # Direct assignment (face order preserved)
-            for face_idx, mat_idx in enumerate(face_materials):
-                if face_idx < len(mesh_obj.data.polygons) and mat_idx < len(materials):
+        # Handle face count - allow slight mismatches from Blender vertex merging/degenerate face removal
+        face_count_diff = len(face_materials) - len(mesh_obj.data.polygons)
+        if abs(face_count_diff) <= 5:  # Allow up to 5 faces difference for small mesh cleanup
+            # Direct assignment with bounds checking (truncate extra assignments)
+            assigned_count = 0
+            max_assignments = min(len(face_materials), len(mesh_obj.data.polygons))
+            for face_idx in range(max_assignments):
+                mat_idx = face_materials[face_idx]
+                if mat_idx < len(materials):
                     mesh_obj.data.polygons[face_idx].material_index = mat_idx
+                    assigned_count += 1
             
-            print(f"    ✅ Assigned face materials to unified mesh: {len(face_materials)} faces")
+            if face_count_diff != 0:
+                print(f"    ✅ Assigned face materials to unified mesh: {assigned_count}/{max_assignments} faces (face count diff: {face_count_diff})")
+            else:
+                print(f"    ✅ Assigned face materials to unified mesh: {assigned_count} faces")
         else:
-            print(f"    ⚠️ Face count mismatch: {len(face_materials)} materials vs {len(mesh_obj.data.polygons)} faces")
+            print(f"    ❌ Face count mismatch too large: {len(face_materials)} materials vs {len(mesh_obj.data.polygons)} faces (diff: {face_count_diff})")
     else:
         print(f"    ⚠️ No face material data available for unified mesh")
 
