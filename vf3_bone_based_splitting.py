@@ -418,45 +418,31 @@ def copy_vertex_groups_for_subset(source_obj, target_obj, vertex_indices: List[i
 
 def copy_materials_for_subset(source_obj, target_obj, face_material_indices: List[int]):
     """
-    Copy materials from source to target mesh and properly assign them to faces.
-    Only copies materials that are actually used by the subset.
+    CRITICAL FIX: Copy ALL materials from source to preserve original material indices.
+    This prevents face-to-material mapping corruption that was causing multi-material chaos.
     """
     try:
         import bpy
     except ImportError:
         return
     
-    # Find which materials are actually used by this subset
-    used_material_indices = set(face_material_indices)
-    
-    # Create mapping from old material index to new material index
-    material_map = {}
-    new_material_index = 0
-    
-    print(f"        🎨 MATERIAL COPYING:")
+    print(f"        🎨 MATERIAL COPYING (PRESERVE INDICES):")
     print(f"           Source has {len(source_obj.data.materials)} materials")
-    print(f"           Subset uses {len(used_material_indices)} materials")
     
-    # Copy only the materials that are used
-    for old_index in sorted(used_material_indices):
-        if old_index < len(source_obj.data.materials):
-            material = source_obj.data.materials[old_index]
-            target_obj.data.materials.append(material)
-            material_map[old_index] = new_material_index
-            print(f"           Copied material {old_index} -> {new_material_index}: {material.name if material else 'None'}")
-            new_material_index += 1
-        else:
-            print(f"           ⚠️ Invalid material index {old_index}")
+    # CRITICAL FIX: Copy ALL materials to preserve original indices
+    # This prevents face-to-material mapping corruption
+    for material in source_obj.data.materials:
+        target_obj.data.materials.append(material)
     
-    # Assign materials to faces using the new indices
-    for face_idx, old_material_index in enumerate(face_material_indices):
+    print(f"           Copied ALL {len(source_obj.data.materials)} materials (preserving indices)")
+    
+    # Assign materials to faces using the ORIGINAL indices (no remapping)
+    for face_idx, material_index in enumerate(face_material_indices):
         if face_idx < len(target_obj.data.polygons):
-            if old_material_index in material_map:
-                target_obj.data.polygons[face_idx].material_index = material_map[old_material_index]
-            else:
-                target_obj.data.polygons[face_idx].material_index = 0  # Default to first material
+            # Use original material index directly - no remapping corruption
+            target_obj.data.polygons[face_idx].material_index = material_index
     
-    print(f"           ✅ Applied materials to {len(face_material_indices)} faces")
+    print(f"           ✅ Applied original material indices to {len(face_material_indices)} faces (no remapping corruption)")
 
 
 def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:

@@ -104,7 +104,11 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                                 'layers': [{'source': source, 'attachments': attachments, 'occupancy': occ_value, 'dynamic_mesh': dynamic_mesh}]
                             }
                             print(f"  {group_name}: Slot {slot_idx} occupied by {source} with occupancy {occ_value}")
-                        elif occ_value > current_winner['occupancy']:
+                        elif occ_value > current_winner['occupancy'] or (
+                            occ_value == current_winner['occupancy'] and 
+                            source.startswith('costume:') and 
+                            current_winner['source'].startswith('skin:')
+                        ):
                             # VF3 Occupancy Rules:
                             # - Occupancy 2: ADDITIVE (costume + underwear both kept)
                             # - Occupancy 3: REPLACEMENT (only costume kept, underwear discarded)
@@ -260,27 +264,17 @@ def filter_attachments_by_occupancy_with_dynamic(skin_attachments: List[Dict[str
                 else:
                     print(f"    DynamicVisual from {winner['source']} (DUPLICATE - identical content: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
             
-            # CRITICAL FIX: For REPLACEMENT items, also preserve unique dynamic meshes from discarded base layers
-            # This ensures we don't lose important joint connectors when putting on costume items
-            if winner['occupancy'] >= 3 and 'discarded_layers' in winner:
-                print(f"    PRESERVATION: Checking discarded base layers for unique connectors...")
-                for discarded_layer in winner['discarded_layers']:
-                    discarded_dynamic_mesh = discarded_layer.get('dynamic_mesh')
-                    if discarded_dynamic_mesh:
-                        # Create unique identifier for discarded mesh
-                        vertex_bones = discarded_dynamic_mesh.get('vertex_bones', [])
-                        vertex_count = len(discarded_dynamic_mesh.get('vertices', []))
-                        mesh_content_key = f"{sorted(set(vertex_bones))}-{vertex_count}"
-                        
-                        if mesh_content_key not in seen_dynamic_meshes:
-                            # This connector provides unique connectivity - preserve it!
-                            dynamic_mesh_with_source = discarded_dynamic_mesh.copy()
-                            dynamic_mesh_with_source['source_info'] = {'source': discarded_layer['source']}
-                            final_dynamic_meshes.append(dynamic_mesh_with_source)
-                            seen_dynamic_meshes.add(mesh_content_key)
-                            print(f"    DynamicVisual from {discarded_layer['source']} (PRESERVED - unique connector: {len(set(vertex_bones))} bone types, {vertex_count} vertices)")
-                        else:
-                            print(f"    DynamicVisual from {discarded_layer['source']} (REDUNDANT - already covered by winner)")
+            # DISABLED: Preservation logic was causing double mesh issues and material scrambling
+            # For REPLACEMENT items (occupancy >= 3), we should NOT add back discarded base layers
+            # The replacement costume should completely replace the base layer
+            # 
+            # ORIGINAL BROKEN LOGIC:
+            # if winner['occupancy'] >= 3 and 'discarded_layers' in winner:
+            #     ... preserve discarded base layer meshes ...
+            # 
+            # This was creating overlapping meshes (e.g., female.arms + maid outfit arms)
+            # causing material chaos with 6+ different materials on same body part
+            pass
     
     print(f"OCCUPANCY FILTER: Final result: {len(final_attachments)} attachments, {len(final_dynamic_meshes)} dynamic meshes (deduplicated)")
     

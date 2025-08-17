@@ -315,14 +315,54 @@ def _assign_face_materials_to_mesh(mesh_obj, materials, mesh_info, trimesh_mesh)
         
         mesh_obj.data.update()
         if len(mesh_obj.data.polygons) > 0:
-            assigned_count = 0
-            material_usage = {}
-            for face_idx, mat_idx in enumerate(face_materials):
-                if face_idx < len(mesh_obj.data.polygons) and mat_idx < len(materials):
-                    mesh_obj.data.polygons[face_idx].material_index = mat_idx
-                    assigned_count += 1
-                    material_usage[mat_idx] = material_usage.get(mat_idx, 0) + 1
-            print(f"    ✅ Assigned materials to {assigned_count}/{len(face_materials)} faces")
+            # CRITICAL FIX: Handle potential face reordering by from_pydata()
+            # Verify that the face count matches exactly
+            if len(face_materials) != len(mesh_obj.data.polygons):
+                print(f"    ❌ FACE COUNT MISMATCH: {len(face_materials)} materials but {len(mesh_obj.data.polygons)} polygons")
+                print(f"    This indicates face reordering or loss during from_pydata() - cannot assign materials safely")
+                return
+            
+            # Check if trimesh face order matches Blender polygon order by comparing face vertices
+            trimesh_faces = trimesh_mesh.faces if trimesh_mesh else None
+            if trimesh_faces is not None and len(trimesh_faces) == len(mesh_obj.data.polygons):
+                # Create mapping from Blender polygon index to original trimesh face index
+                face_mapping = {}
+                for blender_poly_idx, blender_poly in enumerate(mesh_obj.data.polygons):
+                    blender_verts = tuple(sorted(blender_poly.vertices))
+                    # Find matching trimesh face
+                    for trimesh_face_idx, trimesh_face in enumerate(trimesh_faces):
+                        trimesh_verts = tuple(sorted(trimesh_face))
+                        if blender_verts == trimesh_verts:
+                            face_mapping[blender_poly_idx] = trimesh_face_idx
+                            break
+                
+                # Apply materials using the correct mapping
+                assigned_count = 0
+                material_usage = {}
+                for blender_poly_idx in range(len(mesh_obj.data.polygons)):
+                    if blender_poly_idx in face_mapping:
+                        original_face_idx = face_mapping[blender_poly_idx]
+                        if original_face_idx < len(face_materials):
+                            mat_idx = face_materials[original_face_idx]
+                            if mat_idx < len(materials):
+                                mesh_obj.data.polygons[blender_poly_idx].material_index = mat_idx
+                                assigned_count += 1
+                                material_usage[mat_idx] = material_usage.get(mat_idx, 0) + 1
+                
+                print(f"    ✅ Assigned materials to {assigned_count}/{len(face_materials)} faces (with face mapping)")
+                if assigned_count != len(face_materials):
+                    print(f"    ⚠️ Some faces could not be mapped - this may indicate mesh corruption")
+            else:
+                # Fallback: assume face order is preserved (old behavior)
+                print(f"    Using direct face mapping (assuming preserved order)")
+                assigned_count = 0
+                material_usage = {}
+                for face_idx, mat_idx in enumerate(face_materials):
+                    if face_idx < len(mesh_obj.data.polygons) and mat_idx < len(materials):
+                        mesh_obj.data.polygons[face_idx].material_index = mat_idx
+                        assigned_count += 1
+                        material_usage[mat_idx] = material_usage.get(mat_idx, 0) + 1
+                print(f"    ✅ Assigned materials to {assigned_count}/{len(face_materials)} faces (direct mapping)")
             if 'head' in mesh_obj.name.lower():
                 print(f"    Debug: Material usage for {mesh_obj.name}: {material_usage}")
     else:

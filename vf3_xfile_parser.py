@@ -829,8 +829,14 @@ def parse_directx_x_file_with_materials(file_path: str) -> dict:
                             uv_coords.append([uv[0], uv[1]])
                         print(f"Extracted {len(mesh.texCoords)} UV coordinates from frame node")
                     
-                    # Extract faces and track original face indices
-                    original_face_idx = len(face_to_original)
+                    # Extract faces and track original face indices  
+                    # CRITICAL FIX: Properly track original face indices across multiple meshes
+                    base_original_face_idx = 0
+                    # Find the highest original face index used so far
+                    if face_to_original:
+                        base_original_face_idx = max(face_to_original) + 1
+                    
+                    original_face_idx = base_original_face_idx
                     for face in mesh.posFaces:
                         if len(face.indices) >= 3:
                             # Convert to triangles if needed

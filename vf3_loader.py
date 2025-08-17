@@ -83,22 +83,58 @@ def parse_dynamic_visual_mesh(lines: List[str]) -> Optional[Dict]:
             break
             
         if mode == 'vertices':
-            # Format: bone:index:(pos1):(pos2):(uv)
+            # Use VF3's exact colon counting algorithm from ParseDynamicVisualData (0x4109b2)
             parts = line.split(':')
-            if len(parts) >= 5:
+            colon_count = len(parts) - 1  # VF3's CountColonsInString logic
+            
+            if colon_count == 1:
+                # Format: bone:index
                 bone = parts[0]
                 try:
                     idx = int(parts[1])
                 except:
                     continue
+                # Use default position for basic format
+                vertices.append(((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)))
+                vertex_bones.append(bone)
+                
+            elif colon_count == 3:
+                # Format: bone:index:pos1:pos2
+                bone = parts[0]
                 try:
+                    idx = int(parts[1])
+                    pos1 = _parse_tuple3(parts[2])
+                    pos2 = _parse_tuple3(parts[3])
+                except:
+                    continue
+                vertices.append((pos1, pos2))
+                vertex_bones.append(bone)
+                
+            elif colon_count == 4:
+                # Format: bone:index:pos1:pos2:bone_types
+                bone = parts[0]
+                try:
+                    idx = int(parts[1])
+                    pos1 = _parse_tuple3(parts[2])
+                    pos2 = _parse_tuple3(parts[3])
+                    bone_types = parts[4]  # H/P/B classification
+                except:
+                    continue
+                vertices.append((pos1, pos2))
+                vertex_bones.append(bone)
+                
+            elif colon_count >= 5:
+                # Extended format: bone:index:pos1:pos2:uv:bone_types
+                bone = parts[0]
+                try:
+                    idx = int(parts[1])
                     pos1 = _parse_tuple3(parts[2])
                     pos2 = _parse_tuple3(parts[3])
                     uv = _parse_tuple2(parts[4]) if len(parts) > 4 else (0.0, 0.0)
+                    bone_types = parts[5] if len(parts) > 5 else ""
                 except:
                     continue
-                # Store both pos1 and pos2 like the game does - we'll experiment with using them
-                vertices.append((pos1, pos2))  # Store both positions as tuple
+                vertices.append((pos1, pos2))
                 vertex_bones.append(bone)
                 
         elif mode == 'material':
