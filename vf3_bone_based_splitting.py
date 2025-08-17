@@ -275,6 +275,7 @@ def create_mesh_subset(mesh_obj, vertex_indices: List[int], group_name: str):
     
     # Find faces that use only the selected vertices
     new_faces = []
+    face_material_indices = []
     for face in original_mesh.polygons:
         face_vertices = list(face.vertices)
         
@@ -283,6 +284,7 @@ def create_mesh_subset(mesh_obj, vertex_indices: List[int], group_name: str):
             # Remap vertex indices to new mesh
             new_face = [vertex_map[v_idx] for v_idx in face_vertices]
             new_faces.append(new_face)
+            face_material_indices.append(face.material_index)
     
     # Create the new mesh
     new_mesh.from_pydata(new_vertices, [], new_faces)
@@ -295,9 +297,8 @@ def create_mesh_subset(mesh_obj, vertex_indices: List[int], group_name: str):
     # Copy vertex groups (bone assignments) for the selected vertices
     copy_vertex_groups_for_subset(mesh_obj, new_obj, vertex_indices, vertex_map)
     
-    # Copy materials
-    for material in mesh_obj.data.materials:
-        new_obj.data.materials.append(material)
+    # Copy materials and fix material assignments
+    copy_materials_for_subset(mesh_obj, new_obj, face_material_indices)
     
     print(f"      ✅ Created {subset_name}: {len(new_vertices)} vertices, {len(new_faces)} faces")
     return new_obj
@@ -349,6 +350,49 @@ def copy_vertex_groups_for_subset(source_obj, target_obj, vertex_indices: List[i
                 target_group_idx = group_map[group.group]
                 target_vg = target_obj.vertex_groups[target_group_idx]
                 target_vg.add([new_vertex_idx], group.weight, 'REPLACE')
+
+
+def copy_materials_for_subset(source_obj, target_obj, face_material_indices: List[int]):
+    """
+    Copy materials from source to target mesh and properly assign them to faces.
+    Only copies materials that are actually used by the subset.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find which materials are actually used by this subset
+    used_material_indices = set(face_material_indices)
+    
+    # Create mapping from old material index to new material index
+    material_map = {}
+    new_material_index = 0
+    
+    print(f"        🎨 MATERIAL COPYING:")
+    print(f"           Source has {len(source_obj.data.materials)} materials")
+    print(f"           Subset uses {len(used_material_indices)} materials")
+    
+    # Copy only the materials that are used
+    for old_index in sorted(used_material_indices):
+        if old_index < len(source_obj.data.materials):
+            material = source_obj.data.materials[old_index]
+            target_obj.data.materials.append(material)
+            material_map[old_index] = new_material_index
+            print(f"           Copied material {old_index} -> {new_material_index}: {material.name if material else 'None'}")
+            new_material_index += 1
+        else:
+            print(f"           ⚠️ Invalid material index {old_index}")
+    
+    # Assign materials to faces using the new indices
+    for face_idx, old_material_index in enumerate(face_material_indices):
+        if face_idx < len(target_obj.data.polygons):
+            if old_material_index in material_map:
+                target_obj.data.polygons[face_idx].material_index = material_map[old_material_index]
+            else:
+                target_obj.data.polygons[face_idx].material_index = 0  # Default to first material
+    
+    print(f"           ✅ Applied materials to {len(face_material_indices)} faces")
 
 
 def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
