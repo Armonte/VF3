@@ -244,8 +244,10 @@ def _create_unified_material(mesh_obj, materials: List, mesh_info: dict = None):
                 print(f"      Material {i}: Loading texture {texture_name}")
                 
                 try:
-                    # Load image in Blender
-                    image = _load_image_with_black_as_alpha(texture_path, 'hair' in texture_name.lower())
+                    # Load image in Blender with black-as-alpha for hair textures
+                    is_hair_texture = 'hair' in texture_name.lower()
+                    image = _load_image_with_black_as_alpha(texture_path, is_hair_texture)
+                    print(f"      Material {i}: Loaded image with black-as-alpha={is_hair_texture}")
                     
                     if image:
                         # CRITICAL: Create UV Map node for EACH material
@@ -260,6 +262,13 @@ def _create_unified_material(mesh_obj, materials: List, mesh_info: dict = None):
                         # Connect UV Map -> Texture -> BSDF (simple and working)
                         material.node_tree.links.new(uv_map_node.outputs['UV'], texture_node.inputs['Vector'])
                         material.node_tree.links.new(texture_node.outputs['Color'], bsdf.inputs['Base Color'])
+                        
+                        # Simple black-as-alpha for hair textures  
+                        if 'hair' in texture_name.lower():
+                            material.node_tree.links.new(texture_node.outputs['Alpha'], bsdf.inputs['Alpha'])
+                            material.blend_method = 'CLIP'  # Clean cutout - black = transparent, color = opaque
+                            material.alpha_threshold = 0.5  # Higher threshold for cleaner cutout
+                            print(f"      Material {i}: Applied clean alpha cutout for hair texture")
                         
                         print(f"      ✅ Material {i}: Applied texture {texture_name}")
                     
@@ -500,6 +509,13 @@ def _load_image_with_black_as_alpha(image_path: str, make_alpha: bool) -> 'bpy.t
         return None
     
     try:
+        # If make_alpha is True, process the image to convert black to transparent
+        if make_alpha:
+            processed_path = _ensure_alpha_from_black(image_path)
+            if processed_path and processed_path != image_path:
+                image_path = processed_path
+                print(f"      Using black-as-alpha processed image: {os.path.basename(processed_path)}")
+        
         # Check if image already loaded
         image_name = os.path.basename(image_path)
         if image_name in bpy.data.images:
