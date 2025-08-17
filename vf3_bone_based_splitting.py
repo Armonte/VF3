@@ -135,14 +135,29 @@ def split_mesh_by_bone_assignments(mesh_obj) -> Dict[str, List[int]]:
             anatomical_group = bone_mapping[primary_bone]
             group_vertices[anatomical_group].append(vertex_idx)
             
-            # CRITICAL: For bridge connectors, check if this vertex is at an interface
-            # and should be duplicated to adjacent groups
+            # CRITICAL: For bridge connectors, assign connector vertices to the appropriate limb
+            # Shoulder/thigh connectors should go to the limb, not be duplicated to body
             if is_bridge:
                 adjacent_groups = find_adjacent_anatomical_groups(mesh_obj, vertex_idx, bone_mapping)
-                for adj_group in adjacent_groups:
-                    if adj_group != anatomical_group and adj_group in group_vertices:
-                        group_vertices[adj_group].append(vertex_idx)
-                        print(f"    🔗 Interface vertex {vertex_idx} ({primary_bone}) duplicated to {adj_group}")
+                
+                # Check if this is a body-to-limb interface
+                if 'body' in adjacent_groups and len(adjacent_groups) > 1:
+                    # This is a body-limb interface - assign to the limb, not body
+                    limb_groups = [group for group in adjacent_groups if group != 'body']
+                    if limb_groups:
+                        target_limb = limb_groups[0]  # Pick the first limb
+                        if target_limb != anatomical_group and target_limb in group_vertices:
+                            # Move this vertex from current group to target limb
+                            if vertex_idx in group_vertices[anatomical_group]:
+                                group_vertices[anatomical_group].remove(vertex_idx)
+                            group_vertices[target_limb].append(vertex_idx)
+                            print(f"    🎯 Interface vertex {vertex_idx} ({primary_bone}) moved to {target_limb} (body-limb connector)")
+                else:
+                    # Non-body interface - use original duplication logic  
+                    for adj_group in adjacent_groups:
+                        if adj_group != anatomical_group and adj_group in group_vertices:
+                            group_vertices[adj_group].append(vertex_idx)
+                            print(f"    🔗 Interface vertex {vertex_idx} ({primary_bone}) duplicated to {adj_group}")
             
         else:
             group_vertices['unassigned'].append(vertex_idx)

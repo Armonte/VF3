@@ -126,6 +126,9 @@ def merge_same_group_meshes(mesh_parts: List, group_name: str):
         print(f"        ✅ Merged into {merged_mesh.name}")
         print(f"        📦 Final bones: {final_bones}")
         
+        # CRITICAL FIX: Add armature modifier to merged anatomical groups
+        add_armature_modifier_to_merged_group(merged_mesh)
+        
         # Validate the merged result
         validate_merged_group(merged_mesh, group_name)
         
