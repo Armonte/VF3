@@ -40,8 +40,12 @@ def get_bone_to_anatomical_group_mapping() -> Dict[str, str]:
         'waist': 'body',
         'l_breast': 'body',  # Breasts stay with body for anatomical correctness
         'r_breast': 'body',
-        'skirt_f': 'body',   # Skirt parts stay with body
-        'skirt_r': 'body',
+        
+        # Skirt bones (separate anatomical group for proper material handling)
+        'skirt_f': 'skirt',   # Front skirt gets own group
+        'skirt_f2': 'skirt',  # Front skirt extension gets own group
+        'skirt_r': 'skirt',   # Rear skirt gets own group
+        'skirt_r2': 'skirt',  # Rear skirt extension gets own group
         
         # Head bones
         'head': 'head',
@@ -73,13 +77,57 @@ def find_adjacent_anatomical_groups(mesh_obj, vertex_idx: int, bone_mapping: Dic
     return list(adjacent_groups)
 
 
-def is_bridge_connector(mesh_obj) -> bool:
+def is_bilateral_bridge_connector(mesh_obj) -> bool:
     """
-    Check if this mesh is a critical bridge connector that should NOT be split.
-    These are dynamic connectors that bridge between different anatomical groups.
+    Check if this connector bridges bilateral groups (left+right arms/legs).
+    These should be split even if they have VF3 materials to prevent contamination.
     """
     if not mesh_obj or not mesh_obj.name.startswith('dynamic_connector'):
         return False
+    
+    bone_mapping = get_bone_to_anatomical_group_mapping()
+    anatomical_groups = set()
+    
+    for vertex_group in mesh_obj.vertex_groups:
+        bone_name = vertex_group.name
+        if bone_name in bone_mapping:
+            anatomical_groups.add(bone_mapping[bone_name])
+    
+    # Check for bilateral bridges that cause contamination
+    bilateral_pairs = [
+        ('left_arm', 'right_arm'),
+        ('left_leg', 'right_leg')
+    ]
+    
+    for left_group, right_group in bilateral_pairs:
+        if left_group in anatomical_groups and right_group in anatomical_groups:
+            print(f"    🚨 BILATERAL BRIDGE: {mesh_obj.name} bridges {left_group} + {right_group} - MUST SPLIT TO PREVENT CONTAMINATION")
+            return True
+    
+    return False
+
+
+def is_bridge_connector(mesh_obj) -> bool:
+    """
+    Check if this mesh is a critical bridge connector that should be split.
+    Uses hybrid logic: preserve complex multi-material connectors, split bilateral bridges.
+    """
+    if not mesh_obj or not mesh_obj.name.startswith('dynamic_connector'):
+        return False
+    
+    # CRITICAL: Always split bilateral bridge connectors to prevent contamination
+    if is_bilateral_bridge_connector(mesh_obj):
+        return True
+    
+    # PRESERVE: Complex multi-material VF3 connectors (4+ materials)
+    has_vf3_materials = any(
+        mat and 'VF3_DynamicVisual_Material' in mat.name 
+        for mat in mesh_obj.data.materials if mat
+    )
+    
+    if has_vf3_materials and len(mesh_obj.data.materials) >= 4:
+        print(f"    🎨 VF3 COMPLEX CONNECTOR: {mesh_obj.name} has {len(mesh_obj.data.materials)} materials - PRESERVING WHOLE")
+        return False  # Don't treat as bridge connector - preserve as single mesh
     
     # Get unique anatomical groups represented by the bones in this mesh
     bone_mapping = get_bone_to_anatomical_group_mapping()
@@ -90,10 +138,10 @@ def is_bridge_connector(mesh_obj) -> bool:
         if bone_name in bone_mapping:
             anatomical_groups.add(bone_mapping[bone_name])
     
-    # If this connector bridges multiple anatomical groups, preserve it
+    # If this connector bridges multiple anatomical groups, split it
     if len(anatomical_groups) > 1:
         group_list = sorted(list(anatomical_groups))
-        print(f"    🌉 BRIDGE CONNECTOR: {mesh_obj.name} bridges {group_list} - PRESERVING WHOLE")
+        print(f"    🌉 BRIDGE CONNECTOR: {mesh_obj.name} bridges {group_list} - WILL SPLIT")
         return True
     
     return False
@@ -432,6 +480,7 @@ def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
         'left_leg': [],
         'right_leg': [],
         'head': [],
+        'skirt': [],  # Separate group for skirt meshes and their connectors
         'unassigned': [],
         'bridge_connectors': []  # Special group for connectors that bridge anatomical groups
     }
@@ -444,22 +493,54 @@ def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
                 
             print(f"\n  🔍 Analyzing: {mesh_obj.name}")
             
-            # CRITICAL: Check if this is a bridge connector
-            if is_bridge_connector(mesh_obj):
-                # Split bridge connectors but preserve their connectivity by distributing parts
-                print(f"    🌉 SPLITTING BRIDGE CONNECTOR: {mesh_obj.name} across anatomical groups")
-                group_vertices = split_mesh_by_bone_assignments(mesh_obj)
-                
-                # Create subset meshes for each anatomical group (same as normal splitting)
-                for group_name, vertex_list in group_vertices.items():
-                    if vertex_list:  # Only create subsets for groups with vertices
-                        subset_obj = create_mesh_subset(mesh_obj, vertex_list, f"{group_name}_bridge")
-                        if subset_obj:
-                            anatomical_groups[group_name].append(subset_obj)
-                
-                # Remove the original bridge connector after splitting
-                bpy.data.objects.remove(mesh_obj, do_unlink=True)
-                continue
+            # CRITICAL: Check if this connector should be preserved or split
+            if mesh_obj.name.startswith('dynamic_connector'):
+                # Check if this is a bridge connector that needs splitting
+                if is_bridge_connector(mesh_obj):
+                    # Split bridge connectors but preserve their connectivity by distributing parts
+                    print(f"    🌉 SPLITTING BRIDGE CONNECTOR: {mesh_obj.name} across anatomical groups")
+                    group_vertices = split_mesh_by_bone_assignments(mesh_obj)
+                    
+                    # Create subset meshes for each anatomical group (same as normal splitting)
+                    for group_name, vertex_list in group_vertices.items():
+                        if vertex_list:  # Only create subsets for groups with vertices
+                            subset_obj = create_mesh_subset(mesh_obj, vertex_list, f"{group_name}_bridge")
+                            if subset_obj:
+                                anatomical_groups[group_name].append(subset_obj)
+                    
+                    # Remove the original bridge connector after splitting
+                    bpy.data.objects.remove(mesh_obj, do_unlink=True)
+                    continue
+                else:
+                    # This is a VF3 connector that should be preserved - assign to primary anatomical group
+                    has_vf3_materials = any(
+                        mat and 'VF3_DynamicVisual_Material' in mat.name 
+                        for mat in mesh_obj.data.materials if mat
+                    )
+                    
+                    if has_vf3_materials:
+                        print(f"    🎨 VF3 PRESERVED CONNECTOR: {mesh_obj.name} with {len(mesh_obj.data.materials)} materials - assigning to primary group")
+                        
+                        # Determine primary anatomical group based on dominant bone assignment
+                        bone_mapping = get_bone_to_anatomical_group_mapping()
+                        group_vertex_counts = {}
+                        
+                        for vertex in mesh_obj.data.vertices:
+                            primary_bone = get_vertex_primary_bone(mesh_obj, vertex.index)
+                            if primary_bone in bone_mapping:
+                                anatomical_group = bone_mapping[primary_bone]
+                                group_vertex_counts[anatomical_group] = group_vertex_counts.get(anatomical_group, 0) + 1
+                        
+                        # Assign to the group with the most vertices
+                        if group_vertex_counts:
+                            primary_group = max(group_vertex_counts, key=group_vertex_counts.get)
+                            anatomical_groups[primary_group].append(mesh_obj)
+                            print(f"      Assigned to '{primary_group}' group (dominant with {group_vertex_counts[primary_group]} vertices)")
+                        else:
+                            # Fallback to unassigned
+                            anatomical_groups['unassigned'].append(mesh_obj)
+                            print(f"      No bone mapping found, assigned to 'unassigned'")
+                        continue
             
             # Split this mesh by bone assignments
             group_vertices = split_mesh_by_bone_assignments(mesh_obj)

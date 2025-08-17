@@ -64,6 +64,64 @@ def create_anatomical_mesh_groups_scientific(mesh_objects):
     return final_meshes
 
 
+def apply_z_fighting_prevention(mesh_parts: List, group_name: str):
+    """
+    Apply Z-fighting prevention by offsetting overlapping mesh layers.
+    Clothing should be slightly forward of skin to prevent Z-fighting.
+    """
+    try:
+        import bpy
+        from mathutils import Vector
+    except ImportError:
+        return
+    
+    if group_name not in ['body', 'left_arm', 'right_arm', 'left_leg', 'right_leg']:
+        return  # Only apply to body parts that might have overlapping layers
+    
+    print(f"        🔧 Applying Z-fighting prevention to {group_name} parts")
+    
+    # Define layer priorities (higher number = more forward)
+    layer_priorities = {
+        'female': 0,      # Base skin layer (furthest back)
+        'stocking': 1,    # Stockings on top of skin
+        'maid': 2,        # Maid outfit on top of everything
+        'default': 1      # Default priority for unknown items
+    }
+    
+    # Sort mesh parts by priority
+    prioritized_parts = []
+    for mesh_part in mesh_parts:
+        priority = layer_priorities.get('default', 1)
+        
+        # Determine priority based on mesh name
+        mesh_name_lower = mesh_part.name.lower()
+        for layer_type, layer_priority in layer_priorities.items():
+            if layer_type in mesh_name_lower:
+                priority = layer_priority
+                break
+        
+        prioritized_parts.append((mesh_part, priority))
+    
+    # Sort by priority (lowest first)
+    prioritized_parts.sort(key=lambda x: x[1])
+    
+    # Apply offset based on priority
+    offset_distance = 0.001  # Small offset to prevent Z-fighting
+    
+    for i, (mesh_part, priority) in enumerate(prioritized_parts):
+        if priority > 0:  # Don't offset base skin layer
+            offset_vector = Vector((0, 0, priority * offset_distance))
+            
+            # Apply offset to mesh vertices
+            bpy.context.view_layer.objects.active = mesh_part
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.transform.translate(value=offset_vector)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+            print(f"          Applied {offset_vector} offset to {mesh_part.name} (priority {priority})")
+
+
 def merge_same_group_meshes(mesh_parts: List, group_name: str):
     """
     Merge mesh parts that belong to the same anatomical group.
@@ -78,6 +136,9 @@ def merge_same_group_meshes(mesh_parts: List, group_name: str):
         return None
     
     print(f"    🔧 Merging {len(mesh_parts)} {group_name} parts:")
+    
+    # DISABLED: Z-fighting prevention - was causing mesh corruption and "black texture" issues
+    # apply_z_fighting_prevention(mesh_parts, group_name)
     
     # Log what we're merging
     for i, mesh_part in enumerate(mesh_parts):
@@ -269,6 +330,15 @@ def validate_final_anatomical_groups(final_meshes):
                     total_contamination += len(left_bones)
                 else:
                     print(f"      ✅ Right leg clean")
+                    
+            elif 'skirt' in group_name:
+                # Skirt should only have skirt bones, not body/arm/leg bones
+                invalid_bones = [bone for bone in bones if not (bone.startswith('skirt_') or bone in ['waist'])]
+                if invalid_bones:
+                    print(f"      🚨 SKIRT contaminated with non-skirt bones: {invalid_bones}")
+                    total_contamination += len(invalid_bones)
+                else:
+                    print(f"      ✅ Skirt clean")
             else:
                 print(f"      ℹ️ {group_name} (neutral group - no contamination check)")
                 

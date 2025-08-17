@@ -4,13 +4,13 @@
 # Tests the refactored modular version against the original
 
 echo "🎌 Testing VF3 Modular Exporter..."
-echo "📁 Input: data/satsuki.TXT"
+echo "📁 Input: data/hisui.TXT"
 
-OUTPUT_FILE="sats_modular_$(date +%Y%m%d_%H%M%S).glb"
+OUTPUT_FILE="hisui_modular_$(date +%Y%m%d_%H%M%S).glb"
 echo "📦 Output: $OUTPUT_FILE"
 
 # Run the modular exporter
-blender --background --python vf3_blender_exporter_modular.py -- data/satsuki.TXT "$OUTPUT_FILE"
+blender --background --python vf3_blender_exporter_modular.py -- data/hisui.TXT "$OUTPUT_FILE"
 
 # Check result
 if [ -f "$OUTPUT_FILE" ]; then
