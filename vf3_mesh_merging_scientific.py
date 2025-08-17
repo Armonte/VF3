@@ -38,11 +38,16 @@ def create_anatomical_mesh_groups_scientific(mesh_objects):
         if not mesh_parts:
             continue
             
+        # Skip empty bridge_connectors group (bridge parts are now distributed to anatomical groups)
+        if group_name == 'bridge_connectors':
+            continue
+            
         print(f"\n  🔧 Merging {group_name} group: {len(mesh_parts)} parts")
         
         if len(mesh_parts) == 1:
-            # Single mesh - just rename it
+            # Single mesh - just rename it and add armature binding
             mesh_parts[0].name = f"VF3_{group_name.title()}"
+            add_armature_modifier_to_merged_group(mesh_parts[0])
             final_meshes.append(mesh_parts[0])
             print(f"    ✅ Renamed single mesh to VF3_{group_name.title()}")
         else:
@@ -129,6 +134,34 @@ def merge_same_group_meshes(mesh_parts: List, group_name: str):
     except Exception as e:
         print(f"        ❌ Failed to merge {group_name} parts: {e}")
         return None
+
+
+def add_armature_modifier_to_merged_group(merged_mesh):
+    """
+    Add armature modifier to merged anatomical group so it's bound to VF3_Armature.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return
+    
+    # Find the VF3_Armature
+    armature_obj = None
+    for obj in bpy.context.scene.objects:
+        if obj.type == 'ARMATURE' and 'VF3' in obj.name:
+            armature_obj = obj
+            break
+    
+    if not armature_obj:
+        print(f"        ❌ Could not find VF3_Armature for {merged_mesh.name}")
+        return
+    
+    # Add armature modifier
+    armature_modifier = merged_mesh.modifiers.new(name="Armature", type='ARMATURE')
+    armature_modifier.object = armature_obj
+    armature_modifier.use_vertex_groups = True
+    
+    print(f"        🔗 Added armature modifier to {merged_mesh.name} -> {armature_obj.name}")
 
 
 def validate_merged_group(merged_mesh, expected_group: str):

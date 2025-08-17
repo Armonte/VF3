@@ -49,9 +49,60 @@ def get_bone_to_anatomical_group_mapping() -> Dict[str, str]:
     }
 
 
+def find_adjacent_anatomical_groups(mesh_obj, vertex_idx: int, bone_mapping: Dict[str, str]) -> List[str]:
+    """
+    Find anatomical groups that are adjacent to a vertex by checking faces that include this vertex.
+    This helps identify interface vertices that should be duplicated to connected groups.
+    """
+    try:
+        import bpy
+    except ImportError:
+        return []
+    
+    adjacent_groups = set()
+    
+    # Check all faces that include this vertex
+    for face in mesh_obj.data.polygons:
+        if vertex_idx in face.vertices:
+            # Get all anatomical groups represented in this face
+            for face_vertex_idx in face.vertices:
+                vertex_bone = get_vertex_primary_bone(mesh_obj, face_vertex_idx)
+                if vertex_bone in bone_mapping:
+                    adjacent_groups.add(bone_mapping[vertex_bone])
+    
+    return list(adjacent_groups)
+
+
+def is_bridge_connector(mesh_obj) -> bool:
+    """
+    Check if this mesh is a critical bridge connector that should NOT be split.
+    These are dynamic connectors that bridge between different anatomical groups.
+    """
+    if not mesh_obj or not mesh_obj.name.startswith('dynamic_connector'):
+        return False
+    
+    # Get unique anatomical groups represented by the bones in this mesh
+    bone_mapping = get_bone_to_anatomical_group_mapping()
+    anatomical_groups = set()
+    
+    for vertex_group in mesh_obj.vertex_groups:
+        bone_name = vertex_group.name
+        if bone_name in bone_mapping:
+            anatomical_groups.add(bone_mapping[bone_name])
+    
+    # If this connector bridges multiple anatomical groups, preserve it
+    if len(anatomical_groups) > 1:
+        group_list = sorted(list(anatomical_groups))
+        print(f"    🌉 BRIDGE CONNECTOR: {mesh_obj.name} bridges {group_list} - PRESERVING WHOLE")
+        return True
+    
+    return False
+
+
 def split_mesh_by_bone_assignments(mesh_obj) -> Dict[str, List[int]]:
     """
     Split a mesh into anatomical groups based on vertex bone assignments.
+    For bridge connectors, vertices at interfaces are duplicated to connected groups.
     
     Returns:
         Dict mapping anatomical group names to lists of vertex indices
@@ -74,6 +125,8 @@ def split_mesh_by_bone_assignments(mesh_obj) -> Dict[str, List[int]]:
     # Also track unassigned vertices
     group_vertices['unassigned'] = []
     
+    is_bridge = mesh_obj.name.startswith('dynamic_connector')
+    
     # Analyze each vertex's bone assignment
     for vertex_idx, vertex in enumerate(mesh_obj.data.vertices):
         primary_bone = get_vertex_primary_bone(mesh_obj, vertex_idx)
@@ -81,6 +134,16 @@ def split_mesh_by_bone_assignments(mesh_obj) -> Dict[str, List[int]]:
         if primary_bone in bone_mapping:
             anatomical_group = bone_mapping[primary_bone]
             group_vertices[anatomical_group].append(vertex_idx)
+            
+            # CRITICAL: For bridge connectors, check if this vertex is at an interface
+            # and should be duplicated to adjacent groups
+            if is_bridge:
+                adjacent_groups = find_adjacent_anatomical_groups(mesh_obj, vertex_idx, bone_mapping)
+                for adj_group in adjacent_groups:
+                    if adj_group != anatomical_group and adj_group in group_vertices:
+                        group_vertices[adj_group].append(vertex_idx)
+                        print(f"    🔗 Interface vertex {vertex_idx} ({primary_bone}) duplicated to {adj_group}")
+            
         else:
             group_vertices['unassigned'].append(vertex_idx)
             if primary_bone:  # Only warn if there actually is a bone assignment
@@ -294,7 +357,8 @@ def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
         'left_leg': [],
         'right_leg': [],
         'head': [],
-        'unassigned': []
+        'unassigned': [],
+        'bridge_connectors': []  # Special group for connectors that bridge anatomical groups
     }
     
     for mesh_obj in mesh_objects:
@@ -304,6 +368,23 @@ def split_all_meshes_by_bones(mesh_objects) -> Dict[str, List]:
                 continue
                 
             print(f"\n  🔍 Analyzing: {mesh_obj.name}")
+            
+            # CRITICAL: Check if this is a bridge connector
+            if is_bridge_connector(mesh_obj):
+                # Split bridge connectors but preserve their connectivity by distributing parts
+                print(f"    🌉 SPLITTING BRIDGE CONNECTOR: {mesh_obj.name} across anatomical groups")
+                group_vertices = split_mesh_by_bone_assignments(mesh_obj)
+                
+                # Create subset meshes for each anatomical group (same as normal splitting)
+                for group_name, vertex_list in group_vertices.items():
+                    if vertex_list:  # Only create subsets for groups with vertices
+                        subset_obj = create_mesh_subset(mesh_obj, vertex_list, f"{group_name}_bridge")
+                        if subset_obj:
+                            anatomical_groups[group_name].append(subset_obj)
+                
+                # Remove the original bridge connector after splitting
+                bpy.data.objects.remove(mesh_obj, do_unlink=True)
+                continue
             
             # Split this mesh by bone assignments
             group_vertices = split_mesh_by_bone_assignments(mesh_obj)
